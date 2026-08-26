@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import StatusBar from "../_components/StatusBar";
 import {
@@ -5,11 +8,29 @@ import {
   HOLDINGS,
   TOTAL_PORTFOLIO_VALUE,
   TOTAL_PORTFOLIO_CHANGE_PCT,
+  type WineType,
 } from "../_lib/mock-data";
 
-const CATEGORIES = ["全部", "威士忌", "高粱", "白蘭地", "紅酒", "白酒"];
+const SORT_FILTERS = ["全部", "最新上架", "保值首選", "千元好物", "搭餐絕配"];
+
+const CATEGORIES: { key: WineType | "全部"; label: string; icon: string }[] = [
+  { key: "全部", label: "全部", icon: "/icons/cat-all.svg" },
+  { key: "威士忌", label: "威士忌", icon: "/icons/cat-whisky.svg" },
+  { key: "高粱", label: "高粱", icon: "/icons/cat-sorghum.svg" },
+  { key: "白蘭地", label: "白蘭地", icon: "/icons/cat-brandy.svg" },
+  { key: "紅酒", label: "紅酒", icon: "/icons/cat-redwine.svg" },
+  { key: "白酒", label: "白酒", icon: "/icons/cat-whitewine.svg" },
+];
 
 export default function WineSelectPage() {
+  const [sortFilter, setSortFilter] = useState(SORT_FILTERS[0]);
+  const [category, setCategory] = useState<WineType | "全部">("全部");
+
+  const products =
+    category === "全部"
+      ? PRODUCTS
+      : PRODUCTS.filter((p) => p.wineType === category);
+
   return (
     <div className="flex flex-col bg-white">
       <StatusBar />
@@ -49,21 +70,58 @@ export default function WineSelectPage() {
         <span className="text-gray-300">›</span>
       </Link>
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3">
-        {CATEGORIES.map((c, i) => (
-          <span
-            key={c}
-            className={`shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold ${
-              i === 0 ? "bg-gray-800 text-gray-000" : "bg-gray-100 text-gray-800"
-            }`}
+      <div className="relative">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3 pr-12">
+          {SORT_FILTERS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setSortFilter(f)}
+              className={`shrink-0 rounded-lg px-3 py-2 text-[14px] font-semibold ${
+                sortFilter === f
+                  ? "bg-gray-800 text-gray-000"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute bottom-3 right-0 top-0 flex w-14 items-center justify-end bg-gradient-to-l from-white via-white to-transparent pr-4">
+          <button className="pointer-events-auto flex size-6 items-center justify-center">
+            <img src="/icons/filter-alt.svg" alt="篩選" className="size-6" />
+          </button>
+        </div>
+      </div>
+
+      <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pb-4">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setCategory(c.key)}
+            className="flex w-[52px] shrink-0 flex-col items-center gap-1"
           >
-            {c}
-          </span>
+            <span
+              className={`flex size-12 items-center justify-center rounded-full ${
+                category === c.key ? "bg-red-50" : ""
+              }`}
+            >
+              <img src={c.icon} alt="" className="size-10" />
+            </span>
+            <span
+              className={`text-[12px] ${
+                category === c.key
+                  ? "font-semibold text-gray-900"
+                  : "text-gray-500"
+              }`}
+            >
+              {c.label}
+            </span>
+          </button>
         ))}
       </div>
 
       <div className="grid grid-cols-2 gap-4 px-4 pb-6">
-        {PRODUCTS.map((p) => (
+        {products.map((p) => (
           <Link
             key={p.id}
             href={`/v1/wine-select/${p.id}`}
@@ -90,6 +148,11 @@ export default function WineSelectPage() {
             </div>
           </Link>
         ))}
+        {products.length === 0 && (
+          <p className="col-span-2 py-10 text-center text-[13px] text-gray-400">
+            這個分類目前沒有商品
+          </p>
+        )}
       </div>
     </div>
   );

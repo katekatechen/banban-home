@@ -1,3 +1,5 @@
+export type WineType = "威士忌" | "高粱" | "白蘭地" | "紅酒" | "白酒";
+
 export type Product = {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export type Product = {
   emoji: string;
   gradient: string;
   category: "精選酒品" | "日用品";
+  wineType: WineType;
   tag?: string;
 };
 
@@ -18,6 +21,7 @@ export const PRODUCTS: Product[] = [
     emoji: "🍶",
     gradient: "from-gray-700 to-gray-900",
     category: "精選酒品",
+    wineType: "高粱",
   },
   {
     id: "macallan-12",
@@ -27,6 +31,7 @@ export const PRODUCTS: Product[] = [
     emoji: "🥃",
     gradient: "from-amber-700 to-amber-950",
     category: "精選酒品",
+    wineType: "威士忌",
     tag: "熱銷",
   },
   {
@@ -37,6 +42,7 @@ export const PRODUCTS: Product[] = [
     emoji: "🍷",
     gradient: "from-rose-800 to-rose-950",
     category: "精選酒品",
+    wineType: "紅酒",
     tag: "NEW",
   },
   {
@@ -47,6 +53,7 @@ export const PRODUCTS: Product[] = [
     emoji: "🥃",
     gradient: "from-orange-800 to-amber-950",
     category: "精選酒品",
+    wineType: "威士忌",
   },
   {
     id: "new-whisky",
@@ -56,6 +63,7 @@ export const PRODUCTS: Product[] = [
     emoji: "🛢️",
     gradient: "from-stone-700 to-stone-900",
     category: "精選酒品",
+    wineType: "威士忌",
   },
 ];
 
