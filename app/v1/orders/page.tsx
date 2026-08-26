@@ -46,9 +46,9 @@ export default function OrdersPage() {
       : [{ status: filter as OrderStatus, items: filtered }];
 
   return (
-    <div className="flex flex-col bg-white">
+    <div className="flex h-full flex-col bg-white">
       <StatusBar />
-      <div className="flex items-center px-2 pb-2 pt-1">
+      <div className="flex shrink-0 items-center px-2 pb-2 pt-1">
         <button
           onClick={() => router.back()}
           className="flex size-10 items-center justify-center text-[20px] text-gray-800"
@@ -61,7 +61,7 @@ export default function OrdersPage() {
         <div className="size-10" />
       </div>
 
-      <div className="flex gap-6 border-b border-gray-100 px-4">
+      <div className="flex shrink-0 gap-6 border-b border-gray-100 px-4">
         <button
           onClick={() => setTab("訂單")}
           className={`pb-2.5 text-[15px] font-semibold ${
@@ -84,6 +84,7 @@ export default function OrdersPage() {
         </button>
       </div>
 
+      <div className="no-scrollbar flex-1 overflow-y-auto">
       {tab === "詢問" ? (
         <div className="flex flex-col items-center gap-2 px-4 py-20 text-center">
           <span className="text-[40px]">💬</span>
@@ -172,6 +173,7 @@ export default function OrdersPage() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

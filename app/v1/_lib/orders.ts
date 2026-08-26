@@ -78,17 +78,6 @@ function seedIfEmpty() {
         status: "已完成",
         createdAt: daysAgo(6),
       },
-      {
-        id: genOrderNo(new Date(daysAgo(13))),
-        name: "無香洗衣精 補充包",
-        price: 259,
-        qty: 2,
-        emoji: "🧴",
-        gradient: "from-sky-600 to-sky-900",
-        source: "伴伴對話",
-        status: "已取消",
-        createdAt: daysAgo(13),
-      },
     ];
     sessionStorage.setItem(STORAGE_ORDERS, JSON.stringify(seeded));
   } catch {
