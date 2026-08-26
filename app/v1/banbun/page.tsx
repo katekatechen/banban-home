@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
@@ -41,10 +41,31 @@ const PROMPT_CHIPS = [
   "我想了解報稅的事",
 ];
 
+// 標題每次進首頁隨機換一句，都用同一個「你 OO，我 OO」節奏，
+// 呼應伴伴從「幫你買東西」擴大成「個人助理」的定位
+const HEADLINES = [
+  "你想要什麼，\n我來搞定！",
+  "什麼都能問，\n我來處理！",
+  "買酒、繳費、算錢，\n我都罩你！",
+  "你的錢事，\n我來張羅！",
+];
+
+// mock：呼應「伴伴主動提醒待辦任務」story，之後接真的帳號狀態
+const REMINDER = {
+  text: "你上次那筆身分驗證卡住了，點一下",
+  href: "/v1/account",
+};
+
 export default function BanbunHomePage() {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [homeInput, setHomeInput] = useState("");
+  // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
+  // 掛載後才隨機換一句，符合「每次進首頁都會換」的需求
+  const [headline, setHeadline] = useState(HEADLINES[0]);
+  useEffect(() => {
+    setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+  }, []);
 
   const submitHomeInput = () => {
     const text = homeInput.trim();
@@ -100,47 +121,45 @@ export default function BanbunHomePage() {
       </div>
 
       <div className="flex flex-col gap-6 px-4 pb-6 pt-2">
-        {/* reminder card — 呼應「伴伴主動提醒待辦任務」story */}
-        <Link
-          href="/v1/account"
-          className="flex items-center gap-3 rounded-2xl bg-gray-800 px-4 py-3 text-white"
-        >
-          <span className="text-[20px]">⚠️</span>
-          <div className="flex-1">
-            <p className="text-[14px] font-semibold">
-              你上次那筆身分驗證卡住了
-            </p>
-            <p className="text-[12px] text-gray-300">要不要現在弄一下？</p>
-          </div>
-          <span className="text-gray-400">›</span>
-        </Link>
-
-        {/* banner — 沿用既有 Figma 設計的伴伴入口視覺，底部嵌入輸入框 */}
+        {/* hero — 標題隨機換句、整合待辦提醒，輸入框放在標題下方 */}
         <div
-          className="relative flex w-full flex-col overflow-hidden rounded-2xl px-5 pb-4 pt-5 text-white"
+          className="relative flex w-full flex-col overflow-hidden rounded-2xl px-5 pb-5 pt-5 text-white"
           style={{
             backgroundImage:
               "linear-gradient(168deg, #0b2250 10%, #001133 85%), linear-gradient(90deg, #ff3b3b 0%, #ff3b3b 100%)",
             backgroundBlendMode: "screen",
           }}
         >
-          <Link href="/v1/banbun/chat" className="block">
-            <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
-            <p className="mt-1 text-[22px] font-black leading-[1.25]">
-              你想要什麼，我來搞定！
-            </p>
-          </Link>
           <LottiePlayer
             src="/lottie/otter-typing.json"
-            className="pointer-events-none absolute right-1 top-0 size-[110px]"
+            className="pointer-events-none absolute right-0 top-0 size-[84px]"
           />
+
+          {/* eyebrow：有待辦提醒就顯示提醒，沒有的話顯示問候語 */}
+          <Link
+            href={REMINDER.href}
+            className="flex w-fit items-center gap-1.5 rounded-full bg-black/20 py-1 pl-1 pr-2.5"
+          >
+            <span className="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px]">
+              !
+            </span>
+            <span className="text-[12px] font-medium text-white/95">
+              {REMINDER.text}
+            </span>
+          </Link>
+
+          <Link href="/v1/banbun/chat" className="mt-3 block pr-16">
+            <p className="whitespace-pre-line text-[28px] font-black leading-[1.2]">
+              {headline}
+            </p>
+          </Link>
 
           <form
             onSubmit={(e) => {
               e.preventDefault();
               submitHomeInput();
             }}
-            className="mt-4 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
+            className="mt-5 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
           >
             <input
               value={homeInput}
