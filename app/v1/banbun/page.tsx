@@ -43,23 +43,21 @@ export default function BanbunHomePage() {
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
         <div className="flex items-center gap-2">
           <div className="relative flex size-8 items-center justify-center">
-            <span className="text-[20px]">🔔</span>
+            <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
               9
             </span>
           </div>
           <Link
             href="/v1/collection"
-            className="flex size-8 items-center justify-center text-[20px]"
+            className="flex size-8 items-center justify-center"
           >
-            🛍️
+            <img src="/icons/nav-bag.svg" alt="我的收藏" className="size-6" />
           </Link>
         </div>
-        <p className="text-[15px] font-bold tracking-wide text-gray-800">
-          AIFIAN
-        </p>
+        <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
         <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
-          <span className="text-brand">💰</span>
+          <img src="/icons/nav-reward.svg" alt="" className="size-4" />
           <span className="text-[14px] font-medium text-gray-800">
             999,999
           </span>

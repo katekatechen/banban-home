@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon from "./Icon";
 
 const TABS = [
-  { href: "/v1/banbun", label: "伴伴", icon: "🦦" },
-  { href: "/v1/wine-select", label: "精選酒品", icon: "🍷" },
-  { href: "/v1/ai-select", label: "智能選品", icon: "✨" },
-  { href: "/v1/experience", label: "體驗", icon: "🎁" },
-  { href: "/v1/account", label: "帳號", icon: "👤" },
+  { href: "/v1/banbun", label: "伴伴", icon: "/icons/tab-banbun.svg" },
+  { href: "/v1/wine-select", label: "精選酒品", icon: "/icons/tab-wine-select.svg" },
+  { href: "/v1/ai-select", label: "智能選品", icon: "/icons/tab-ai-select.svg" },
+  { href: "/v1/experience", label: "體驗", icon: "/icons/tab-experience.svg" },
+  { href: "/v1/account", label: "帳號", icon: "/icons/tab-account.svg" },
 ] as const;
 
 export default function TabBar() {
@@ -26,13 +27,12 @@ export default function TabBar() {
               href={tab.href}
               className="flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-1.5"
             >
-              <span
-                className={`text-[18px] leading-none transition-transform ${
-                  active ? "scale-110" : "opacity-60"
+              <Icon
+                src={tab.icon}
+                className={`size-5 transition-transform ${
+                  active ? "scale-110 text-gray-800" : "text-gray-400"
                 }`}
-              >
-                {tab.icon}
-              </span>
+              />
               <span
                 className={`text-[10px] leading-none ${
                   active ? "font-semibold text-gray-800" : "text-gray-400"

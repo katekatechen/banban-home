@@ -182,7 +182,7 @@ export default function ChatClient() {
         >
           ‹
         </button>
-        <span className="text-[20px]">🦦</span>
+        <img src="/icons/tab-banbun.svg" alt="伴伴" className="size-6" />
         <p className="text-[15px] font-semibold text-gray-800">伴伴</p>
       </div>
 
