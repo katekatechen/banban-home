@@ -139,7 +139,7 @@ export default function ChatClient() {
           desc: "2025 Whisky · 送禮首選",
           price: 999,
           emoji: "🥃",
-          gradient: "from-amber-700 to-amber-950",
+          gradient: "from-[#EAE7DD] to-[#EAE7DD]",
         },
       });
       return;

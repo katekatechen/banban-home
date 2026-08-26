@@ -73,7 +73,7 @@ function seedIfEmpty() {
         price: 1100,
         qty: 1,
         emoji: "🥃",
-        gradient: "from-orange-800 to-amber-950",
+        gradient: "from-[#EAE7DD] to-[#EAE7DD]",
         source: "精選酒品",
         status: "已完成",
         createdAt: daysAgo(6),
