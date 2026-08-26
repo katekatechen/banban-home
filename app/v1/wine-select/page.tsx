@@ -1,6 +1,11 @@
 import Link from "next/link";
 import StatusBar from "../_components/StatusBar";
-import { PRODUCTS } from "../_lib/mock-data";
+import {
+  PRODUCTS,
+  HOLDINGS,
+  TOTAL_PORTFOLIO_VALUE,
+  TOTAL_PORTFOLIO_CHANGE_PCT,
+} from "../_lib/mock-data";
 
 const CATEGORIES = ["全部", "威士忌", "高粱", "白蘭地", "紅酒", "白酒"];
 
@@ -17,6 +22,32 @@ export default function WineSelectPage() {
           </span>
         </div>
       </div>
+
+      <Link
+        href="/v1/collection"
+        className="mx-4 mb-3 flex items-center gap-3 rounded-2xl bg-gray-000 px-4 py-3"
+      >
+        <div className="flex -space-x-2">
+          {HOLDINGS.slice(0, 3).map((h) => (
+            <div
+              key={h.id}
+              className={`flex size-9 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br text-[16px] ${h.gradient}`}
+            >
+              {h.emoji}
+            </div>
+          ))}
+        </div>
+        <div className="flex-1">
+          <p className="text-[13px] text-gray-500">我的酒窖</p>
+          <p className="text-[15px] font-semibold text-gray-800">
+            ${TOTAL_PORTFOLIO_VALUE.toLocaleString()}{" "}
+            <span className="text-[13px] font-medium text-emerald-600">
+              (+{TOTAL_PORTFOLIO_CHANGE_PCT}%)
+            </span>
+          </p>
+        </div>
+        <span className="text-gray-300">›</span>
+      </Link>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3">
         {CATEGORIES.map((c, i) => (

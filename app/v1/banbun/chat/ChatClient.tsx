@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
+import { addOrder } from "../../_lib/orders";
 
 type RecCard = {
   name: string;
@@ -30,8 +31,16 @@ type Stage =
   | "await_daily_category"
   | "done";
 
-const STORAGE_MESSAGES = "banbun-chat-messages";
-const STORAGE_STAGE = "banbun-chat-stage";
+type Conversation = {
+  id: string;
+  title: string;
+  messages: Message[];
+  stage: Stage;
+  updatedAt: number;
+};
+
+const STORAGE_CONVERSATIONS = "banbun-conversations";
+const STORAGE_ACTIVE_ID = "banbun-active-conversation-id";
 
 const DEFAULT_GREETING: Message[] = [
   {
@@ -41,35 +50,50 @@ const DEFAULT_GREETING: Message[] = [
   },
 ];
 
-// 用 lazy initializer（而非 useEffect）從 sessionStorage 還原對話紀錄，
-// 讀取跟第一次 render 同步發生，避免跟正在進行中的對話流程（例如已經
-// setStage 但訊息還在 setTimeout 延遲中）產生競態、把 stage 覆蓋回預設值。
-function loadMessages(): Message[] {
-  if (typeof window === "undefined") return DEFAULT_GREETING;
-  try {
-    const saved = sessionStorage.getItem(STORAGE_MESSAGES);
-    if (saved) {
-      const parsed: Message[] = JSON.parse(saved);
-      if (parsed.length > 0) {
-        nextId = Math.max(...parsed.map((m) => m.id), 0) + 1;
-        return parsed;
-      }
-    }
-  } catch {
-    // sessionStorage 不可用（例如無痕模式）就從預設問候語開始
-  }
-  return DEFAULT_GREETING;
+function createConversation(): Conversation {
+  return {
+    id: `conv-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+    title: "新對話",
+    messages: DEFAULT_GREETING,
+    stage: "idle",
+    updatedAt: Date.now(),
+  };
 }
 
-function loadStage(): Stage {
-  if (typeof window === "undefined") return "idle";
+function loadConversations(): Conversation[] {
+  if (typeof window === "undefined") return [];
   try {
-    const saved = sessionStorage.getItem(STORAGE_STAGE) as Stage | null;
-    if (saved) return saved;
+    const saved = sessionStorage.getItem(STORAGE_CONVERSATIONS);
+    if (saved) return JSON.parse(saved);
   } catch {
     // ignore
   }
-  return "idle";
+  return [];
+}
+
+function saveConversations(list: Conversation[]) {
+  try {
+    sessionStorage.setItem(STORAGE_CONVERSATIONS, JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+}
+
+function loadActiveId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(STORAGE_ACTIVE_ID);
+  } catch {
+    return null;
+  }
+}
+
+function deriveTitle(messages: Message[]): string | null {
+  const firstUser = messages.find((m) => m.role === "user" && m.text);
+  if (!firstUser?.text) return null;
+  return firstUser.text.length > 16
+    ? firstUser.text.slice(0, 16) + "…"
+    : firstUser.text;
 }
 
 export default function ChatClient() {
@@ -77,21 +101,72 @@ export default function ChatClient() {
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("prompt") ?? "";
 
-  const [messages, setMessages] = useState<Message[]>(loadMessages);
-  const [stage, setStage] = useState<Stage>(loadStage);
+  // 只在第一次 render 算一次「初始要用哪個對話串」，避免跟後續互動產生競態
+  const initialRef = useRef<{
+    conversations: Conversation[];
+    activeId: string;
+  } | null>(null);
+  if (initialRef.current === null) {
+    const convs = loadConversations();
+    let activeId = loadActiveId();
+    if (!activeId || !convs.find((c) => c.id === activeId)) {
+      if (convs.length > 0) {
+        activeId = convs[0].id;
+      } else {
+        const fresh = createConversation();
+        convs.push(fresh);
+        activeId = fresh.id;
+        nextId = Math.max(...fresh.messages.map((m) => m.id), 0) + 1;
+      }
+    } else {
+      const active = convs.find((c) => c.id === activeId)!;
+      nextId = Math.max(...active.messages.map((m) => m.id), 1) + 1;
+    }
+    initialRef.current = { conversations: convs, activeId };
+  }
+  const initial = initialRef.current;
+  const initialActive =
+    initial.conversations.find((c) => c.id === initial.activeId) ??
+    initial.conversations[0];
+
+  const [conversations, setConversations] = useState<Conversation[]>(
+    initial.conversations,
+  );
+  const [activeId, setActiveId] = useState<string>(initial.activeId);
+  const [messages, setMessages] = useState<Message[]>(initialActive.messages);
+  const [stage, setStage] = useState<Stage>(initialActive.stage);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const sentInitial = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 把目前對話寫回對話清單 + sessionStorage（切換/新增對話時三個 setState
+  // 會在同一個事件處理內一起呼叫、一起 batch，這裡才不會用舊資料互相覆蓋）
   useEffect(() => {
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.id === activeId);
+      const title = deriveTitle(messages) ?? prev[idx]?.title ?? "新對話";
+      const updated: Conversation = {
+        id: activeId,
+        title,
+        messages,
+        stage,
+        updatedAt: Date.now(),
+      };
+      const next =
+        idx >= 0
+          ? prev.map((c, i) => (i === idx ? updated : c))
+          : [updated, ...prev];
+      saveConversations(next);
+      return next;
+    });
     try {
-      sessionStorage.setItem(STORAGE_MESSAGES, JSON.stringify(messages));
-      sessionStorage.setItem(STORAGE_STAGE, stage);
+      sessionStorage.setItem(STORAGE_ACTIVE_ID, activeId);
     } catch {
       // ignore
     }
-  }, [messages, stage]);
+  }, [messages, stage, activeId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -202,11 +277,40 @@ export default function ChatClient() {
   };
 
   const handleBuy = async (card: RecCard) => {
+    addOrder({
+      name: card.name,
+      price: card.price,
+      emoji: card.emoji,
+      gradient: card.gradient,
+      source: "伴伴對話",
+    });
     await pushBot({ text: `好，幫你下單「${card.name}」了。` });
     await pushBot({
       orderConfirmed: true,
       text: `已下單，直接寄到你家 — 這次不會存放在 AIFIAN 裡面囉。`,
     });
+  };
+
+  const newChat = () => {
+    const fresh = createConversation();
+    setConversations((prev) => {
+      const next = [fresh, ...prev];
+      saveConversations(next);
+      return next;
+    });
+    setActiveId(fresh.id);
+    setMessages(fresh.messages);
+    setStage(fresh.stage);
+    setDrawerOpen(false);
+  };
+
+  const openConversation = (id: string) => {
+    const conv = conversations.find((c) => c.id === id);
+    if (!conv) return;
+    setActiveId(id);
+    setMessages(conv.messages);
+    setStage(conv.stage);
+    setDrawerOpen(false);
   };
 
   useEffect(() => {
@@ -218,17 +322,35 @@ export default function ChatClient() {
   }, [initialPrompt]);
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="relative flex h-full flex-col bg-white">
       <StatusBar />
       <div className="flex items-center gap-2 border-b border-gray-100 px-4 pb-3 pt-1">
         <button
-          onClick={() => router.push("/v1/banbun")}
-          className="flex size-8 items-center justify-center text-[20px] text-gray-700"
+          onClick={() => setDrawerOpen(true)}
+          title="對話紀錄"
+          className="flex size-8 items-center justify-center text-gray-800"
         >
-          ‹
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+          >
+            <line x1="4" x2="20" y1="6" y2="6" />
+            <line x1="4" x2="20" y1="12" y2="12" />
+            <line x1="4" x2="20" y1="18" y2="18" />
+          </svg>
         </button>
-        <img src="/icons/tab-banbun.svg" alt="伴伴" className="size-6" />
-        <p className="text-[15px] font-semibold text-gray-800">伴伴</p>
+        <button
+          onClick={() => router.push("/v1/banbun")}
+          className="flex items-center gap-2"
+        >
+          <img src="/icons/tab-banbun.svg" alt="伴伴" className="size-6" />
+          <p className="text-[15px] font-semibold text-gray-800">伴伴</p>
+        </button>
       </div>
 
       <div
@@ -279,6 +401,102 @@ export default function ChatClient() {
           ↑
         </button>
       </form>
+
+      {drawerOpen && (
+        <div
+          className="absolute inset-0 z-40 flex flex-col bg-white p-4"
+          style={{
+            animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both",
+          }}
+        >
+          <div className="flex items-center justify-between px-1 pb-3">
+            <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="flex size-9 items-center justify-center rounded-lg text-gray-800"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <button
+            onClick={newChat}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+            >
+              <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.167.094 10 10 0 1 0-4.845-4.821" />
+              <path d="M12 8v8" />
+              <path d="M8 12h8" />
+            </svg>
+            開新對話
+          </button>
+
+          <div className="no-scrollbar mt-2 flex-1 overflow-y-auto">
+            <p className="px-3 pb-2 text-[12px] font-medium text-gray-400">
+              最近
+            </p>
+            {conversations
+              .slice()
+              .sort((a, b) => b.updatedAt - a.updatedAt)
+              .map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => openConversation(c.id)}
+                  className={`block w-full truncate rounded-xl px-3 py-3 text-left text-[14px] ${
+                    c.id === activeId
+                      ? "bg-gray-100 font-medium text-gray-800"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {c.title}
+                </button>
+              ))}
+          </div>
+
+          <button
+            onClick={() => {
+              setDrawerOpen(false);
+              router.push("/v1/orders");
+            }}
+            className="flex items-center gap-3 border-t border-gray-100 px-3 pb-1 pt-4 text-left text-[14px] font-medium text-gray-800"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+              <path d="M12 22V12" />
+              <polyline points="3.29 7 12 12 20.71 7" />
+              <path d="m7.5 4.27 9 5.15" />
+            </svg>
+            我的訂單
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -310,9 +528,7 @@ function ChatBubble({
   if (message.card) {
     const c = message.card;
     return (
-      <div
-        className="flex w-full max-w-[85%] items-center gap-4 self-start rounded-2xl border border-gray-200 bg-white p-3.5"
-      >
+      <div className="flex w-full max-w-[85%] items-center gap-4 self-start rounded-2xl border border-gray-200 bg-white p-3.5">
         <div
           className={`flex size-[74px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-[30px] ${c.gradient}`}
         >

@@ -39,6 +39,15 @@ body {
   font-family: var(--font-app-sans);
 }
 
+@keyframes drawerIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 /* 隱藏 scrollbar，維持手機瀏覽的乾淨感 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

@@ -20,6 +20,7 @@ export default async function WineDetailPage({
       gradient={product.gradient}
       rating={4}
       lastUpdated="2026/07/25"
+      source="精選酒品"
     />
   );
 }

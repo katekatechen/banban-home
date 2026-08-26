@@ -26,6 +26,7 @@ export default async function HoldingDetailPage({
         currentValue: holding.currentValue,
         changePct: holding.changePct,
       }}
+      source="我的收藏"
     />
   );
 }

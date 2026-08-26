@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import StatusBar from "./StatusBar";
+import { addOrder } from "../_lib/orders";
 
 type HoldingInfo = {
   qty: number;
@@ -20,6 +21,7 @@ type ProductDetailProps = {
   rating: number;
   lastUpdated: string;
   holding?: HoldingInfo;
+  source: "精選酒品" | "我的收藏";
 };
 
 export default function ProductDetail({
@@ -31,6 +33,7 @@ export default function ProductDetail({
   rating,
   lastUpdated,
   holding,
+  source,
 }: ProductDetailProps) {
   const router = useRouter();
   const [tab, setTab] = useState<"status" | "info">("status");
@@ -175,7 +178,10 @@ export default function ProductDetail({
           </>
         )}
         <button
-          onClick={() => setAction("bought")}
+          onClick={() => {
+            setAction("bought");
+            addOrder({ name, price, emoji, gradient, source });
+          }}
           className="flex flex-[1.4] flex-col items-center justify-center rounded-2xl bg-brand py-2.5 text-white"
         >
           <span className="text-[14px] font-semibold">買入</span>
