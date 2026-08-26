@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
-import HistoryDrawer from "../../_components/HistoryDrawer";
-import { addOrder } from "../../_lib/orders";
+import ProductSheet from "../../_components/ProductSheet";
+import { getCart, toggleCartItem, ensureInCart } from "../../_lib/cart";
 import {
   type Conversation,
   type Message,
@@ -65,20 +65,22 @@ export default function ChatClient() {
     initial.conversations.find((c) => c.id === initial.activeId) ??
     initial.conversations[0];
 
-  const [conversations, setConversations] = useState<Conversation[]>(
+  const [, setConversations] = useState<Conversation[]>(
     initial.conversations,
   );
-  const [activeId, setActiveId] = useState<string>(initial.activeId);
+  const [activeId] = useState<string>(initial.activeId);
   const [messages, setMessages] = useState<Message[]>(initialActive.messages);
   const [stage, setStage] = useState<Stage>(initialActive.stage);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [sheetCard, setSheetCard] = useState<RecCard | null>(null);
+  const [cartKeys, setCartKeys] = useState<Set<string>>(
+    () => new Set(getCart().map((i) => i.key)),
+  );
   const sentInitial = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 把目前對話寫回對話清單 + sessionStorage（切換/新增對話時三個 setState
-  // 會在同一個事件處理內一起呼叫、一起 batch，這裡才不會用舊資料互相覆蓋）
+  // 把目前對話寫回對話清單 + sessionStorage
   useEffect(() => {
     setConversations((prev) => {
       const idx = prev.findIndex((c) => c.id === activeId);
@@ -208,41 +210,29 @@ export default function ChatClient() {
     handleSend(reply);
   };
 
-  const handleBuy = async (card: RecCard) => {
-    addOrder({
-      name: card.name,
-      price: card.price,
-      emoji: card.emoji,
-      gradient: card.gradient,
-      source: "伴伴對話",
-    });
-    await pushBot({ text: `好，幫你下單「${card.name}」了。` });
-    await pushBot({
-      orderConfirmed: true,
-      text: `已下單，直接寄到你家 — 這次不會存放在 AIFIAN 裡面囉。`,
-    });
-  };
+  const toCartItem = (card: RecCard) => ({
+    key: card.name,
+    name: card.name,
+    price: card.price,
+    emoji: card.emoji,
+    gradient: card.gradient,
+    source: "伴伴對話" as const,
+  });
 
-  const newChat = () => {
-    const fresh = createConversation();
-    setConversations((prev) => {
-      const next = [fresh, ...prev];
-      saveConversations(next);
+  const handleToggleCart = (card: RecCard) => {
+    const nowIn = toggleCartItem(toCartItem(card));
+    setCartKeys((prev) => {
+      const next = new Set(prev);
+      if (nowIn) next.add(card.name);
+      else next.delete(card.name);
       return next;
     });
-    setActiveId(fresh.id);
-    setMessages(fresh.messages);
-    setStage(fresh.stage);
-    setDrawerOpen(false);
   };
 
-  const openConversation = (id: string) => {
-    const conv = conversations.find((c) => c.id === id);
-    if (!conv) return;
-    setActiveId(id);
-    setMessages(conv.messages);
-    setStage(conv.stage);
-    setDrawerOpen(false);
+  const handleBuyNow = (card: RecCard) => {
+    ensureInCart(toCartItem(card));
+    setSheetCard(null);
+    router.push("/v1/checkout");
   };
 
   useEffect(() => {
@@ -264,25 +254,6 @@ export default function ChatClient() {
         >
           ‹
         </button>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          title="對話紀錄"
-          className="flex size-8 items-center justify-center text-gray-800"
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.9"
-            strokeLinecap="round"
-          >
-            <line x1="4" x2="20" y1="6" y2="6" />
-            <line x1="4" x2="20" y1="12" y2="12" />
-            <line x1="4" x2="20" y1="18" y2="18" />
-          </svg>
-        </button>
         <div className="ml-1 flex items-center gap-2">
           <img src="/icons/tab-banbun.svg" alt="伴伴" className="size-6" />
           <p className="text-[15px] font-semibold text-gray-800">伴伴</p>
@@ -295,7 +266,14 @@ export default function ChatClient() {
       >
         <div className="flex flex-col gap-3">
           {messages.map((m) => (
-            <ChatBubble key={m.id} message={m} onBuy={handleBuy} />
+            <ChatBubble
+              key={m.id}
+              message={m}
+              inCart={m.card ? cartKeys.has(m.card.name) : false}
+              onToggleCart={handleToggleCart}
+              onBuyNow={handleBuyNow}
+              onOpenSheet={setSheetCard}
+            />
           ))}
           {typing && (
             <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-3 self-start">
@@ -338,17 +316,13 @@ export default function ChatClient() {
         </button>
       </form>
 
-      {drawerOpen && (
-        <HistoryDrawer
-          conversations={conversations}
-          activeId={activeId}
-          onClose={() => setDrawerOpen(false)}
-          onNewChat={newChat}
-          onOpenConversation={openConversation}
-          onOrders={() => {
-            setDrawerOpen(false);
-            router.push("/v1/orders");
-          }}
+      {sheetCard && (
+        <ProductSheet
+          card={sheetCard}
+          inCart={cartKeys.has(sheetCard.name)}
+          onClose={() => setSheetCard(null)}
+          onToggleCart={() => handleToggleCart(sheetCard)}
+          onBuyNow={() => handleBuyNow(sheetCard)}
         />
       )}
     </div>
@@ -366,10 +340,16 @@ function Dot({ delay }: { delay: string }) {
 
 function ChatBubble({
   message,
-  onBuy,
+  inCart,
+  onToggleCart,
+  onBuyNow,
+  onOpenSheet,
 }: {
   message: Message;
-  onBuy: (card: RecCard) => void;
+  inCart: boolean;
+  onToggleCart: (card: RecCard) => void;
+  onBuyNow: (card: RecCard) => void;
+  onOpenSheet: (card: RecCard) => void;
 }) {
   if (message.role === "user") {
     return (
@@ -382,41 +362,87 @@ function ChatBubble({
   if (message.card) {
     const c = message.card;
     return (
-      <div className="flex w-full max-w-[85%] items-center gap-4 self-start rounded-2xl border border-gray-200 bg-white p-3.5">
-        <div
-          className={`flex size-[74px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-[30px] ${c.gradient}`}
-        >
-          {c.emoji}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-[15px] leading-[1.4] text-gray-800">
-            {c.name}
-          </p>
-          <p className="mt-2 text-[17px] font-bold text-gray-800">
-            ${c.price.toLocaleString()}
-          </p>
-        </div>
+      <div className="flex w-full max-w-[85%] items-center gap-3 self-start rounded-2xl border border-gray-200 bg-white p-3.5">
         <button
-          onClick={() => onBuy(c)}
-          title="立即購買"
-          className="flex size-[46px] shrink-0 items-center justify-center rounded-[10px] text-white shadow-[0_2px_6px_rgba(255,80,80,0.3)]"
-          style={{ background: "#ff5050" }}
+          onClick={() => onOpenSheet(c)}
+          className="flex min-w-0 flex-1 items-center gap-4 text-left"
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <div
+            className={`flex size-[74px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-[30px] ${c.gradient}`}
           >
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-            <path d="M3 6h18" />
-            <path d="M16 10a4 4 0 0 1-8 0" />
-          </svg>
+            {c.emoji}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-2 text-[15px] leading-[1.4] text-gray-800">
+              {c.name}
+            </p>
+            <p className="mt-2 text-[17px] font-bold text-gray-800">
+              ${c.price.toLocaleString()}
+            </p>
+          </div>
         </button>
+        <div className="flex shrink-0 flex-col gap-2">
+          <button
+            onClick={() => onToggleCart(c)}
+            title={inCart ? "已加入購物車" : "加入購物車"}
+            className={`relative flex size-[42px] items-center justify-center rounded-[10px] border transition-colors ${
+              inCart
+                ? "border-emerald-600 bg-emerald-50 text-emerald-600"
+                : "border-gray-300 text-gray-500"
+            }`}
+          >
+            {inCart ? (
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : (
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="8" cy="21" r="1" />
+                <circle cx="19" cy="21" r="1" />
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+              </svg>
+            )}
+          </button>
+          <button
+            onClick={() => onBuyNow(c)}
+            title="立即購買"
+            className="flex size-[42px] items-center justify-center rounded-[10px] text-white shadow-[0_2px_6px_rgba(255,80,80,0.3)]"
+            style={{ background: "#ff5050" }}
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+              <path d="M3 6h18" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+          </button>
+        </div>
       </div>
     );
   }

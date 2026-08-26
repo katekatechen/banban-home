@@ -7,6 +7,7 @@ const FULLSCREEN_PATTERNS = [
   /^\/v1\/banbun\/chat(\/.*)?$/,
   /^\/v1\/wine-select\/[^/]+$/,
   /^\/v1\/collection\/[^/]+$/,
+  /^\/v1\/checkout$/,
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

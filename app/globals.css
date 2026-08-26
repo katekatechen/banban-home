@@ -48,6 +48,24 @@ body {
   }
 }
 
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* 隱藏 scrollbar，維持手機瀏覽的乾淨感 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
