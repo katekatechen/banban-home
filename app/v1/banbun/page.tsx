@@ -1,5 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
+import HistoryDrawer from "../_components/HistoryDrawer";
+import { loadConversations, loadActiveId } from "../_lib/chat-storage";
 
 const SERVICES = [
   {
@@ -35,15 +41,23 @@ const PROMPT_CHIPS = [
 ];
 
 export default function BanbunHomePage() {
+  const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // 在首頁打開的是「快速預覽」：只有實際選了對話/開新對話/看訂單才會離開首頁，
+  // 純粹打開看一眼、按 X 關掉的話會留在首頁，不會憑空多一個空對話。
+  const conversations = drawerOpen ? loadConversations() : [];
+  const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
+
   return (
-    <div className="flex flex-col bg-white">
+    <div className="relative flex flex-col bg-white">
       <StatusBar />
 
       {/* header */}
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
         <div className="flex items-center gap-2">
-          <Link
-            href="/v1/banbun/chat?drawer=1"
+          <button
+            onClick={() => setDrawerOpen(true)}
             title="對話紀錄"
             className="flex size-8 items-center justify-center text-gray-800"
           >
@@ -60,7 +74,7 @@ export default function BanbunHomePage() {
               <line x1="4" x2="20" y1="12" y2="12" />
               <line x1="4" x2="20" y1="18" y2="18" />
             </svg>
-          </Link>
+          </button>
           <div className="relative flex size-8 items-center justify-center">
             <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
@@ -175,6 +189,19 @@ export default function BanbunHomePage() {
           </div>
         </div>
       </div>
+
+      {drawerOpen && (
+        <HistoryDrawer
+          conversations={conversations}
+          activeId={activeId}
+          onClose={() => setDrawerOpen(false)}
+          onNewChat={() => router.push("/v1/banbun/chat?new=1")}
+          onOpenConversation={(id) =>
+            router.push(`/v1/banbun/chat?open=${id}`)
+          }
+          onOrders={() => router.push("/v1/orders")}
+        />
+      )}
     </div>
   );
 }

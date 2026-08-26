@@ -3,103 +3,29 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
+import HistoryDrawer from "../../_components/HistoryDrawer";
 import { addOrder } from "../../_lib/orders";
-
-type RecCard = {
-  name: string;
-  desc: string;
-  price: number;
-  emoji: string;
-  gradient: string;
-};
-
-type Message = {
-  id: number;
-  role: "bot" | "user";
-  text?: string;
-  quickReplies?: string[];
-  card?: RecCard;
-  orderConfirmed?: boolean;
-};
-
-let nextId = 1;
-const genId = () => nextId++;
-
-type Stage =
-  | "idle"
-  | "await_wine_budget"
-  | "await_daily_category"
-  | "done";
-
-type Conversation = {
-  id: string;
-  title: string;
-  messages: Message[];
-  stage: Stage;
-  updatedAt: number;
-};
-
-const STORAGE_CONVERSATIONS = "banbun-conversations";
-const STORAGE_ACTIVE_ID = "banbun-active-conversation-id";
-
-const DEFAULT_GREETING: Message[] = [
-  {
-    id: genId(),
-    role: "bot",
-    text: "你想要什麼，我來買！要買酒、買日用品，還是想聊聊回饋或理財，都可以直接說。",
-  },
-];
-
-function createConversation(): Conversation {
-  return {
-    id: `conv-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-    title: "新對話",
-    messages: DEFAULT_GREETING,
-    stage: "idle",
-    updatedAt: Date.now(),
-  };
-}
-
-function loadConversations(): Conversation[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const saved = sessionStorage.getItem(STORAGE_CONVERSATIONS);
-    if (saved) return JSON.parse(saved);
-  } catch {
-    // ignore
-  }
-  return [];
-}
-
-function saveConversations(list: Conversation[]) {
-  try {
-    sessionStorage.setItem(STORAGE_CONVERSATIONS, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
-}
-
-function loadActiveId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return sessionStorage.getItem(STORAGE_ACTIVE_ID);
-  } catch {
-    return null;
-  }
-}
-
-function deriveTitle(messages: Message[]): string | null {
-  const firstUser = messages.find((m) => m.role === "user" && m.text);
-  if (!firstUser?.text) return null;
-  return firstUser.text.length > 16
-    ? firstUser.text.slice(0, 16) + "…"
-    : firstUser.text;
-}
+import {
+  type Conversation,
+  type Message,
+  type RecCard,
+  type Stage,
+  bumpNextId,
+  createConversation,
+  deriveTitle,
+  genId,
+  loadActiveId,
+  loadConversations,
+  saveConversations,
+  saveActiveId,
+} from "../../_lib/chat-storage";
 
 export default function ChatClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("prompt") ?? "";
+  const forceNew = searchParams.get("new") === "1";
+  const openId = searchParams.get("open");
 
   // 只在第一次 render 算一次「初始要用哪個對話串」，避免跟後續互動產生競態
   const initialRef = useRef<{
@@ -108,20 +34,30 @@ export default function ChatClient() {
   } | null>(null);
   if (initialRef.current === null) {
     const convs = loadConversations();
-    let activeId = loadActiveId();
-    if (!activeId || !convs.find((c) => c.id === activeId)) {
-      if (convs.length > 0) {
-        activeId = convs[0].id;
-      } else {
-        const fresh = createConversation();
-        convs.push(fresh);
-        activeId = fresh.id;
-        nextId = Math.max(...fresh.messages.map((m) => m.id), 0) + 1;
-      }
+    let activeId: string | null = null;
+
+    if (forceNew) {
+      const fresh = createConversation();
+      convs.unshift(fresh);
+      activeId = fresh.id;
+    } else if (openId && convs.find((c) => c.id === openId)) {
+      activeId = openId;
     } else {
-      const active = convs.find((c) => c.id === activeId)!;
-      nextId = Math.max(...active.messages.map((m) => m.id), 1) + 1;
+      activeId = loadActiveId();
+      if (!activeId || !convs.find((c) => c.id === activeId)) {
+        activeId = convs[0]?.id ?? null;
+      }
     }
+
+    if (!activeId) {
+      const fresh = createConversation();
+      convs.push(fresh);
+      activeId = fresh.id;
+    }
+
+    const allIds = convs.flatMap((c) => c.messages.map((m) => m.id));
+    bumpNextId(allIds);
+
     initialRef.current = { conversations: convs, activeId };
   }
   const initial = initialRef.current;
@@ -135,9 +71,7 @@ export default function ChatClient() {
   const [activeId, setActiveId] = useState<string>(initial.activeId);
   const [messages, setMessages] = useState<Message[]>(initialActive.messages);
   const [stage, setStage] = useState<Stage>(initialActive.stage);
-  const [drawerOpen, setDrawerOpen] = useState(
-    () => searchParams.get("drawer") === "1",
-  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const sentInitial = useRef(false);
@@ -163,11 +97,7 @@ export default function ChatClient() {
       saveConversations(next);
       return next;
     });
-    try {
-      sessionStorage.setItem(STORAGE_ACTIVE_ID, activeId);
-    } catch {
-      // ignore
-    }
+    saveActiveId(activeId);
   }, [messages, stage, activeId]);
 
   useEffect(() => {
@@ -409,99 +339,17 @@ export default function ChatClient() {
       </form>
 
       {drawerOpen && (
-        <div
-          className="absolute inset-0 z-40 flex flex-col bg-white p-4"
-          style={{
-            animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both",
+        <HistoryDrawer
+          conversations={conversations}
+          activeId={activeId}
+          onClose={() => setDrawerOpen(false)}
+          onNewChat={newChat}
+          onOpenConversation={openConversation}
+          onOrders={() => {
+            setDrawerOpen(false);
+            router.push("/v1/orders");
           }}
-        >
-          <div className="flex items-center justify-between px-1 pb-3">
-            <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
-            <button
-              onClick={() => setDrawerOpen(false)}
-              className="flex size-9 items-center justify-center rounded-lg text-gray-800"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <button
-            onClick={newChat}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-            >
-              <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.167.094 10 10 0 1 0-4.845-4.821" />
-              <path d="M12 8v8" />
-              <path d="M8 12h8" />
-            </svg>
-            開新對話
-          </button>
-
-          <div className="no-scrollbar mt-2 flex-1 overflow-y-auto">
-            <p className="px-3 pb-2 text-[12px] font-medium text-gray-400">
-              最近
-            </p>
-            {conversations
-              .slice()
-              .sort((a, b) => b.updatedAt - a.updatedAt)
-              .map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => openConversation(c.id)}
-                  className={`block w-full truncate rounded-xl px-3 py-3 text-left text-[14px] ${
-                    c.id === activeId
-                      ? "bg-gray-100 font-medium text-gray-800"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {c.title}
-                </button>
-              ))}
-          </div>
-
-          <button
-            onClick={() => {
-              setDrawerOpen(false);
-              router.push("/v1/orders");
-            }}
-            className="flex items-center gap-3 border-t border-gray-100 px-3 pb-1 pt-4 text-left text-[14px] font-medium text-gray-800"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
-              <path d="M12 22V12" />
-              <polyline points="3.29 7 12 12 20.71 7" />
-              <path d="m7.5 4.27 9 5.15" />
-            </svg>
-            我的訂單
-          </button>
-        </div>
+        />
       )}
     </div>
   );
