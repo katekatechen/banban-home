@@ -104,8 +104,7 @@ export default function ProductSheet({
             </button>
             <button
               onClick={onBuyNow}
-              className="flex-1 rounded-xl py-3 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(255,80,80,0.32)]"
-              style={{ background: "#ff5050" }}
+              className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(255,59,59,0.32)]"
             >
               立即購買
             </button>

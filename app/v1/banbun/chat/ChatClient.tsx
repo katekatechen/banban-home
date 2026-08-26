@@ -424,8 +424,7 @@ function ChatBubble({
           <button
             onClick={() => onBuyNow(c)}
             title="立即購買"
-            className="flex size-[42px] items-center justify-center rounded-[10px] text-white shadow-[0_2px_6px_rgba(255,80,80,0.3)]"
-            style={{ background: "#ff5050" }}
+            className="flex size-[42px] items-center justify-center rounded-[10px] bg-brand text-white shadow-[0_2px_6px_rgba(255,59,59,0.3)]"
           >
             <svg
               width="17"
