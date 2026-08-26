@@ -149,7 +149,8 @@ export default function BanbunHomePage() {
           </Link>
 
           <Link href="/v1/banbun/chat" className="mt-3 block pr-16">
-            <p className="whitespace-pre-line text-[28px] font-black leading-[1.2]">
+            <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
+            <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
               {headline}
             </p>
           </Link>
