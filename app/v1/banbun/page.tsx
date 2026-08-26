@@ -43,6 +43,13 @@ const PROMPT_CHIPS = [
 export default function BanbunHomePage() {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [homeInput, setHomeInput] = useState("");
+
+  const submitHomeInput = () => {
+    const text = homeInput.trim();
+    if (!text) return;
+    router.push(`/v1/banbun/chat?prompt=${encodeURIComponent(text)}`);
+  };
 
   // 在首頁打開的是「快速預覽」：只有實際選了對話/開新對話/看訂單才會離開首頁，
   // 純粹打開看一眼、按 X 關掉的話會留在首頁，不會憑空多一個空對話。
@@ -107,26 +114,46 @@ export default function BanbunHomePage() {
           <span className="text-gray-400">›</span>
         </Link>
 
-        {/* banner — 沿用既有 Figma 設計的伴伴入口視覺 */}
-        <Link
-          href="/v1/banbun/chat"
-          className="relative flex h-[180px] w-full flex-col justify-center overflow-hidden rounded-2xl px-5 text-white"
+        {/* banner — 沿用既有 Figma 設計的伴伴入口視覺，底部嵌入輸入框 */}
+        <div
+          className="relative flex w-full flex-col overflow-hidden rounded-2xl px-5 pb-4 pt-5 text-white"
           style={{
             backgroundImage:
               "linear-gradient(168deg, #0b2250 10%, #001133 85%), linear-gradient(90deg, #ff3b3b 0%, #ff3b3b 100%)",
             backgroundBlendMode: "screen",
           }}
         >
-          <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
-          <p className="mt-1 text-[24px] font-black leading-[1.25]">
-            你想要什麼，
-            <br />
-            我來買！
-          </p>
-          <span className="absolute bottom-4 right-4 text-[64px] opacity-90">
+          <Link href="/v1/banbun/chat" className="block">
+            <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
+            <p className="mt-1 text-[22px] font-black leading-[1.25]">
+              你想要什麼，我來買！
+            </p>
+          </Link>
+          <span className="pointer-events-none absolute right-4 top-3 text-[48px] opacity-90">
             🦦
           </span>
-        </Link>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitHomeInput();
+            }}
+            className="mt-4 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
+          >
+            <input
+              value={homeInput}
+              onChange={(e) => setHomeInput(e.target.value)}
+              placeholder="跟伴伴說你想要什麼..."
+              className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+            />
+            <button
+              type="submit"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
+            >
+              ↑
+            </button>
+          </form>
+        </div>
 
         {/* 三大服務發現 */}
         <div className="flex flex-col gap-3">
