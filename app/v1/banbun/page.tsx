@@ -42,18 +42,31 @@ export default function BanbunHomePage() {
       {/* header */}
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
         <div className="flex items-center gap-2">
+          <Link
+            href="/v1/banbun/chat?drawer=1"
+            title="對話紀錄"
+            className="flex size-8 items-center justify-center text-gray-800"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+            >
+              <line x1="4" x2="20" y1="6" y2="6" />
+              <line x1="4" x2="20" y1="12" y2="12" />
+              <line x1="4" x2="20" y1="18" y2="18" />
+            </svg>
+          </Link>
           <div className="relative flex size-8 items-center justify-center">
             <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
               9
             </span>
           </div>
-          <Link
-            href="/v1/collection"
-            className="flex size-8 items-center justify-center"
-          >
-            <img src="/icons/nav-bag.svg" alt="我的收藏" className="size-6" />
-          </Link>
         </div>
         <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
         <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">

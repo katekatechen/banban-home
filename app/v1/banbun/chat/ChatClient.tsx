@@ -135,7 +135,9 @@ export default function ChatClient() {
   const [activeId, setActiveId] = useState<string>(initial.activeId);
   const [messages, setMessages] = useState<Message[]>(initialActive.messages);
   const [stage, setStage] = useState<Stage>(initialActive.stage);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(
+    () => searchParams.get("drawer") === "1",
+  );
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const sentInitial = useRef(false);
