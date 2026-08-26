@@ -29,7 +29,8 @@ export default function CheckoutPage() {
     items.forEach((i) =>
       addOrder({
         name: i.name,
-        price: i.price * i.qty,
+        price: i.price,
+        qty: i.qty,
         emoji: i.emoji,
         gradient: i.gradient,
         source: i.source,
