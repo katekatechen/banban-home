@@ -30,23 +30,68 @@ type Stage =
   | "await_daily_category"
   | "done";
 
+const STORAGE_MESSAGES = "banbun-chat-messages";
+const STORAGE_STAGE = "banbun-chat-stage";
+
+const DEFAULT_GREETING: Message[] = [
+  {
+    id: genId(),
+    role: "bot",
+    text: "你想要什麼，我來買！要買酒、買日用品，還是想聊聊回饋或理財，都可以直接說。",
+  },
+];
+
+// 用 lazy initializer（而非 useEffect）從 sessionStorage 還原對話紀錄，
+// 讀取跟第一次 render 同步發生，避免跟正在進行中的對話流程（例如已經
+// setStage 但訊息還在 setTimeout 延遲中）產生競態、把 stage 覆蓋回預設值。
+function loadMessages(): Message[] {
+  if (typeof window === "undefined") return DEFAULT_GREETING;
+  try {
+    const saved = sessionStorage.getItem(STORAGE_MESSAGES);
+    if (saved) {
+      const parsed: Message[] = JSON.parse(saved);
+      if (parsed.length > 0) {
+        nextId = Math.max(...parsed.map((m) => m.id), 0) + 1;
+        return parsed;
+      }
+    }
+  } catch {
+    // sessionStorage 不可用（例如無痕模式）就從預設問候語開始
+  }
+  return DEFAULT_GREETING;
+}
+
+function loadStage(): Stage {
+  if (typeof window === "undefined") return "idle";
+  try {
+    const saved = sessionStorage.getItem(STORAGE_STAGE) as Stage | null;
+    if (saved) return saved;
+  } catch {
+    // ignore
+  }
+  return "idle";
+}
+
 export default function ChatClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("prompt") ?? "";
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: genId(),
-      role: "bot",
-      text: "你想要什麼，我來買！要買酒、買日用品，還是想聊聊回饋或理財，都可以直接說。",
-    },
-  ]);
-  const [stage, setStage] = useState<Stage>("idle");
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
+  const [stage, setStage] = useState<Stage>(loadStage);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const sentInitial = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_MESSAGES, JSON.stringify(messages));
+      sessionStorage.setItem(STORAGE_STAGE, stage);
+    } catch {
+      // ignore
+    }
+  }, [messages, stage]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });

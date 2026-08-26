@@ -39,30 +39,31 @@ export default function ProductDetail({
   );
 
   return (
-    <div className="flex flex-col bg-white">
-      <div className="relative">
-        <div
-          className={`flex h-[320px] items-center justify-center bg-gradient-to-br text-[100px] ${gradient}`}
-        >
-          {emoji}
-        </div>
-        <div className="absolute inset-x-0 top-0">
-          <StatusBar dark />
-          <div className="flex items-center justify-between px-4 pt-1">
-            <button
-              onClick={() => router.back()}
-              className="flex size-9 items-center justify-center rounded-full bg-white/90 text-[18px] text-gray-800"
-            >
-              ‹
-            </button>
-            <button className="flex size-9 items-center justify-center rounded-full bg-white/90 text-[16px]">
-              🎧
-            </button>
+    <div className="flex h-full flex-col bg-white">
+      <div className="no-scrollbar flex-1 overflow-y-auto">
+        <div className="relative">
+          <div
+            className={`flex h-[320px] items-center justify-center bg-gradient-to-br text-[100px] ${gradient}`}
+          >
+            {emoji}
+          </div>
+          <div className="absolute inset-x-0 top-0">
+            <StatusBar dark />
+            <div className="flex items-center justify-between px-4 pt-1">
+              <button
+                onClick={() => router.back()}
+                className="flex size-9 items-center justify-center rounded-full bg-white/90 text-[18px] text-gray-800"
+              >
+                ‹
+              </button>
+              <button className="flex size-9 items-center justify-center rounded-full bg-white/90 text-[16px]">
+                🎧
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex flex-col gap-3 px-4 pb-40 pt-5">
+      <div className="flex flex-col gap-3 px-4 pb-6 pt-5">
         <div>
           <p className="text-[20px] font-bold text-gray-800">{name}</p>
           <p className="mt-1 text-[13px] text-gray-500">{subtitle}</p>
@@ -152,8 +153,9 @@ export default function ProductDetail({
           </div>
         )}
       </div>
+      </div>
 
-      <div className="fixed inset-x-0 bottom-[100px] mx-auto flex w-full max-w-[430px] items-center gap-2 bg-gradient-to-t from-white via-white px-4 pb-2 pt-4">
+      <div className="flex shrink-0 items-center gap-2 border-t border-gray-100 bg-white px-4 pb-2 pt-3">
         {holding && (
           <>
             <button
