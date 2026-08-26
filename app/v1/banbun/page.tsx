@@ -127,7 +127,7 @@ export default function BanbunHomePage() {
           <Link href="/v1/banbun/chat" className="block">
             <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
             <p className="mt-1 text-[22px] font-black leading-[1.25]">
-              你想要什麼，我來買！
+              你想要什麼，我來搞定！
             </p>
           </Link>
           <LottiePlayer

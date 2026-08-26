@@ -42,7 +42,7 @@ export const DEFAULT_GREETING: Message[] = [
   {
     id: genId(),
     role: "bot",
-    text: "你想要什麼，我來買！要買酒、買日用品，還是想聊聊回饋或理財，都可以直接說。",
+    text: "你想要什麼，我來搞定！要買酒、買日用品，還是想聊聊回饋或理財，都可以直接說。",
   },
 ];
 
