@@ -22,8 +22,7 @@ export default function HistoryDrawer({
       className="fixed inset-0 z-40 flex flex-col bg-white p-4"
       style={{ animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both" }}
     >
-      <div className="flex items-center justify-between px-1 pb-3">
-        <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
+      <div className="flex items-center justify-end px-1 pb-3">
         <button
           onClick={onClose}
           title="關閉"
