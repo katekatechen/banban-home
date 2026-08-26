@@ -301,7 +301,7 @@ function ChatBubble({
 }) {
   if (message.role === "user") {
     return (
-      <div className="max-w-[80%] self-end rounded-2xl rounded-br-sm bg-brand px-4 py-2.5 text-[14px] text-white">
+      <div className="max-w-[80%] self-end rounded-2xl rounded-br-sm bg-gray-800 px-4 py-2.5 text-[14px] text-white">
         {message.text}
       </div>
     );
