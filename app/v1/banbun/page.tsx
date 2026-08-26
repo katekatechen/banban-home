@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import HistoryDrawer from "../_components/HistoryDrawer";
+import LottiePlayer from "../_components/LottiePlayer";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
 
 const SERVICES = [
@@ -129,9 +130,10 @@ export default function BanbunHomePage() {
               你想要什麼，我來買！
             </p>
           </Link>
-          <span className="pointer-events-none absolute right-4 top-3 text-[48px] opacity-90">
-            🦦
-          </span>
+          <LottiePlayer
+            src="/lottie/otter-typing.json"
+            className="pointer-events-none absolute right-1 top-0 size-[110px]"
+          />
 
           <form
             onSubmit={(e) => {
