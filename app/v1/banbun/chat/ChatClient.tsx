@@ -324,7 +324,14 @@ export default function ChatClient() {
   return (
     <div className="relative flex h-full flex-col bg-white">
       <StatusBar />
-      <div className="flex items-center gap-2 border-b border-gray-100 px-4 pb-3 pt-1">
+      <div className="flex items-center gap-1 border-b border-gray-100 px-2 pb-3 pt-1">
+        <button
+          onClick={() => router.push("/v1/banbun")}
+          title="回首頁"
+          className="flex size-8 items-center justify-center text-[20px] text-gray-700"
+        >
+          ‹
+        </button>
         <button
           onClick={() => setDrawerOpen(true)}
           title="對話紀錄"
@@ -344,13 +351,10 @@ export default function ChatClient() {
             <line x1="4" x2="20" y1="18" y2="18" />
           </svg>
         </button>
-        <button
-          onClick={() => router.push("/v1/banbun")}
-          className="flex items-center gap-2"
-        >
+        <div className="ml-1 flex items-center gap-2">
           <img src="/icons/tab-banbun.svg" alt="伴伴" className="size-6" />
           <p className="text-[15px] font-semibold text-gray-800">伴伴</p>
-        </button>
+        </div>
       </div>
 
       <div
