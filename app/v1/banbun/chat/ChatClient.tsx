@@ -310,31 +310,43 @@ function ChatBubble({
   if (message.card) {
     const c = message.card;
     return (
-      <div className="flex max-w-[85%] flex-col overflow-hidden self-start rounded-2xl border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+      <div
+        className="flex w-full max-w-[85%] items-center gap-4 self-start rounded-2xl border border-gray-200 bg-white p-3.5"
+      >
         <div
-          className={`flex h-28 items-center justify-center bg-gradient-to-br text-[48px] ${c.gradient}`}
+          className={`flex size-[74px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-[30px] ${c.gradient}`}
         >
           {c.emoji}
         </div>
-        <div className="flex flex-col gap-2 p-3">
-          <div>
-            <p className="text-[14px] font-semibold text-gray-800">
-              {c.name}
-            </p>
-            <p className="text-[12px] text-gray-500">{c.desc}</p>
-          </div>
-          <div className="flex items-center justify-between">
-            <p className="text-[15px] font-bold text-gray-800">
-              ${c.price.toLocaleString()}
-            </p>
-            <button
-              onClick={() => onBuy(c)}
-              className="rounded-full bg-brand px-4 py-1.5 text-[13px] font-semibold text-white"
-            >
-              跟伴伴買這個
-            </button>
-          </div>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[15px] leading-[1.4] text-gray-800">
+            {c.name}
+          </p>
+          <p className="mt-2 text-[17px] font-bold text-gray-800">
+            ${c.price.toLocaleString()}
+          </p>
         </div>
+        <button
+          onClick={() => onBuy(c)}
+          title="立即購買"
+          className="flex size-[46px] shrink-0 items-center justify-center rounded-[10px] text-white shadow-[0_2px_6px_rgba(255,80,80,0.3)]"
+          style={{ background: "#ff5050" }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+            <path d="M3 6h18" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+        </button>
       </div>
     );
   }
