@@ -188,6 +188,19 @@ export default function BanbunHomePage() {
               </button>
             </form>
 
+            {/* 快速提問 chips，移到輸入框下方、直排 */}
+            <div className="relative z-10 mt-3 flex flex-col gap-2">
+              {PROMPT_CHIPS.map((p) => (
+                <Link
+                  key={p}
+                  href={`/v1/banbun/chat?prompt=${encodeURIComponent(p)}`}
+                  className="rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[13px] text-white"
+                >
+                  {p}
+                </Link>
+              ))}
+            </div>
+
             <LottiePlayer
               src="/lottie/otter-typing.json"
               className="pointer-events-none absolute -bottom-8 right-1 z-0 size-[168px]"
@@ -195,7 +208,7 @@ export default function BanbunHomePage() {
           </div>
         </div>
 
-        {/* 三大服務發現 — 直的三欄，圖示在上、文字在下 */}
+        {/* 三大服務發現 — 置底，直的三欄，圖示在上、文字在下 */}
         <div className="flex flex-col gap-3">
           <p className="text-[16px] font-semibold text-gray-800">
             伴伴可以幫你
@@ -205,13 +218,15 @@ export default function BanbunHomePage() {
               s.disabled ? (
                 <div
                   key={s.key}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center opacity-60"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl bg-gray-100 px-2 py-4 text-center"
                 >
-                  <span className="text-[28px]">{s.emoji}</span>
-                  <p className="text-[13px] font-semibold text-gray-700">
+                  <span className="text-[28px] opacity-50 grayscale">
+                    {s.emoji}
+                  </span>
+                  <p className="text-[13px] font-semibold text-gray-400">
                     {s.label}
                   </p>
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-400">
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
                     敬請期待
                   </span>
                 </div>
@@ -219,7 +234,7 @@ export default function BanbunHomePage() {
                 <Link
                   key={s.key}
                   href={s.href}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl bg-gray-000 px-2 py-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center shadow-[0_2px_6px_rgba(0,0,0,0.08)] transition-transform active:scale-[0.97]"
                 >
                   <span className="text-[28px]">{s.emoji}</span>
                   <p className="text-[13px] font-semibold text-gray-800">
@@ -231,24 +246,6 @@ export default function BanbunHomePage() {
                 </Link>
               ),
             )}
-          </div>
-        </div>
-
-        {/* 快速提問 chips */}
-        <div className="flex flex-col gap-2">
-          <p className="text-[16px] font-semibold text-gray-800">
-            或是問伴伴：
-          </p>
-          <div className="no-scrollbar flex gap-2 overflow-x-auto">
-            {PROMPT_CHIPS.map((p) => (
-              <Link
-                key={p}
-                href={`/v1/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                className="shrink-0 rounded-full border border-gray-300 px-3.5 py-2 text-[13px] text-gray-700"
-              >
-                {p}
-              </Link>
-            ))}
           </div>
         </div>
       </div>
