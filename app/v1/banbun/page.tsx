@@ -221,7 +221,7 @@ export default function BanbunHomePage() {
               s.disabled ? (
                 <div
                   key={s.key}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl bg-gray-100 px-2 py-4 text-center"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
                 >
                   <span className="text-[28px] opacity-50 grayscale">
                     {s.emoji}
@@ -237,7 +237,7 @@ export default function BanbunHomePage() {
                 <Link
                   key={s.key}
                   href={s.href}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center shadow-[0_2px_6px_rgba(0,0,0,0.08)] transition-transform active:scale-[0.97]"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center transition-transform active:scale-[0.97]"
                 >
                   <span className="text-[28px]">{s.emoji}</span>
                   <p className="text-[13px] font-semibold text-gray-800">
