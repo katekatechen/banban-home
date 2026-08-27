@@ -182,7 +182,7 @@ export default function BanbunHomePage() {
               />
               <button
                 type="submit"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
               >
                 ↑
               </button>
