@@ -104,10 +104,17 @@ export default function BanbunHomePage() {
       )}
 
       {/* 打開漢堡時，首頁本身往右推開，露出左邊的側欄，
-          呼應 ChatGPT 那種「內容推開、側欄從底下出現」的手感 */}
+          呼應 ChatGPT 那種「內容推開、側欄從底下出現」的手感。
+          陰影放在首頁這層的左邊，讓首頁看起來浮在側欄「上面」往右滑開，
+          而不是側欄浮在首頁上面。 */}
       <div
         className="relative flex flex-col bg-white transition-transform duration-300 ease-out"
-        style={{ transform: drawerOpen ? "translateX(85%)" : "translateX(0)" }}
+        style={{
+          transform: drawerOpen ? "translateX(85%)" : "translateX(0)",
+          boxShadow: drawerOpen
+            ? "-8px 0 24px rgba(0,0,0,0.18)"
+            : "none",
+        }}
       >
         <StatusBar />
 
