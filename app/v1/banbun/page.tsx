@@ -66,8 +66,11 @@ export default function BanbunHomePage() {
   // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
   // 掛載後才隨機換一句，符合「每次進首頁都會換」的需求
   const [headline, setHeadline] = useState(HEADLINES[0]);
+  // chips 固定先顯示前 4 個（跟 SSR 結果一致），掛載後才從全部裡隨機抽 4 個
+  const [chips, setChips] = useState(PROMPT_CHIPS.slice(0, 4));
   useEffect(() => {
     setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+    setChips([...PROMPT_CHIPS].sort(() => Math.random() - 0.5).slice(0, 4));
   }, []);
 
   const submitHomeInput = () => {
@@ -188,13 +191,13 @@ export default function BanbunHomePage() {
               </button>
             </form>
 
-            {/* 快速提問 chips，移到輸入框下方、直排 */}
-            <div className="relative z-10 mt-3 flex flex-col gap-2">
-              {PROMPT_CHIPS.map((p) => (
+            {/* 快速提問 chips，移到輸入框下方、直排，最多 4 個、每次隨機、寬度依內容 hug */}
+            <div className="relative z-10 mt-3 flex flex-col items-start gap-2">
+              {chips.map((p) => (
                 <Link
                   key={p}
                   href={`/v1/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                  className="rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[13px] text-white"
+                  className="w-fit rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[13px] text-white"
                 >
                   {p}
                 </Link>
