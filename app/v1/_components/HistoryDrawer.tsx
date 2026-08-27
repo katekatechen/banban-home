@@ -19,7 +19,7 @@ export default function HistoryDrawer({
 }: HistoryDrawerProps) {
   return (
     <div
-      className="fixed inset-y-0 left-0 z-40 flex w-[85%] max-w-[320px] flex-col bg-gray-50 p-4"
+      className="fixed inset-y-0 left-0 z-40 flex w-[85%] max-w-[320px] flex-col bg-white p-4"
       style={{ animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both" }}
     >
       <div className="flex items-center justify-end px-1 pb-3">
