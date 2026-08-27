@@ -52,7 +52,7 @@ const HEADLINES = [
 
 // mock：呼應「伴伴主動提醒待辦任務」story，之後接真的帳號狀態
 const REMINDER = {
-  text: "你上次那筆身分驗證卡住了，點一下",
+  text: "請查看系統通知信，繼續完成身份驗證",
   href: "/v1/account",
 };
 
