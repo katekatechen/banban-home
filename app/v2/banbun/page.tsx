@@ -206,6 +206,19 @@ export default function BanbunHomePage() {
               </button>
             </form>
 
+            {/* 快速提問 chips，移到輸入框下方 */}
+            <div className="no-scrollbar relative z-10 mt-3 flex gap-2 overflow-x-auto">
+              {PROMPT_CHIPS.map((p) => (
+                <Link
+                  key={p}
+                  href={`/v2/banbun/chat?prompt=${encodeURIComponent(p)}`}
+                  className="shrink-0 rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[13px] text-white"
+                >
+                  {p}
+                </Link>
+              ))}
+            </div>
+
             <LottiePlayer
               src="/lottie/otter-typing.json"
               className="pointer-events-none absolute -bottom-8 right-1 z-0 size-[168px]"
@@ -252,31 +265,16 @@ export default function BanbunHomePage() {
           </div>
         </div>
 
-        {/* 快速提問 chips */}
-        <div className="flex flex-col gap-2">
-          <p className="text-[16px] font-semibold text-gray-800">
-            或是問伴伴：
-          </p>
-          <div className="no-scrollbar flex gap-2 overflow-x-auto">
-            {PROMPT_CHIPS.map((p) => (
-              <Link
-                key={p}
-                href={`/v2/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                className="shrink-0 rounded-full border border-gray-300 px-3.5 py-2 text-[13px] text-gray-700"
-              >
-                {p}
-              </Link>
-            ))}
-          </div>
-        </div>
-
         {/* 精選酒品 — 從獨立分頁移到首頁下方 */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-[16px] font-semibold text-gray-800">
               精選酒品
             </p>
-            <Link href="/v2/collection" className="text-[12px] text-gray-400">
+            <Link
+              href="/v2/collection"
+              className="flex items-center gap-0.5 text-[13px] font-semibold text-brand"
+            >
               我的酒窖 ›
             </Link>
           </div>
