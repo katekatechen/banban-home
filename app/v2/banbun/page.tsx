@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import HistoryDrawer from "../_components/HistoryDrawer";
-import LottiePlayer from "../_components/LottiePlayer";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
 import { PRODUCTS, type WineType } from "../_lib/mock-data";
 
@@ -176,9 +175,15 @@ export default function BanbunHomePage() {
             </span>
           </Link>
 
-          {/* hero — 扁平紅底，加高卡片、伴伴插圖超出的部分裁掉不外露 */}
-          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 pb-10 pt-5 text-white">
-            <Link href="/v2/banbun/chat" className="block pr-20">
+          {/* hero — 扁平紅底，插畫放在右上角，避免跟下方的 chips 重疊 */}
+          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 pb-5 pt-5 text-white">
+            <img
+              src="/illustrations/otter-working-flat.png"
+              alt="伴伴"
+              className="pointer-events-none absolute right-3 top-3 w-[108px]"
+            />
+
+            <Link href="/v2/banbun/chat" className="block pr-28">
               <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
               <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
                 {headline}
@@ -218,11 +223,6 @@ export default function BanbunHomePage() {
                 </Link>
               ))}
             </div>
-
-            <LottiePlayer
-              src="/lottie/otter-typing.json"
-              className="pointer-events-none absolute -bottom-8 right-1 z-0 size-[168px]"
-            />
           </div>
         </div>
 
