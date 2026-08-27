@@ -284,17 +284,7 @@ export default function BanbunHomePage() {
 
         {/* 伴伴精選 — 從獨立分頁移到首頁下方 */}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[16px] font-semibold text-gray-800">
-              伴伴精選
-            </p>
-            <Link
-              href="/v2/collection"
-              className="flex items-center gap-0.5 text-[13px] font-semibold text-brand"
-            >
-              我的酒窖 ›
-            </Link>
-          </div>
+          <p className="text-[16px] font-semibold text-gray-800">伴伴精選</p>
 
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             {SORT_FILTERS.map((f) => (

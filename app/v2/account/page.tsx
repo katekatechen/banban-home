@@ -36,6 +36,12 @@ const SETTINGS_1: Row[] = [
     href: "/v2/orders",
   },
   {
+    key: "cellar",
+    icon: "/icons/tab-wine-select.svg",
+    label: "我的酒窖",
+    href: "/v2/collection",
+  },
+  {
     key: "gifts",
     icon: "/icons/acc-gift.svg",
     label: "我的禮物",
