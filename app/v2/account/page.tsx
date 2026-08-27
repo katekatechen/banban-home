@@ -38,7 +38,7 @@ const SETTINGS_1: Row[] = [
   {
     key: "cellar",
     icon: "/icons/tab-wine-select.svg",
-    label: "我的酒窖",
+    label: "我的收藏",
     href: "/v2/collection",
   },
   {

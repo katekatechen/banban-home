@@ -18,7 +18,7 @@ export default function AiSelectPage() {
 
       <div className="flex flex-col gap-4 px-4 pb-8 pt-2">
         <Link href="/v2/collection" className="block">
-          <p className="text-[14px] text-gray-400">我的酒窖</p>
+          <p className="text-[14px] text-gray-400">我的收藏</p>
           <p className="mt-1 text-[32px] font-bold leading-none">
             {preview.qty} 瓶
           </p>
