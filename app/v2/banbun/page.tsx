@@ -175,15 +175,9 @@ export default function BanbunHomePage() {
             </span>
           </Link>
 
-          {/* hero — 扁平紅底，插畫放在右上角，避免跟下方的 chips 重疊 */}
+          {/* hero — 扁平紅底 */}
           <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 pb-5 pt-5 text-white">
-            <img
-              src="/illustrations/otter-working-flat.png"
-              alt="伴伴"
-              className="pointer-events-none absolute right-3 top-3 w-[108px]"
-            />
-
-            <Link href="/v2/banbun/chat" className="block pr-28">
+            <Link href="/v2/banbun/chat" className="block">
               <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
               <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
                 {headline}
