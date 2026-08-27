@@ -12,7 +12,7 @@ export default function CollectionPage() {
       <StatusBar />
       <div className="flex items-center px-2 pb-2 pt-1">
         <Link
-          href="/v2/wine-select"
+          href="/v2/banbun"
           className="flex size-10 items-center justify-center text-[20px] text-gray-800"
         >
           ‹

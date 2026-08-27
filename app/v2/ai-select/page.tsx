@@ -55,7 +55,7 @@ export default function AiSelectPage() {
           <span className="text-[11px]">可賣出：{preview.qty} 瓶</span>
         </Link>
         <Link
-          href="/v2/wine-select"
+          href="/v2/banbun"
           className="flex flex-[1.4] flex-col items-center justify-center rounded-2xl bg-brand py-2.5 text-white"
         >
           <span className="text-[14px] font-semibold">買入</span>

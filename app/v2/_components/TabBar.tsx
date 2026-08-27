@@ -6,7 +6,6 @@ import Icon from "./Icon";
 
 const TABS = [
   { href: "/v2/banbun", label: "伴伴", icon: "/icons/tab-banbun.svg" },
-  { href: "/v2/wine-select", label: "精選酒品", icon: "/icons/tab-wine-select.svg" },
   { href: "/v2/ai-select", label: "智能選品", icon: "/icons/tab-ai-select.svg" },
   { href: "/v2/experience", label: "體驗", icon: "/icons/tab-experience.svg" },
   { href: "/v2/account", label: "帳號", icon: "/icons/tab-account.svg" },
