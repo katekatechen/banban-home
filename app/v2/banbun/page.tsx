@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import HistoryDrawer from "../_components/HistoryDrawer";
+import WineSheet from "../_components/WineSheet";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
-import { PRODUCTS, type WineType } from "../_lib/mock-data";
+import { PRODUCTS, type Product, type WineType } from "../_lib/mock-data";
+import { ensureInCart } from "../_lib/cart";
 
 const SORT_FILTERS = ["全部", "最新上架", "保值首選", "千元好物", "搭餐絕配"];
 
@@ -80,6 +82,27 @@ export default function BanbunHomePage() {
     wineCategory === "全部"
       ? PRODUCTS
       : PRODUCTS.filter((p) => p.wineType === wineCategory);
+  const [selectedWine, setSelectedWine] = useState<Product | null>(null);
+
+  const handleAskBanbun = (product: Product) => {
+    setSelectedWine(null);
+    router.push(
+      `/v2/banbun/chat?prompt=${encodeURIComponent(`幫我介紹一下${product.name}`)}`,
+    );
+  };
+
+  const handleWineCheckout = (product: Product) => {
+    ensureInCart({
+      key: product.id,
+      name: product.name,
+      price: product.price,
+      emoji: product.emoji,
+      gradient: product.gradient,
+      source: "精選酒品",
+    });
+    setSelectedWine(null);
+    router.push("/v2/checkout");
+  };
   // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
   // 掛載後才隨機換一句，符合「每次進首頁都會換」的需求
   const [headline, setHeadline] = useState(HEADLINES[0]);
@@ -259,11 +282,11 @@ export default function BanbunHomePage() {
           </div>
         </div>
 
-        {/* 精選酒品 — 從獨立分頁移到首頁下方 */}
+        {/* 伴伴精選 — 從獨立分頁移到首頁下方 */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-[16px] font-semibold text-gray-800">
-              精選酒品
+              伴伴精選
             </p>
             <Link
               href="/v2/collection"
@@ -318,10 +341,10 @@ export default function BanbunHomePage() {
 
           <div className="grid grid-cols-2 gap-4">
             {wineProducts.map((p) => (
-              <Link
+              <button
                 key={p.id}
-                href={`/v2/wine-select/${p.id}`}
-                className="flex flex-col overflow-hidden rounded-lg"
+                onClick={() => setSelectedWine(p)}
+                className="flex flex-col overflow-hidden rounded-lg text-left"
               >
                 <div
                   className={`relative flex aspect-square items-center justify-center rounded-2xl bg-gradient-to-br text-[56px] ${p.gradient}`}
@@ -342,7 +365,7 @@ export default function BanbunHomePage() {
                   </p>
                   <p className="text-[14px] text-gray-800">${p.price}</p>
                 </div>
-              </Link>
+              </button>
             ))}
             {wineProducts.length === 0 && (
               <p className="col-span-2 py-10 text-center text-[13px] text-gray-400">
@@ -353,6 +376,15 @@ export default function BanbunHomePage() {
         </div>
       </div>
       </div>
+
+      {selectedWine && (
+        <WineSheet
+          product={selectedWine}
+          onClose={() => setSelectedWine(null)}
+          onAskBanbun={() => handleAskBanbun(selectedWine)}
+          onCheckout={() => handleWineCheckout(selectedWine)}
+        />
+      )}
     </div>
   );
 }
