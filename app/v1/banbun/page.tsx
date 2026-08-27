@@ -79,8 +79,37 @@ export default function BanbunHomePage() {
   const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
 
   return (
-    <div className="relative flex flex-col bg-white">
-      <StatusBar />
+    <div className="relative flex flex-col overflow-hidden bg-white">
+      {drawerOpen && (
+        <HistoryDrawer
+          conversations={conversations}
+          activeId={activeId}
+          onClose={() => setDrawerOpen(false)}
+          onNewChat={() => router.push("/v1/banbun/chat?new=1")}
+          onOpenConversation={(id) =>
+            router.push(`/v1/banbun/chat?open=${id}`)
+          }
+          onOrders={() => router.push("/v1/orders")}
+        />
+      )}
+
+      {drawerOpen && (
+        // fixed（不是 absolute）蓋住整個手機畫面高度，不受首頁內容實際高度限制，
+        // 不然內容比畫面短時，下半部空白處會點不到關閉用的 overlay
+        <button
+          aria-label="關閉側欄"
+          onClick={() => setDrawerOpen(false)}
+          className="fixed inset-0 z-10"
+        />
+      )}
+
+      {/* 打開漢堡時，首頁本身往右推開，露出左邊的側欄，
+          呼應 ChatGPT 那種「內容推開、側欄從底下出現」的手感 */}
+      <div
+        className="relative flex flex-col bg-white transition-transform duration-300 ease-out"
+        style={{ transform: drawerOpen ? "translateX(85%)" : "translateX(0)" }}
+      >
+        <StatusBar />
 
       {/* header */}
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
@@ -238,19 +267,7 @@ export default function BanbunHomePage() {
           </div>
         </div>
       </div>
-
-      {drawerOpen && (
-        <HistoryDrawer
-          conversations={conversations}
-          activeId={activeId}
-          onClose={() => setDrawerOpen(false)}
-          onNewChat={() => router.push("/v1/banbun/chat?new=1")}
-          onOpenConversation={(id) =>
-            router.push(`/v1/banbun/chat?open=${id}`)
-          }
-          onOrders={() => router.push("/v1/orders")}
-        />
-      )}
+      </div>
     </div>
   );
 }
