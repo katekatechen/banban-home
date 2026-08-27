@@ -12,7 +12,7 @@ const SERVICES = [
   {
     key: "wine",
     label: "買酒",
-    desc: "送禮、投資、自己喝都行",
+    desc: "送禮、投資、自己喝",
     emoji: "🍷",
     href: "/v1/banbun/chat?prompt=幫我找一支適合送禮的酒",
     disabled: false,
@@ -20,7 +20,7 @@ const SERVICES = [
   {
     key: "daily",
     label: "買日用品",
-    desc: "生活雜貨，說一聲就好",
+    desc: "生活雜貨，下單送到家",
     emoji: "🧴",
     href: "/v1/banbun/chat?prompt=我想買日用品",
     disabled: false,
@@ -36,9 +36,12 @@ const SERVICES = [
 ] as const;
 
 const PROMPT_CHIPS = [
-  "幫我找一支送禮的威士忌",
-  "這個月有什麼回饋活動？",
-  "我想了解報稅的事",
+  "🥃 第一次喝威士忌，入門推薦",
+  "🤔 普發一萬花在哪裡最划算？",
+  "🎈 這個月有什麼回饋活動？",
+  "💰 我想了解報稅的事情",
+  "👍 乾拌麵推薦",
+  "🌀 防災乾糧",
 ];
 
 // 標題每次進首頁隨機換一句，都用同一個「你 OO，我 OO」節奏，
@@ -234,7 +237,7 @@ export default function BanbunHomePage() {
         {/* 快速提問 chips */}
         <div className="flex flex-col gap-2">
           <p className="text-[16px] font-semibold text-gray-800">
-            或直接問伴伴
+            或是問伴伴：
           </p>
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             {PROMPT_CHIPS.map((p) => (
