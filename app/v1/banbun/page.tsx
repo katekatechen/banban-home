@@ -174,7 +174,7 @@ export default function BanbunHomePage() {
               <input
                 value={homeInput}
                 onChange={(e) => setHomeInput(e.target.value)}
-                placeholder="跟伴伴說你想要什麼..."
+                placeholder="你想要做什麼..."
                 className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
               />
               <button
