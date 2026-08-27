@@ -157,26 +157,14 @@ export default function BanbunHomePage() {
       </div>
 
       <div className="flex flex-col gap-6 px-4 pb-6 pt-2">
-        {/* hero — 標題隨機換句、整合待辦提醒，輸入框放在標題下方 */}
-        <div
-          className="relative flex w-full flex-col overflow-hidden rounded-2xl px-5 pb-5 pt-5 text-white"
-          style={{
-            backgroundImage:
-              "linear-gradient(168deg, #0b2250 10%, #001133 85%), linear-gradient(90deg, #ff3b3b 0%, #ff3b3b 100%)",
-            backgroundBlendMode: "screen",
-          }}
-        >
-          <LottiePlayer
-            src="/lottie/otter-typing.json"
-            className="pointer-events-none absolute right-0 top-0 size-[84px]"
-          />
-
+        {/* hero — 扁平紅底，伴伴放大在右下角破格 */}
+        <div className="relative flex w-full flex-col rounded-2xl bg-brand px-5 pb-5 pt-5 text-white">
           {/* eyebrow：有待辦提醒就顯示提醒，沒有的話顯示問候語 */}
           <Link
             href={REMINDER.href}
             className="flex w-fit items-center gap-1.5 rounded-full bg-black/20 py-1 pl-1 pr-2.5"
           >
-            <span className="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px]">
+            <span className="flex size-[18px] items-center justify-center rounded-full bg-white text-[11px] text-brand">
               !
             </span>
             <span className="text-[12px] font-medium text-white/95">
@@ -184,7 +172,7 @@ export default function BanbunHomePage() {
             </span>
           </Link>
 
-          <Link href="/v1/banbun/chat" className="mt-3 block pr-16">
+          <Link href="/v1/banbun/chat" className="mt-3 block pr-20">
             <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
             <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
               {headline}
@@ -196,7 +184,7 @@ export default function BanbunHomePage() {
               e.preventDefault();
               submitHomeInput();
             }}
-            className="mt-5 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
+            className="relative z-10 mt-5 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
           >
             <input
               value={homeInput}
@@ -211,6 +199,11 @@ export default function BanbunHomePage() {
               ↑
             </button>
           </form>
+
+          <LottiePlayer
+            src="/lottie/otter-typing.json"
+            className="pointer-events-none absolute -bottom-8 right-1 z-0 size-[168px]"
+          />
         </div>
 
         {/* 三大服務發現 */}
