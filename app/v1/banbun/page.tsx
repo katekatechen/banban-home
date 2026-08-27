@@ -192,25 +192,22 @@ export default function BanbunHomePage() {
           </div>
         </div>
 
-        {/* 三大服務發現 */}
+        {/* 三大服務發現 — 直的三欄，圖示在上、文字在下 */}
         <div className="flex flex-col gap-3">
           <p className="text-[16px] font-semibold text-gray-800">
             伴伴可以幫你
           </p>
-          <div className="flex flex-col gap-2.5">
+          <div className="grid grid-cols-3 gap-2.5">
             {SERVICES.map((s) =>
               s.disabled ? (
                 <div
                   key={s.key}
-                  className="flex items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-3 opacity-60"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center opacity-60"
                 >
-                  <span className="text-[24px]">{s.emoji}</span>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-semibold text-gray-700">
-                      {s.label}
-                    </p>
-                    <p className="text-[12px] text-gray-400">{s.desc}</p>
-                  </div>
+                  <span className="text-[28px]">{s.emoji}</span>
+                  <p className="text-[13px] font-semibold text-gray-700">
+                    {s.label}
+                  </p>
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-400">
                     敬請期待
                   </span>
@@ -219,16 +216,15 @@ export default function BanbunHomePage() {
                 <Link
                   key={s.key}
                   href={s.href}
-                  className="flex items-center gap-3 rounded-2xl bg-gray-000 px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl bg-gray-000 px-2 py-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
                 >
-                  <span className="text-[24px]">{s.emoji}</span>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-semibold text-gray-800">
-                      {s.label}
-                    </p>
-                    <p className="text-[12px] text-gray-500">{s.desc}</p>
-                  </div>
-                  <span className="text-gray-300">›</span>
+                  <span className="text-[28px]">{s.emoji}</span>
+                  <p className="text-[13px] font-semibold text-gray-800">
+                    {s.label}
+                  </p>
+                  <p className="text-[11px] leading-tight text-gray-500">
+                    {s.desc}
+                  </p>
                 </Link>
               ),
             )}
