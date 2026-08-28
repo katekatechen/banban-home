@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import StatusBar from "../_components/StatusBar";
+import SectionSwitcher from "../_components/SectionSwitcher";
 import {
   PRODUCTS,
   HOLDINGS,
@@ -35,7 +36,7 @@ export default function WineSelectPage() {
     <div className="flex flex-col bg-white">
       <StatusBar />
       <div className="flex items-center justify-between px-4 pb-3 pt-1">
-        <p className="text-[20px] font-bold text-gray-800">精選酒品</p>
+        <SectionSwitcher active="wine" />
         <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
           <img src="/icons/nav-reward.svg" alt="" className="size-4" />
           <span className="text-[14px] font-medium text-gray-800">
