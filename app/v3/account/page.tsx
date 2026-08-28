@@ -1,5 +1,6 @@
 import Link from "next/link";
 import StatusBar from "../_components/StatusBar";
+import MenuButton from "../_components/MenuButton";
 
 type Row = {
   key: string;
@@ -66,7 +67,11 @@ export default function AccountPage() {
     <div className="flex flex-col bg-white">
       <StatusBar />
       <div className="flex flex-col gap-1 px-4 pb-4 pt-2">
-        <p className="text-[20px] font-bold text-gray-800">帳號</p>
+        <div className="flex items-center justify-between">
+          <MenuButton className="text-gray-800" />
+          <p className="text-[20px] font-bold text-gray-800">帳號</p>
+          <div className="size-8" />
+        </div>
         <div className="mt-2 flex items-center gap-3">
           <div className="flex size-14 items-center justify-center rounded-full bg-gray-100 text-[24px]">
             🧑

@@ -1,4 +1,5 @@
 import { type Conversation, sortedByRecent } from "../_lib/chat-storage";
+import Icon from "./Icon";
 
 type HistoryDrawerProps = {
   conversations: Conversation[];
@@ -7,7 +8,18 @@ type HistoryDrawerProps = {
   onNewChat: () => void;
   onOpenConversation: (id: string) => void;
   onOrders: () => void;
+  onWineSelect: () => void;
+  onAiSelect: () => void;
+  onExperience: () => void;
+  onAccount: () => void;
 };
+
+const NAV_ITEMS = [
+  { key: "wine", label: "精選酒品", icon: "/icons/tab-wine-select.svg" },
+  { key: "ai", label: "智能選品", icon: "/icons/tab-ai-select.svg" },
+  { key: "experience", label: "體驗", icon: "/icons/tab-experience.svg" },
+  { key: "account", label: "帳號", icon: "/icons/tab-account.svg" },
+] as const;
 
 export default function HistoryDrawer({
   conversations,
@@ -16,7 +28,17 @@ export default function HistoryDrawer({
   onNewChat,
   onOpenConversation,
   onOrders,
+  onWineSelect,
+  onAiSelect,
+  onExperience,
+  onAccount,
 }: HistoryDrawerProps) {
+  const NAV_HANDLERS: Record<(typeof NAV_ITEMS)[number]["key"], () => void> = {
+    wine: onWineSelect,
+    ai: onAiSelect,
+    experience: onExperience,
+    account: onAccount,
+  };
   return (
     <div
       className="fixed inset-y-0 left-0 z-40 flex w-full flex-col bg-white p-4"
@@ -83,6 +105,20 @@ export default function HistoryDrawer({
         </svg>
         訂單紀錄
       </button>
+
+      {/* 原本 tab bar 上的功能，收進側邊欄 */}
+      <div className="mt-2 flex flex-col border-t border-gray-100 pt-2">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            onClick={NAV_HANDLERS[item.key]}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
+          >
+            <Icon src={item.icon} className="size-5" />
+            {item.label}
+          </button>
+        ))}
+      </div>
 
       <div className="no-scrollbar mt-2 flex-1 overflow-y-auto border-t border-gray-100 pt-2">
         {conversations.length > 0 && (

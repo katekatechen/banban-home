@@ -1,4 +1,5 @@
 import StatusBar from "../_components/StatusBar";
+import MenuButton from "../_components/MenuButton";
 
 const UPCOMING = [
   { name: "Ricoh GR III 相機", emoji: "📷", diff: "1,200", gradient: "from-gray-700 to-gray-900" },
@@ -10,6 +11,7 @@ export default function ExperiencePage() {
     <div className="flex flex-col bg-white">
       <StatusBar />
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
+        <MenuButton className="text-gray-800" />
         <p className="text-[20px] font-bold text-gray-800">體驗</p>
         <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
           <img src="/icons/nav-reward.svg" alt="" className="size-4" />

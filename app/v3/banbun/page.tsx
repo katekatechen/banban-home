@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
-import HistoryDrawer from "../_components/HistoryDrawer";
 import LottiePlayer from "../_components/LottiePlayer";
-import { loadConversations, loadActiveId } from "../_lib/chat-storage";
+import { useDrawer } from "../_components/DrawerContext";
 
 const SERVICES = [
   {
@@ -61,7 +60,7 @@ const REMINDER = {
 
 export default function BanbunHomePage() {
   const router = useRouter();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { openDrawer } = useDrawer();
   const [homeInput, setHomeInput] = useState("");
   // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
   // 掛載後才隨機換一句，符合「每次進首頁都會換」的需求
@@ -79,41 +78,16 @@ export default function BanbunHomePage() {
     router.push(`/v3/banbun/chat?prompt=${encodeURIComponent(text)}`);
   };
 
-  // 在首頁打開的是「快速預覽」：只有實際選了對話/開新對話/看訂單才會離開首頁，
-  // 純粹打開看一眼、按 X 關掉的話會留在首頁，不會憑空多一個空對話。
-  const conversations = drawerOpen ? loadConversations() : [];
-  const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
-
   return (
-    <div className="relative flex flex-col overflow-hidden bg-white">
-      {drawerOpen && (
-        <HistoryDrawer
-          conversations={conversations}
-          activeId={activeId}
-          onClose={() => setDrawerOpen(false)}
-          onNewChat={() => router.push("/v3/banbun/chat?new=1")}
-          onOpenConversation={(id) =>
-            router.push(`/v3/banbun/chat?open=${id}`)
-          }
-          onOrders={() => router.push("/v3/orders")}
-        />
-      )}
-
-      {/* 打開漢堡時，首頁整個往右滑出畫面，側欄改成滿版覆蓋 */}
-      <div
-        className="relative flex flex-col bg-white transition-transform duration-300 ease-out"
-        style={{
-          transform: drawerOpen ? "translateX(100%)" : "translateX(0)",
-        }}
-      >
-        <StatusBar />
+    <div className="flex min-h-full flex-col bg-white">
+      <StatusBar />
 
       {/* header */}
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setDrawerOpen(true)}
-            title="對話紀錄"
+            onClick={openDrawer}
+            title="選單"
             className="flex size-8 items-center justify-center text-gray-800"
           >
             <svg
@@ -146,9 +120,9 @@ export default function BanbunHomePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 px-4 pb-6 pt-2">
+      {/* 可捲動內容：提醒、招呼語、伴伴可以幫你 */}
+      <div className="flex flex-1 flex-col gap-6 px-4 pb-4 pt-2">
         <div className="flex flex-col gap-3">
-          {/* 待辦提醒，跟紅色區塊分開顯示 */}
           <Link
             href={REMINDER.href}
             className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 py-1.5 pl-1.5 pr-3"
@@ -161,8 +135,8 @@ export default function BanbunHomePage() {
             </span>
           </Link>
 
-          {/* hero — 扁平紅底，加高卡片、伴伴插圖超出的部分裁掉不外露 */}
-          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 pb-10 pt-5 text-white">
+          {/* hero — 招呼語 + 標題，輸入框跟 chips 都移到最下面，像常見的 AI 對話 app */}
+          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 py-6 text-white">
             <Link href="/v3/banbun/chat" className="block pr-20">
               <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
               <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
@@ -170,48 +144,13 @@ export default function BanbunHomePage() {
               </p>
             </Link>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitHomeInput();
-              }}
-              className="relative z-10 mt-5 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
-            >
-              <input
-                value={homeInput}
-                onChange={(e) => setHomeInput(e.target.value)}
-                placeholder="你想要做什麼..."
-                className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
-              />
-              <button
-                type="submit"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
-              >
-                ↑
-              </button>
-            </form>
-
-            {/* 快速提問 chips，移到輸入框下方、直排，最多 4 個、每次隨機、寬度依內容 hug */}
-            <div className="relative z-10 mt-3 flex flex-col items-start gap-2">
-              {chips.map((p) => (
-                <Link
-                  key={p}
-                  href={`/v3/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                  className="w-fit rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[13px] text-white"
-                >
-                  {p}
-                </Link>
-              ))}
-            </div>
-
             <LottiePlayer
               src="/lottie/otter-typing.json"
-              className="pointer-events-none absolute -bottom-8 right-1 z-0 size-[168px]"
+              className="pointer-events-none absolute -bottom-6 right-1 z-0 size-[140px]"
             />
           </div>
         </div>
 
-        {/* 三大服務發現 — 置底，直的三欄，圖示在上、文字在下 */}
         <div className="flex flex-col gap-3">
           <p className="text-[16px] font-semibold text-gray-800">
             伴伴可以幫你
@@ -252,6 +191,41 @@ export default function BanbunHomePage() {
           </div>
         </div>
       </div>
+
+      {/* 底部固定的對話框，跟一般常見的 AI 對話 app 一樣：快速提問在輸入框正上方 */}
+      <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-gray-100 bg-white/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto">
+          {chips.map((p) => (
+            <Link
+              key={p}
+              href={`/v3/banbun/chat?prompt=${encodeURIComponent(p)}`}
+              className="shrink-0 rounded-full border border-gray-300 px-3.5 py-2 text-[13px] text-gray-700"
+            >
+              {p}
+            </Link>
+          ))}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitHomeInput();
+          }}
+          className="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1.5"
+        >
+          <input
+            value={homeInput}
+            onChange={(e) => setHomeInput(e.target.value)}
+            placeholder="你想要做什麼..."
+            className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+          />
+          <button
+            type="submit"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
+          >
+            ↑
+          </button>
+        </form>
       </div>
     </div>
   );
