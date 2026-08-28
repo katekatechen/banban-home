@@ -17,10 +17,9 @@ type HistoryDrawerProps = {
 
 const NAV_ITEMS = [
   { key: "banbun", label: "伴伴", icon: "/icons/tab-banbun.svg" },
-  { key: "wine", label: "精選酒品", icon: "/icons/tab-wine-select.svg" },
   { key: "ai", label: "智能選品", icon: "/icons/tab-ai-select.svg" },
+  { key: "wine", label: "精選單品", icon: "/icons/tab-wine-select.svg" },
   { key: "experience", label: "體驗", icon: "/icons/tab-experience.svg" },
-  { key: "account", label: "帳號", icon: "/icons/tab-account.svg" },
 ] as const;
 
 export default function HistoryDrawer({
@@ -38,17 +37,16 @@ export default function HistoryDrawer({
 }: HistoryDrawerProps) {
   const NAV_HANDLERS: Record<(typeof NAV_ITEMS)[number]["key"], () => void> = {
     banbun: onBanbun,
-    wine: onWineSelect,
     ai: onAiSelect,
+    wine: onWineSelect,
     experience: onExperience,
-    account: onAccount,
   };
   return (
     <div
       className="fixed inset-y-0 left-0 z-40 flex w-full flex-col bg-white p-4"
       style={{ animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both" }}
     >
-      <div className="flex items-center justify-end px-1 pb-3">
+      <div className="flex items-center justify-end px-1 pb-1">
         <button
           onClick={onClose}
           title="關閉"
@@ -69,17 +67,46 @@ export default function HistoryDrawer({
         </button>
       </div>
 
+      {/* 帳號頭像，點擊進帳號設定 */}
+      <button
+        onClick={onAccount}
+        className="flex items-center gap-3 rounded-xl px-3 py-3 text-left"
+      >
+        <div className="flex size-11 items-center justify-center rounded-full bg-gray-100 text-[20px]">
+          🧑
+        </div>
+        <div className="flex-1">
+          <p className="text-[15px] font-semibold text-gray-800">阿福</p>
+          <p className="text-[12px] text-gray-400">帳號設定</p>
+        </div>
+        <span className="text-gray-300">›</span>
+      </button>
+
+      {/* 原本 tab bar 上的功能，收進側邊欄 */}
+      <div className="mt-2 flex flex-col border-t border-gray-100 pt-2">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            onClick={NAV_HANDLERS[item.key]}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
+          >
+            <Icon src={item.icon} className="size-5" />
+            {item.label}
+          </button>
+        ))}
+      </div>
+
       <button
         onClick={onNewChat}
-        className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
+        className="mt-3 flex items-center justify-center gap-2 rounded-full bg-gray-800 px-4 py-3 text-[15px] font-semibold text-white"
       >
         <svg
-          width="20"
-          height="20"
+          width="18"
+          height="18"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.7"
+          strokeWidth="1.9"
         >
           <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.167.094 10 10 0 1 0-4.845-4.821" />
           <path d="M12 8v8" />
@@ -90,7 +117,7 @@ export default function HistoryDrawer({
 
       <button
         onClick={onOrders}
-        className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
+        className="mt-2 flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
       >
         <svg
           width="20"
@@ -109,20 +136,6 @@ export default function HistoryDrawer({
         </svg>
         訂單紀錄
       </button>
-
-      {/* 原本 tab bar 上的功能，收進側邊欄 */}
-      <div className="mt-2 flex flex-col border-t border-gray-100 pt-2">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.key}
-            onClick={NAV_HANDLERS[item.key]}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
-          >
-            <Icon src={item.icon} className="size-5" />
-            {item.label}
-          </button>
-        ))}
-      </div>
 
       <div className="no-scrollbar mt-2 flex-1 overflow-y-auto border-t border-gray-100 pt-2">
         {conversations.length > 0 && (
