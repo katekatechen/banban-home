@@ -113,8 +113,8 @@ export default function BanbunHomePage() {
         </div>
       </div>
 
-      {/* 可捲動內容：招呼語、伴伴可以幫你 */}
-      <div className="flex flex-1 flex-col gap-8 px-4 pb-4 pt-2">
+      {/* 可捲動內容：招呼語、伴伴可以幫你，整塊在可視範圍內垂直置中 */}
+      <div className="flex flex-1 flex-col justify-center gap-8 px-4 pb-4 pt-2">
         {/* hero — 大頭貼置中、招呼語跟標題置中，輸入框跟 chips 移到最下面 */}
         <Link href="/v3/banbun/chat" className="flex flex-col items-center gap-3 pt-2 text-center">
           <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
