@@ -161,8 +161,8 @@ export default function BanbunHomePage() {
             </span>
           </Link>
 
-          {/* hero — 扁平紅底，加高卡片、伴伴插圖超出的部分裁掉不外露 */}
-          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 pb-10 pt-5 text-white">
+          {/* hero — 扁平灰底，加高卡片、伴伴插圖超出的部分裁掉不外露 */}
+          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-gray-800 px-5 pb-10 pt-5 text-white">
             <Link href="/v4/banbun/chat" className="block pr-20">
               <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
               <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
