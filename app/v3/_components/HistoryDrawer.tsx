@@ -47,7 +47,7 @@ export default function HistoryDrawer({
       style={{ animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both" }}
     >
       <div className="flex items-center justify-between px-1 pb-3">
-        <img src="/icons/logo-aifian-mark.svg" alt="AIFIAN" className="h-5" />
+        <img src="/icons/logo-aifian-mark.svg" alt="AIFIAN" className="h-8" />
         <button
           onClick={onClose}
           title="返回"
@@ -83,27 +83,8 @@ export default function HistoryDrawer({
       </div>
 
       <button
-        onClick={onNewChat}
-        className="mt-3 flex items-center justify-center gap-2 rounded-full bg-gray-800 px-4 py-3 text-[15px] font-semibold text-white"
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.9"
-        >
-          <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.167.094 10 10 0 1 0-4.845-4.821" />
-          <path d="M12 8v8" />
-          <path d="M8 12h8" />
-        </svg>
-        開新對話
-      </button>
-
-      <button
         onClick={onOrders}
-        className="mt-2 flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
+        className="mt-3 flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
       >
         <svg
           width="20"
@@ -154,6 +135,26 @@ export default function HistoryDrawer({
         </div>
         <p className="flex-1 text-[15px] font-medium text-gray-800">阿福</p>
         <img src="/icons/acc-settings.svg" alt="" className="size-5" />
+      </button>
+
+      {/* 開新對話改成浮動按鈕，固定在右下角 */}
+      <button
+        onClick={onNewChat}
+        title="開新對話"
+        className="absolute bottom-[92px] right-4 flex size-14 items-center justify-center rounded-full bg-gray-800 text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+        >
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
       </button>
     </div>
   );
