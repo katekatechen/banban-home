@@ -5,7 +5,7 @@ export type CartItem = {
   emoji: string;
   gradient: string;
   qty: number;
-  source: "伴伴對話" | "精選酒品" | "我的收藏";
+  source: "伴伴對話" | "精選單品" | "我的收藏";
 };
 
 const STORAGE_CART = "banbun-v4-cart";

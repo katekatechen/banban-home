@@ -10,7 +10,7 @@ type AiWineSectionProps = {
   initialActive: "ai" | "wine";
 };
 
-// 智能選品跟精選酒品合併成一組，用左右滑動切換，取代原本各自獨立的頁面。
+// 智能選品跟精選單品合併成一組，用左右滑動切換，取代原本各自獨立的頁面。
 export default function AiWineSection({ initialActive }: AiWineSectionProps) {
   const [active, setActive] = useState<"ai" | "wine">(initialActive);
   const dark = active === "ai";

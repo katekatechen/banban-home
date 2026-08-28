@@ -6,10 +6,10 @@ type SectionSwitcherProps = {
 
 const OPTIONS = [
   { key: "ai", label: "智能選品" },
-  { key: "wine", label: "精選酒品" },
+  { key: "wine", label: "精選單品" },
 ] as const;
 
-// 智能選品跟精選酒品合併成一組，tab bar 上不再各佔一格，
+// 智能選品跟精選單品合併成一組，tab bar 上不再各佔一格，
 // 改用這個切換入口互通；點擊只是切換同一頁裡的左右滑動面板，不會換路由。
 export default function SectionSwitcher({ active, dark, onSelect }: SectionSwitcherProps) {
   return (
