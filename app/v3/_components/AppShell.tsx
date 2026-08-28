@@ -48,6 +48,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             onNewChat={() => go("/v3/banbun/chat?new=1")}
             onOpenConversation={(id) => go(`/v3/banbun/chat?open=${id}`)}
             onOrders={() => go("/v3/orders")}
+            onBanbun={() => go("/v3/banbun")}
             onWineSelect={() => go("/v3/wine-select")}
             onAiSelect={() => go("/v3/ai-select")}
             onExperience={() => go("/v3/experience")}
