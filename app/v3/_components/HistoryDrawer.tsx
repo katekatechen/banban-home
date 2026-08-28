@@ -46,41 +46,27 @@ export default function HistoryDrawer({
       className="fixed inset-y-0 left-0 z-40 flex w-full flex-col bg-white p-4"
       style={{ animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both" }}
     >
-      <div className="flex items-center justify-end px-1 pb-1">
+      <div className="flex items-center justify-between px-1 pb-3">
+        <img src="/icons/logo-aifian-mark.svg" alt="AIFIAN" className="h-5" />
         <button
           onClick={onClose}
-          title="關閉"
-          className="flex size-9 items-center justify-center rounded-lg text-gray-800"
+          title="返回"
+          className="flex size-9 items-center justify-center rounded-full border border-white/60 bg-white/30 text-gray-800 shadow-[0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-md"
         >
           <svg
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.8"
+            strokeWidth="2"
             strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
+            <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
       </div>
-
-      {/* 帳號頭像，點擊進帳號設定 */}
-      <button
-        onClick={onAccount}
-        className="flex items-center gap-3 rounded-xl px-3 py-3 text-left"
-      >
-        <div className="flex size-11 items-center justify-center rounded-full bg-gray-100 text-[20px]">
-          🧑
-        </div>
-        <div className="flex-1">
-          <p className="text-[15px] font-semibold text-gray-800">阿福</p>
-          <p className="text-[12px] text-gray-400">帳號設定</p>
-        </div>
-        <span className="text-gray-300">›</span>
-      </button>
 
       {/* 原本 tab bar 上的功能，收進側邊欄 */}
       <div className="mt-2 flex flex-col border-t border-gray-100 pt-2">
@@ -157,6 +143,18 @@ export default function HistoryDrawer({
           </button>
         ))}
       </div>
+
+      {/* 帳號頭像置底，點擊進帳號設定 */}
+      <button
+        onClick={onAccount}
+        className="flex shrink-0 items-center gap-3 border-t border-gray-100 px-3 pb-1 pt-3 text-left"
+      >
+        <div className="flex size-9 items-center justify-center rounded-full bg-gray-100 text-[17px]">
+          🧑
+        </div>
+        <p className="flex-1 text-[15px] font-medium text-gray-800">阿福</p>
+        <img src="/icons/acc-settings.svg" alt="" className="size-5" />
+      </button>
     </div>
   );
 }
