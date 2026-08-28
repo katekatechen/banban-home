@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import { useDrawer } from "../_components/DrawerContext";
+import { getOrders, type Order } from "../_lib/orders";
 
 const SERVICES = [
   {
@@ -60,9 +61,12 @@ export default function BanbunHomePage() {
   const [headline, setHeadline] = useState(HEADLINES[0]);
   // chips 固定先顯示前 4 個（跟 SSR 結果一致），掛載後才從全部裡隨機抽 4 個
   const [chips, setChips] = useState(PROMPT_CHIPS.slice(0, 4));
+  // 訂單紀錄收進帳號頁，但有進行中的訂單需要留意時，首頁會冒出來提醒
+  const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   useEffect(() => {
     setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
     setChips([...PROMPT_CHIPS].sort(() => Math.random() - 0.5).slice(0, 4));
+    setPendingOrder(getOrders().find((o) => o.status === "進行中") ?? null);
   }, []);
 
   const submitHomeInput = () => {
@@ -115,6 +119,20 @@ export default function BanbunHomePage() {
 
       {/* 可捲動內容：招呼語、伴伴可以幫你，整塊在可視範圍內垂直置中 */}
       <div className="flex flex-1 flex-col justify-center gap-8 px-4 pb-4 pt-2">
+        {/* 訂單紀錄收進帳號頁，但進行中的訂單會在首頁冒出來提醒查看狀態 */}
+        {pendingOrder && (
+          <Link
+            href={`/v3/orders/${pendingOrder.id}`}
+            className="flex items-center gap-2 rounded-xl bg-gray-800 px-4 py-3"
+          >
+            <span className="text-[16px]">🚚</span>
+            <span className="flex-1 text-[13px] font-medium text-white">
+              「{pendingOrder.name}」訂單處理中，點擊查看進度
+            </span>
+            <span className="text-[13px] font-bold text-white/70">&rsaquo;</span>
+          </Link>
+        )}
+
         {/* hero — 大頭貼置中、招呼語跟標題置中，輸入框跟 chips 移到最下面 */}
         <Link href="/v3/banbun/chat" className="flex flex-col items-center gap-3 pt-2 text-center">
           <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
