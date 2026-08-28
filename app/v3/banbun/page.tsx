@@ -4,31 +4,30 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
-import LottiePlayer from "../_components/LottiePlayer";
 import { useDrawer } from "../_components/DrawerContext";
 
 const SERVICES = [
   {
     key: "wine",
     label: "買酒",
-    desc: "送禮、投資、自己喝",
     emoji: "🍷",
+    circle: "bg-red-100",
     href: "/v3/banbun/chat?prompt=幫我找一支適合送禮的酒",
     disabled: false,
   },
   {
     key: "daily",
     label: "買日用品",
-    desc: "生活雜貨，下單送到家",
     emoji: "🧴",
+    circle: "bg-blue-100",
     href: "/v3/banbun/chat?prompt=我想買日用品",
     disabled: false,
   },
   {
     key: "bill",
     label: "代繳帳單",
-    desc: "房租／房貸／信用卡，即將推出",
     emoji: "💳",
+    circle: "bg-gray-200",
     href: "#",
     disabled: true,
   },
@@ -121,70 +120,64 @@ export default function BanbunHomePage() {
       </div>
 
       {/* 可捲動內容：提醒、招呼語、伴伴可以幫你 */}
-      <div className="flex flex-1 flex-col gap-6 px-4 pb-4 pt-2">
-        <div className="flex flex-col gap-3">
-          <Link
-            href={REMINDER.href}
-            className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 py-1.5 pl-1.5 pr-3"
-          >
-            <span className="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px] text-white">
-              !
-            </span>
-            <span className="text-[12px] font-medium text-brand">
-              {REMINDER.text}
-            </span>
-            <span className="text-[13px] font-bold text-brand">&rsaquo;</span>
-          </Link>
+      <div className="flex flex-1 flex-col gap-8 px-4 pb-4 pt-2">
+        <Link
+          href={REMINDER.href}
+          className="flex items-center gap-2 rounded-xl bg-gray-800 px-4 py-3"
+        >
+          <span className="flex size-4 shrink-0 items-center justify-center rounded-full border border-white/70 text-[10px] font-bold text-white">
+            i
+          </span>
+          <span className="flex-1 text-[13px] font-medium text-white">
+            {REMINDER.text}
+          </span>
+          <span className="text-[13px] font-bold text-white/70">&rsaquo;</span>
+        </Link>
 
-          {/* hero — 招呼語 + 標題，輸入框跟 chips 都移到最下面，像常見的 AI 對話 app */}
-          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 py-6 text-white">
-            <Link href="/v3/banbun/chat" className="block pr-20">
-              <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
-              <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
-                {headline}
-              </p>
-            </Link>
-
-            <LottiePlayer
-              src="/lottie/otter-typing.json"
-              className="pointer-events-none absolute -bottom-6 right-1 z-0 size-[140px]"
-            />
+        {/* hero — 大頭貼置中、招呼語跟標題置中，輸入框跟 chips 移到最下面 */}
+        <Link href="/v3/banbun/chat" className="flex flex-col items-center gap-3 pt-2 text-center">
+          <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
+          <div>
+            <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
+            <p className="mt-1 whitespace-pre-line text-[24px] font-black leading-[1.3] text-gray-800">
+              {headline}
+            </p>
           </div>
-        </div>
+        </Link>
 
         <div className="flex flex-col gap-3">
-          <p className="text-[16px] font-semibold text-gray-800">
-            伴伴可以幫你
-          </p>
           <div className="grid grid-cols-3 gap-2.5">
             {SERVICES.map((s) =>
               s.disabled ? (
                 <div
                   key={s.key}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
+                  className="relative flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
                 >
-                  <span className="text-[28px] opacity-50 grayscale">
+                  <span className="absolute right-2 top-2 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-500">
+                    即將推出
+                  </span>
+                  <span
+                    className={`flex size-11 items-center justify-center rounded-full text-[20px] opacity-60 grayscale ${s.circle}`}
+                  >
                     {s.emoji}
                   </span>
                   <p className="text-[13px] font-semibold text-gray-400">
                     {s.label}
                   </p>
-                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-                    敬請期待
-                  </span>
                 </div>
               ) : (
                 <Link
                   key={s.key}
                   href={s.href}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center transition-transform active:scale-[0.97]"
+                  className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 px-2 py-4 text-center transition-transform active:scale-[0.97]"
                 >
-                  <span className="text-[28px]">{s.emoji}</span>
+                  <span
+                    className={`flex size-11 items-center justify-center rounded-full text-[20px] ${s.circle}`}
+                  >
+                    {s.emoji}
+                  </span>
                   <p className="text-[13px] font-semibold text-gray-800">
                     {s.label}
-                  </p>
-                  <p className="text-[11px] leading-tight text-gray-500">
-                    {s.desc}
                   </p>
                 </Link>
               ),
@@ -212,17 +205,17 @@ export default function BanbunHomePage() {
             e.preventDefault();
             submitHomeInput();
           }}
-          className="flex items-center gap-2 rounded-full bg-gray-100 px-2 py-1.5"
+          className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5"
         >
           <input
             value={homeInput}
             onChange={(e) => setHomeInput(e.target.value)}
-            placeholder="你想要做什麼..."
+            placeholder="跟伴伴說你想要什麼..."
             className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
           />
           <button
             type="submit"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
           >
             ↑
           </button>
