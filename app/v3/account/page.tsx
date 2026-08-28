@@ -37,6 +37,12 @@ const SETTINGS_1: Row[] = [
     href: "/v3/orders",
   },
   {
+    key: "banbun-orders",
+    icon: "/icons/tab-banbun.svg",
+    label: "伴伴訂單紀錄",
+    href: "/v3/orders?source=伴伴對話",
+  },
+  {
     key: "gifts",
     icon: "/icons/acc-gift.svg",
     label: "我的禮物",

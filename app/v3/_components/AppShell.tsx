@@ -38,7 +38,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       onClose={() => setDrawerOpen(false)}
       onNewChat={() => go("/v3/banbun/chat?new=1")}
       onOpenConversation={(id) => go(`/v3/banbun/chat?open=${id}`)}
-      onOrders={() => go("/v3/orders?source=伴伴對話")}
       onBanbun={() => go("/v3/banbun")}
       onWineSelect={() => go("/v3/wine-select")}
       onAiSelect={() => go("/v3/ai-select")}

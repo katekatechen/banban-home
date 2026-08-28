@@ -7,7 +7,6 @@ type HistoryDrawerProps = {
   onClose: () => void;
   onNewChat: () => void;
   onOpenConversation: (id: string) => void;
-  onOrders: () => void;
   onBanbun: () => void;
   onWineSelect: () => void;
   onAiSelect: () => void;
@@ -28,7 +27,6 @@ export default function HistoryDrawer({
   onClose,
   onNewChat,
   onOpenConversation,
-  onOrders,
   onBanbun,
   onWineSelect,
   onAiSelect,
@@ -82,29 +80,7 @@ export default function HistoryDrawer({
         ))}
       </div>
 
-      <button
-        onClick={onOrders}
-        className="mt-3 flex items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-medium text-gray-800"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
-          <path d="M12 22V12" />
-          <polyline points="3.29 7 12 12 20.71 7" />
-          <path d="m7.5 4.27 9 5.15" />
-        </svg>
-        伴伴訂單紀錄
-      </button>
-
-      <div className="no-scrollbar mt-2 flex-1 overflow-y-auto border-t border-gray-100 pt-2">
+      <div className="no-scrollbar mt-3 flex-1 overflow-y-auto border-t border-gray-100 pt-2">
         {conversations.length > 0 && (
           <p className="px-3 pb-2 text-[12px] font-medium text-gray-400">
             最近
