@@ -51,12 +51,6 @@ const HEADLINES = [
   "買酒、繳費、算錢，都能找我！",
 ];
 
-// mock：呼應「伴伴主動提醒待辦任務」story，之後接真的帳號狀態
-const REMINDER = {
-  text: "交易跟提領功能已暫停，請重新提交身分驗證",
-  href: "/v3/account",
-};
-
 export default function BanbunHomePage() {
   const router = useRouter();
   const { openDrawer } = useDrawer();
@@ -119,21 +113,8 @@ export default function BanbunHomePage() {
         </div>
       </div>
 
-      {/* 可捲動內容：提醒、招呼語、伴伴可以幫你 */}
+      {/* 可捲動內容：招呼語、伴伴可以幫你 */}
       <div className="flex flex-1 flex-col gap-8 px-4 pb-4 pt-2">
-        <Link
-          href={REMINDER.href}
-          className="flex items-center gap-2 rounded-xl bg-gray-800 px-4 py-3"
-        >
-          <span className="flex size-4 shrink-0 items-center justify-center rounded-full border border-white/70 text-[10px] font-bold text-white">
-            i
-          </span>
-          <span className="flex-1 text-[13px] font-medium text-white">
-            {REMINDER.text}
-          </span>
-          <span className="text-[13px] font-bold text-white/70">&rsaquo;</span>
-        </Link>
-
         {/* hero — 大頭貼置中、招呼語跟標題置中，輸入框跟 chips 移到最下面 */}
         <Link href="/v3/banbun/chat" className="flex flex-col items-center gap-3 pt-2 text-center">
           <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />

@@ -21,14 +21,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const fullScreen = FULLSCREEN_PATTERNS.some((re) => re.test(pathname));
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  if (fullScreen) {
-    // 全螢幕頁面（對話、商品詳情）自己管理內部捲動跟底部固定的 CTA，
-    // 這裡不能再套一層 overflow-y-auto，不然會跟頁面內部的捲動打架。
-    return <div className="flex flex-1 flex-col overflow-hidden">{children}</div>;
-  }
-
-  // 側邊欄取代原本的 tab bar，統一放在 AppShell 這層，讓每個頁面都能打開，
-  // 而不用各自管理一份 drawerOpen 狀態。
+  // 側邊欄取代原本的 tab bar，統一放在 AppShell 這層，讓每個頁面（包含全螢幕頁面，
+  // 例如對話中點「返回」）都能打開，而不用各自管理一份 drawerOpen 狀態。
   const conversations = drawerOpen ? loadConversations() : [];
   const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
 
@@ -37,24 +31,39 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     router.push(href);
   };
 
+  const drawer = drawerOpen && (
+    <HistoryDrawer
+      conversations={conversations}
+      activeId={activeId}
+      onClose={() => setDrawerOpen(false)}
+      onNewChat={() => go("/v3/banbun/chat?new=1")}
+      onOpenConversation={(id) => go(`/v3/banbun/chat?open=${id}`)}
+      onOrders={() => go("/v3/orders")}
+      onBanbun={() => go("/v3/banbun")}
+      onWineSelect={() => go("/v3/wine-select")}
+      onAiSelect={() => go("/v3/ai-select")}
+      onExperience={() => go("/v3/experience")}
+      onAccount={() => go("/v3/account")}
+    />
+  );
+
+  if (fullScreen) {
+    // 全螢幕頁面（對話、商品詳情）自己管理內部捲動跟底部固定的 CTA，
+    // 這裡不能再套一層 overflow-y-auto，不然會跟頁面內部的捲動打架。
+    return (
+      <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
+        <div className="relative flex flex-1 flex-col overflow-hidden">
+          {drawer}
+          {children}
+        </div>
+      </DrawerContext.Provider>
+    );
+  }
+
   return (
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true) }}>
       <div className="relative flex flex-1 flex-col overflow-hidden bg-white">
-        {drawerOpen && (
-          <HistoryDrawer
-            conversations={conversations}
-            activeId={activeId}
-            onClose={() => setDrawerOpen(false)}
-            onNewChat={() => go("/v3/banbun/chat?new=1")}
-            onOpenConversation={(id) => go(`/v3/banbun/chat?open=${id}`)}
-            onOrders={() => go("/v3/orders")}
-            onBanbun={() => go("/v3/banbun")}
-            onWineSelect={() => go("/v3/wine-select")}
-            onAiSelect={() => go("/v3/ai-select")}
-            onExperience={() => go("/v3/experience")}
-            onAccount={() => go("/v3/account")}
-          />
-        )}
+        {drawer}
 
         <div
           className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden bg-white transition-transform duration-300 ease-out"

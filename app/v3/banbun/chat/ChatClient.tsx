@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
 import ProductSheet from "../../_components/ProductSheet";
+import { useDrawer } from "../../_components/DrawerContext";
 import { getCart, toggleCartItem, ensureInCart } from "../../_lib/cart";
 import {
   type Conversation,
@@ -22,6 +23,7 @@ import {
 
 export default function ChatClient() {
   const router = useRouter();
+  const { openDrawer } = useDrawer();
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("prompt") ?? "";
   const forceNew = searchParams.get("new") === "1";
@@ -248,8 +250,8 @@ export default function ChatClient() {
       <StatusBar />
       <div className="flex items-center gap-1 border-b border-gray-100 px-2 pb-3 pt-1">
         <button
-          onClick={() => router.push("/v3/banbun")}
-          title="回首頁"
+          onClick={openDrawer}
+          title="選單"
           className="flex size-8 items-center justify-center text-[20px] text-gray-700"
         >
           ‹
