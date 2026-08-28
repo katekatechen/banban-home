@@ -68,7 +68,7 @@ const HEADLINES = [
 
 // mock：呼應「伴伴主動提醒待辦任務」story，之後接真的帳號狀態
 const REMINDER = {
-  text: "請查看系統通知信，繼續完成身份驗證",
+  text: "交易跟提領功能已暫停，請重新提交身分驗證",
   href: "/v2/account",
 };
 
@@ -196,6 +196,7 @@ export default function BanbunHomePage() {
             <span className="text-[12px] font-medium text-brand">
               {REMINDER.text}
             </span>
+            <span className="text-[13px] font-bold text-brand">&rsaquo;</span>
           </Link>
 
           {/* hero — 扁平淺灰底 */}
