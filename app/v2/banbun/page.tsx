@@ -198,11 +198,11 @@ export default function BanbunHomePage() {
             </span>
           </Link>
 
-          {/* hero — 扁平紅底 */}
-          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-brand px-5 pb-5 pt-5 text-white">
+          {/* hero — 扁平淺灰底 */}
+          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-gray-100 px-5 pb-5 pt-5 text-gray-800">
             <Link href="/v2/banbun/chat" className="block">
-              <p className="text-[14px] text-white/90">嗨，我是伴伴</p>
-              <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2]">
+              <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
+              <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
                 {headline}
               </p>
             </Link>
@@ -212,7 +212,7 @@ export default function BanbunHomePage() {
                 e.preventDefault();
                 submitHomeInput();
               }}
-              className="relative z-10 mt-5 flex items-center gap-2 rounded-full bg-white/95 px-2 py-1.5"
+              className="relative z-10 mt-5 flex items-center gap-2 rounded-full bg-white px-2 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
             >
               <input
                 value={homeInput}
@@ -234,7 +234,7 @@ export default function BanbunHomePage() {
                 <Link
                   key={p}
                   href={`/v2/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                  className="shrink-0 rounded-full border border-white/30 bg-white/15 px-3.5 py-2 text-[13px] text-white"
+                  className="shrink-0 rounded-full border border-gray-300 bg-white px-3.5 py-2 text-[13px] text-gray-700"
                 >
                   {p}
                 </Link>
