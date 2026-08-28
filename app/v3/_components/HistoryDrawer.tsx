@@ -47,7 +47,7 @@ export default function HistoryDrawer({
       style={{ animation: "drawerIn 0.26s cubic-bezier(.2,.9,.25,1) both" }}
     >
       <div className="flex items-center justify-between px-1 pb-3">
-        <img src="/icons/logo-aifian-mark.svg" alt="AIFIAN" className="h-8" />
+        <img src="/icons/logo-aifian-mark.svg" alt="AIFIAN" className="h-11" />
         <button
           onClick={onClose}
           title="返回"
@@ -140,12 +140,11 @@ export default function HistoryDrawer({
       {/* 開新對話改成浮動按鈕，固定在右下角 */}
       <button
         onClick={onNewChat}
-        title="開新對話"
-        className="absolute bottom-[92px] right-4 flex size-14 items-center justify-center rounded-full bg-gray-800 text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+        className="absolute bottom-[92px] right-4 flex items-center gap-2 rounded-full bg-gray-800 py-3 pl-4 pr-5 text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
       >
         <svg
-          width="24"
-          height="24"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -155,6 +154,7 @@ export default function HistoryDrawer({
           <path d="M12 5v14" />
           <path d="M5 12h14" />
         </svg>
+        開新對話
       </button>
     </div>
   );
