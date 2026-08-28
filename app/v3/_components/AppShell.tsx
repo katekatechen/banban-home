@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import HistoryDrawer from "./HistoryDrawer";
 import { DrawerContext } from "./DrawerContext";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
@@ -20,6 +20,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const fullScreen = FULLSCREEN_PATTERNS.some((re) => re.test(pathname));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // 記著「正在切去哪個路徑」：等新頁面的 pathname 真的到了才關側欄，
+  // 不然側欄關閉的當下 {children} 還是舊頁面，會先閃一下舊頁面才跳新頁面。
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
   // 側邊欄取代原本的 tab bar，統一放在 AppShell 這層，讓每個頁面（包含全螢幕頁面，
   // 例如對話中點「返回」）都能打開，而不用各自管理一份 drawerOpen 狀態。
@@ -27,9 +30,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
 
   const go = (href: string) => {
-    setDrawerOpen(false);
+    const targetPathname = href.split("?")[0];
     router.push(href);
+    if (targetPathname === pathname) {
+      // 同一個 pathname（例如對話裡切另一個 query），沒有整頁替換的問題，直接關
+      setDrawerOpen(false);
+    } else {
+      setNavigatingTo(targetPathname);
+    }
   };
+
+  useEffect(() => {
+    if (navigatingTo && pathname === navigatingTo) {
+      setDrawerOpen(false);
+      setNavigatingTo(null);
+    }
+  }, [pathname, navigatingTo]);
 
   const drawer = drawerOpen && (
     <HistoryDrawer
