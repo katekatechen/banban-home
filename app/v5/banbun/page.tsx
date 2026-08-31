@@ -241,9 +241,6 @@ export default function BanbunHomePage() {
                   <p className="text-[13px] font-semibold text-gray-800">
                     {s.label}
                   </p>
-                  <p className="text-[11px] leading-tight text-gray-500">
-                    {s.desc}
-                  </p>
                 </Link>
               ),
             )}

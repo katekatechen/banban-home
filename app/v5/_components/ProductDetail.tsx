@@ -21,7 +21,7 @@ type ProductDetailProps = {
   rating: number;
   lastUpdated: string;
   holding?: HoldingInfo;
-  source: "精選酒品" | "我的收藏";
+  source: "線上藏酒" | "我的收藏";
 };
 
 export default function ProductDetail({

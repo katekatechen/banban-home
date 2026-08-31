@@ -7,7 +7,7 @@ export type Product = {
   price: number;
   emoji: string;
   gradient: string;
-  category: "精選酒品" | "日用品";
+  category: "線上藏酒" | "日用品";
   wineType: WineType;
   tag?: string;
 };
@@ -20,7 +20,7 @@ export const PRODUCTS: Product[] = [
     price: 550,
     emoji: "🍶",
     gradient: "from-[#EAE7DD] to-[#EAE7DD]",
-    category: "精選酒品",
+    category: "線上藏酒",
     wineType: "高粱",
   },
   {
@@ -30,7 +30,7 @@ export const PRODUCTS: Product[] = [
     price: 999,
     emoji: "🥃",
     gradient: "from-[#EAE7DD] to-[#EAE7DD]",
-    category: "精選酒品",
+    category: "線上藏酒",
     wineType: "威士忌",
     tag: "熱銷",
   },
@@ -41,7 +41,7 @@ export const PRODUCTS: Product[] = [
     price: 921,
     emoji: "🍷",
     gradient: "from-[#EAE7DD] to-[#EAE7DD]",
-    category: "精選酒品",
+    category: "線上藏酒",
     wineType: "紅酒",
     tag: "NEW",
   },
@@ -52,7 +52,7 @@ export const PRODUCTS: Product[] = [
     price: 1100,
     emoji: "🥃",
     gradient: "from-[#EAE7DD] to-[#EAE7DD]",
-    category: "精選酒品",
+    category: "線上藏酒",
     wineType: "威士忌",
   },
   {
@@ -62,7 +62,7 @@ export const PRODUCTS: Product[] = [
     price: 673,
     emoji: "🛢️",
     gradient: "from-[#EAE7DD] to-[#EAE7DD]",
-    category: "精選酒品",
+    category: "線上藏酒",
     wineType: "威士忌",
   },
 ];

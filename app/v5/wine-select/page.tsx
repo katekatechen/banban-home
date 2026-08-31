@@ -35,7 +35,7 @@ export default function WineSelectPage() {
     <div className="flex flex-col bg-white">
       <StatusBar />
       <div className="flex items-center justify-between px-4 pb-3 pt-1">
-        <p className="text-[20px] font-bold text-gray-800">精選酒品</p>
+        <p className="text-[20px] font-bold text-gray-800">線上藏酒</p>
         <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
           <img src="/icons/nav-reward.svg" alt="" className="size-4" />
           <span className="text-[14px] font-medium text-gray-800">
@@ -43,6 +43,23 @@ export default function WineSelectPage() {
           </span>
         </div>
       </div>
+
+      {/* 原版首頁的推廣 banner，引導去智能藏酒 */}
+      <Link
+        href="/v5/ai-select"
+        className="relative mx-4 mb-3 flex h-[140px] shrink-0 flex-col justify-center overflow-hidden rounded-2xl px-5 text-white"
+        style={{
+          backgroundImage: "linear-gradient(160deg, #0b2250 10%, #001133 90%)",
+        }}
+      >
+        <span className="pointer-events-none absolute -right-4 -top-4 text-[100px] opacity-20">
+          🍾
+        </span>
+        <p className="text-[16px] font-semibold">加入智能藏酒，回饋天天領</p>
+        <p className="mt-1 text-[14px] text-white/70">
+          不需懂酒品選擇，歷史回饋率達 9.1%
+        </p>
+      </Link>
 
       <Link
         href="/v5/collection"

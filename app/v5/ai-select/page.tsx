@@ -9,7 +9,7 @@ export default function AiSelectPage() {
     <div className="flex min-h-full flex-col bg-gray-900 text-white">
       <StatusBar dark />
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
-        <p className="text-[20px] font-bold">智能選品</p>
+        <p className="text-[20px] font-bold">智能藏酒</p>
         <div className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1">
           <img src="/icons/nav-reward.svg" alt="" className="size-4" />
           <span className="text-[14px] font-medium">999,999</span>
