@@ -52,12 +52,6 @@ const HEADLINES = [
   "買酒、繳費、算錢，都能找我！",
 ];
 
-// mock：呼應「伴伴主動提醒待辦任務」story，之後接真的帳號狀態
-const REMINDER = {
-  text: "交易跟提領功能已暫停，請重新提交身分驗證",
-  href: "/v5/account",
-};
-
 export default function BanbunHomePage() {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -84,7 +78,7 @@ export default function BanbunHomePage() {
   const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
 
   return (
-    <div className="relative flex min-h-full flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full flex-col overflow-hidden bg-white">
       {drawerOpen && (
         <HistoryDrawer
           conversations={conversations}
@@ -100,149 +94,137 @@ export default function BanbunHomePage() {
 
       {/* 打開漢堡時，首頁整個往右滑出畫面，側欄改成滿版覆蓋 */}
       <div
-        className="relative flex min-h-full flex-col bg-white transition-transform duration-300 ease-out"
+        className="relative flex h-full flex-col bg-white transition-transform duration-300 ease-out"
         style={{
           transform: drawerOpen ? "translateX(100%)" : "translateX(0)",
         }}
       >
         <StatusBar />
 
-      {/* header */}
-      <div className="flex items-center justify-between px-4 pb-2 pt-1">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            title="對話紀錄"
-            className="flex size-8 items-center justify-center text-gray-800"
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
+        {/* header */}
+        <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-1">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              title="對話紀錄"
+              className="flex size-8 items-center justify-center text-gray-800"
             >
-              <line x1="4" x2="20" y1="6" y2="6" />
-              <line x1="4" x2="20" y1="12" y2="12" />
-              <line x1="4" x2="20" y1="18" y2="18" />
-            </svg>
-          </button>
-          <div className="relative flex size-8 items-center justify-center">
-            <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
-              9
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+              >
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            </button>
+            <div className="relative flex size-8 items-center justify-center">
+              <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
+                9
+              </span>
+            </div>
+          </div>
+          <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
+          <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
+            <img src="/icons/nav-reward.svg" alt="" className="size-4" />
+            <span className="text-[14px] font-medium text-gray-800">
+              999,999
             </span>
           </div>
         </div>
-        <img src="/icons/logo-aifian.svg" alt="AIFIAN" className="h-4" />
-        <div className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1">
-          <img src="/icons/nav-reward.svg" alt="" className="size-4" />
-          <span className="text-[14px] font-medium text-gray-800">
-            999,999
-          </span>
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-6 px-4 pb-[200px] pt-2">
-        {/* 待辦提醒，跟紅色區塊分開顯示 */}
-        <Link
-          href={REMINDER.href}
-          className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 py-1.5 pl-1.5 pr-3"
-        >
-          <span className="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px] text-white">
-            !
-          </span>
-          <span className="text-[12px] font-medium text-brand">
-            {REMINDER.text}
-          </span>
-          <span className="text-[13px] font-bold text-brand">&rsaquo;</span>
-        </Link>
-
-        {/* hero — 沿用 v3 排版：大頭貼跟標題置中，不用色塊卡片包住 */}
-        <Link
-          href="/v5/banbun/chat"
-          className="flex flex-col items-center gap-3 pt-2 text-center"
-        >
-          <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
-          <div>
-            <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
-            <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
-              {headline}
-            </p>
-          </div>
-        </Link>
-
-        {/* 三大服務發現 — 放到標題下方，直的三欄，圖示在上、文字在下 */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {SERVICES.map((s) =>
-            s.disabled ? (
-              <div
-                key={s.key}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
-              >
-                <span className="text-[28px] opacity-50 grayscale">
-                  {s.emoji}
-                </span>
-                <p className="text-[13px] font-semibold text-gray-400">
-                  {s.label}
-                </p>
-                <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-                  敬請期待
-                </span>
-              </div>
-            ) : (
-              <Link
-                key={s.key}
-                href={s.href}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center transition-transform active:scale-[0.97]"
-              >
-                <span className="text-[28px]">{s.emoji}</span>
-                <p className="text-[13px] font-semibold text-gray-800">
-                  {s.label}
-                </p>
-              </Link>
-            ),
-          )}
-        </div>
-      </div>
-
-      {/* 對話框固定在 tab bar 正上方（用 layout.tsx 的 contain:layout 讓 fixed 定位在手機外框內） */}
-      <div className="fixed inset-x-0 bottom-[76px] z-10 flex flex-col gap-2 px-4">
-        <div className="no-scrollbar flex gap-2 overflow-x-auto">
-          {chips.map((p) => (
-            <Link
-              key={p}
-              href={`/v5/banbun/chat?prompt=${encodeURIComponent(p)}`}
-              className="shrink-0 rounded-full border border-gray-300 bg-white px-3.5 py-2 text-[13px] text-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-            >
-              {p}
-            </Link>
-          ))}
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submitHomeInput();
-          }}
-          className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.1)]"
-        >
-          <input
-            value={homeInput}
-            onChange={(e) => setHomeInput(e.target.value)}
-            placeholder="你想要做什麼..."
-            className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
-          />
-          <button
-            type="submit"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
+        {/* 伴伴插圖、標題、服務選項一起在剩餘空間垂直置中 */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-4">
+          {/* hero — 沿用 v3 排版：大頭貼跟標題置中，不用色塊卡片包住 */}
+          <Link
+            href="/v5/banbun/chat"
+            className="flex flex-col items-center gap-3 text-center"
           >
-            ↑
-          </button>
-        </form>
-      </div>
+            <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
+            <div>
+              <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
+              <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
+                {headline}
+              </p>
+            </div>
+          </Link>
+
+          {/* 三大服務發現 — 標題下方，直的三欄，圖示在上、文字在下 */}
+          <div className="grid w-full grid-cols-3 gap-2.5">
+            {SERVICES.map((s) =>
+              s.disabled ? (
+                <div
+                  key={s.key}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
+                >
+                  <span className="text-[28px] opacity-50 grayscale">
+                    {s.emoji}
+                  </span>
+                  <p className="text-[13px] font-semibold text-gray-400">
+                    {s.label}
+                  </p>
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                    敬請期待
+                  </span>
+                </div>
+              ) : (
+                <Link
+                  key={s.key}
+                  href={s.href}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center transition-transform active:scale-[0.97]"
+                >
+                  <span className="text-[28px]">{s.emoji}</span>
+                  <p className="text-[13px] font-semibold text-gray-800">
+                    {s.label}
+                  </p>
+                </Link>
+              ),
+            )}
+          </div>
+        </div>
+
+        {/* 對話框：跟著一般文件流排在最下面，往下拉滿 AppShell 保留給 tab bar 的空間，
+            讓對話框跟 tab bar 之間精準維持 8px 間距（而不是用 fixed 定位去猜偏移量） */}
+        <div className="mb-[-28px] flex shrink-0 flex-col gap-2 px-4 pb-2">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto">
+            {chips.map((p) => (
+              <Link
+                key={p}
+                href={`/v5/banbun/chat?prompt=${encodeURIComponent(p)}`}
+                className="shrink-0 rounded-full border border-gray-300 bg-white px-3.5 py-2 text-[13px] text-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+              >
+                {p}
+              </Link>
+            ))}
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitHomeInput();
+            }}
+            className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.1)]"
+          >
+            <input
+              value={homeInput}
+              onChange={(e) => setHomeInput(e.target.value)}
+              placeholder="你想要做什麼..."
+              className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+            />
+            <button
+              type="submit"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
+            >
+              ↑
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
