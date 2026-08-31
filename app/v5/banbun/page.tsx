@@ -84,7 +84,7 @@ export default function BanbunHomePage() {
   const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
 
   return (
-    <div className="relative flex flex-col overflow-hidden bg-white">
+    <div className="relative flex min-h-full flex-col overflow-hidden bg-white">
       {drawerOpen && (
         <HistoryDrawer
           conversations={conversations}
@@ -100,7 +100,7 @@ export default function BanbunHomePage() {
 
       {/* 打開漢堡時，首頁整個往右滑出畫面，側欄改成滿版覆蓋 */}
       <div
-        className="relative flex flex-col bg-white transition-transform duration-300 ease-out"
+        className="relative flex min-h-full flex-col bg-white transition-transform duration-300 ease-out"
         style={{
           transform: drawerOpen ? "translateX(100%)" : "translateX(0)",
         }}
@@ -145,71 +145,36 @@ export default function BanbunHomePage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 px-4 pb-6 pt-2">
-        <div className="flex flex-col gap-3">
-          {/* 待辦提醒，跟紅色區塊分開顯示 */}
-          <Link
-            href={REMINDER.href}
-            className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 py-1.5 pl-1.5 pr-3"
-          >
-            <span className="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px] text-white">
-              !
-            </span>
-            <span className="text-[12px] font-medium text-brand">
-              {REMINDER.text}
-            </span>
-            <span className="text-[13px] font-bold text-brand">&rsaquo;</span>
-          </Link>
+      <div className="flex flex-col gap-6 px-4 pb-[140px] pt-2">
+        {/* 待辦提醒，跟紅色區塊分開顯示 */}
+        <Link
+          href={REMINDER.href}
+          className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 py-1.5 pl-1.5 pr-3"
+        >
+          <span className="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px] text-white">
+            !
+          </span>
+          <span className="text-[12px] font-medium text-brand">
+            {REMINDER.text}
+          </span>
+          <span className="text-[13px] font-bold text-brand">&rsaquo;</span>
+        </Link>
 
-          {/* hero — 沿用 v3 排版：大頭貼跟標題置中，不用色塊卡片包住 */}
-          <div className="flex flex-col items-center gap-3 pt-2 text-center">
-            <Link href="/v5/banbun/chat" className="flex flex-col items-center gap-3">
-              <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
-              <div>
-                <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
-                <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
-                  {headline}
-                </p>
-              </div>
-            </Link>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitHomeInput();
-              }}
-              className="mt-2 flex w-full items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-            >
-              <input
-                value={homeInput}
-                onChange={(e) => setHomeInput(e.target.value)}
-                placeholder="你想要做什麼..."
-                className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
-              />
-              <button
-                type="submit"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
-              >
-                ↑
-              </button>
-            </form>
-
-            {/* 快速提問 chips，最多 4 個、每次隨機，置中排列 */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {chips.map((p) => (
-                <Link
-                  key={p}
-                  href={`/v5/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                  className="w-fit rounded-full border border-gray-300 bg-white px-3.5 py-2 text-[13px] text-gray-700"
-                >
-                  {p}
-                </Link>
-              ))}
-            </div>
+        {/* hero — 沿用 v3 排版：大頭貼跟標題置中，不用色塊卡片包住 */}
+        <Link
+          href="/v5/banbun/chat"
+          className="flex flex-col items-center gap-3 pt-2 text-center"
+        >
+          <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
+          <div>
+            <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
+            <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
+              {headline}
+            </p>
           </div>
-        </div>
+        </Link>
 
-        {/* 三大服務發現 — 置底，直的三欄，圖示在上、文字在下 */}
+        {/* 三大服務發現 — 放到標題下方，直的三欄，圖示在上、文字在下 */}
         <div className="flex flex-col gap-3">
           <p className="text-[16px] font-semibold text-gray-800">
             伴伴可以幫你
@@ -246,6 +211,42 @@ export default function BanbunHomePage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* 對話框固定在 tab bar 正上方（用 layout.tsx 的 contain:layout 讓 fixed 定位在手機外框內） */}
+      <div className="fixed inset-x-0 bottom-[76px] z-10 flex flex-col gap-2 px-4">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto">
+          {chips.map((p) => (
+            <Link
+              key={p}
+              href={`/v5/banbun/chat?prompt=${encodeURIComponent(p)}`}
+              className="shrink-0 rounded-full border border-gray-300 bg-white px-3.5 py-2 text-[13px] text-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+            >
+              {p}
+            </Link>
+          ))}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitHomeInput();
+          }}
+          className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.1)]"
+        >
+          <input
+            value={homeInput}
+            onChange={(e) => setHomeInput(e.target.value)}
+            placeholder="你想要做什麼..."
+            className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+          />
+          <button
+            type="submit"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
+          >
+            ↑
+          </button>
+        </form>
       </div>
       </div>
     </div>
