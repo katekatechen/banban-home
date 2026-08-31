@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import HistoryDrawer from "../_components/HistoryDrawer";
-import LottiePlayer from "../_components/LottiePlayer";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
 
 const SERVICES = [
@@ -162,13 +161,16 @@ export default function BanbunHomePage() {
             <span className="text-[13px] font-bold text-brand">&rsaquo;</span>
           </Link>
 
-          {/* hero — 扁平淺灰底，加高卡片、伴伴插圖超出的部分裁掉不外露 */}
-          <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-gray-100 px-5 pb-10 pt-5 text-gray-800">
-            <Link href="/v5/banbun/chat" className="block pr-20">
-              <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
-              <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
-                {headline}
-              </p>
+          {/* hero — 沿用 v3 排版：大頭貼跟標題置中，不用色塊卡片包住 */}
+          <div className="flex flex-col items-center gap-3 pt-2 text-center">
+            <Link href="/v5/banbun/chat" className="flex flex-col items-center gap-3">
+              <img src="/illustrations/otter-face.svg" alt="伴伴" className="h-[72px]" />
+              <div>
+                <p className="text-[14px] text-gray-500">嗨，我是伴伴</p>
+                <p className="mt-1 whitespace-pre-line text-[28px] font-black leading-[1.2] text-gray-800">
+                  {headline}
+                </p>
+              </div>
             </Link>
 
             <form
@@ -176,7 +178,7 @@ export default function BanbunHomePage() {
                 e.preventDefault();
                 submitHomeInput();
               }}
-              className="relative z-10 mt-5 flex items-center gap-2 rounded-full bg-white px-2 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+              className="mt-2 flex w-full items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
             >
               <input
                 value={homeInput}
@@ -192,8 +194,8 @@ export default function BanbunHomePage() {
               </button>
             </form>
 
-            {/* 快速提問 chips，移到輸入框下方、直排，最多 4 個、每次隨機、寬度依內容 hug */}
-            <div className="relative z-10 mt-3 flex flex-col items-start gap-2">
+            {/* 快速提問 chips，最多 4 個、每次隨機，置中排列 */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {chips.map((p) => (
                 <Link
                   key={p}
@@ -204,11 +206,6 @@ export default function BanbunHomePage() {
                 </Link>
               ))}
             </div>
-
-            <LottiePlayer
-              src="/lottie/otter-typing.json"
-              className="pointer-events-none absolute -bottom-8 right-1 z-0 size-[168px]"
-            />
           </div>
         </div>
 

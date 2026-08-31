@@ -7,7 +7,7 @@ export type Order = {
   qty: number;
   emoji: string;
   gradient: string;
-  source: "伴伴對話" | "精選單品" | "我的收藏";
+  source: "伴伴對話" | "精選酒品" | "我的收藏";
   status: OrderStatus;
   createdAt: number;
 };
@@ -74,7 +74,7 @@ function seedIfEmpty() {
         qty: 1,
         emoji: "🥃",
         gradient: "from-[#EAE7DD] to-[#EAE7DD]",
-        source: "精選單品",
+        source: "精選酒品",
         status: "已完成",
         createdAt: daysAgo(6),
       },
