@@ -47,7 +47,7 @@ export default function WineSelectPage() {
       {/* 原版首頁的推廣 banner，引導去智能選酒 */}
       <Link
         href="/v5/ai-select"
-        className="relative mx-4 mb-3 block h-[140px] shrink-0 overflow-hidden rounded-2xl"
+        className="relative mx-4 mb-3 block aspect-[343/180] shrink-0 overflow-hidden rounded-2xl"
       >
         <img
           src="/banners/ai-select-promo.png"
