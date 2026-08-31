@@ -191,7 +191,10 @@ export default function BanbunHomePage() {
 
         {/* 對話框：跟著一般文件流排在最下面，往下拉滿 AppShell 保留給 tab bar 的空間，
             讓對話框跟 tab bar 之間精準維持 8px 間距（而不是用 fixed 定位去猜偏移量） */}
-        <div className="mb-[-28px] flex shrink-0 flex-col gap-2 px-4 pb-2">
+        <div
+          className="flex shrink-0 flex-col gap-2 px-4 pb-2"
+          style={{ marginBottom: "calc(env(safe-area-inset-bottom) - 28px)" }}
+        >
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             {chips.map((p) => (
               <Link
