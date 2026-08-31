@@ -7,33 +7,6 @@ import StatusBar from "../_components/StatusBar";
 import HistoryDrawer from "../_components/HistoryDrawer";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
 
-const SERVICES = [
-  {
-    key: "wine",
-    label: "買酒",
-    desc: "送禮、投資、自己喝",
-    emoji: "🍷",
-    href: "/v5/banbun/chat?prompt=幫我找一支適合送禮的酒",
-    disabled: false,
-  },
-  {
-    key: "daily",
-    label: "買日用品",
-    desc: "生活雜貨，下單送到家",
-    emoji: "🧴",
-    href: "/v5/banbun/chat?prompt=我想買日用品",
-    disabled: false,
-  },
-  {
-    key: "bill",
-    label: "代繳帳單",
-    desc: "房租／房貸／信用卡，即將推出",
-    emoji: "💳",
-    href: "#",
-    disabled: true,
-  },
-] as const;
-
 const PROMPT_CHIPS = [
   "🥃 第一次喝威士忌，入門推薦",
   "🤔 普發一萬花在哪裡最划算？",
@@ -173,44 +146,6 @@ export default function BanbunHomePage() {
             </p>
           </div>
         </Link>
-
-        {/* 三大服務發現 — 放到標題下方，直的三欄，圖示在上、文字在下 */}
-        <div className="flex flex-col gap-3">
-          <p className="text-[16px] font-semibold text-gray-800">
-            伴伴可以幫你
-          </p>
-          <div className="grid grid-cols-3 gap-2.5">
-            {SERVICES.map((s) =>
-              s.disabled ? (
-                <div
-                  key={s.key}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
-                >
-                  <span className="text-[28px] opacity-50 grayscale">
-                    {s.emoji}
-                  </span>
-                  <p className="text-[13px] font-semibold text-gray-400">
-                    {s.label}
-                  </p>
-                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-                    敬請期待
-                  </span>
-                </div>
-              ) : (
-                <Link
-                  key={s.key}
-                  href={s.href}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-000 px-2 py-4 text-center transition-transform active:scale-[0.97]"
-                >
-                  <span className="text-[28px]">{s.emoji}</span>
-                  <p className="text-[13px] font-semibold text-gray-800">
-                    {s.label}
-                  </p>
-                </Link>
-              ),
-            )}
-          </div>
-        </div>
       </div>
 
       {/* 對話框固定在 tab bar 正上方（用 layout.tsx 的 contain:layout 讓 fixed 定位在手機外框內） */}

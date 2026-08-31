@@ -44,42 +44,38 @@ export default function WineSelectPage() {
         </div>
       </div>
 
-      {/* 原版首頁的推廣 banner，引導去智能藏酒 */}
+      {/* 原版首頁的推廣 banner，引導去智能選酒 */}
       <Link
         href="/v5/ai-select"
-        className="relative mx-4 mb-3 flex h-[140px] shrink-0 flex-col justify-center overflow-hidden rounded-2xl px-5 text-white"
-        style={{
-          backgroundImage: "linear-gradient(160deg, #0b2250 10%, #001133 90%)",
-        }}
+        className="relative mx-4 mb-3 block h-[140px] shrink-0 overflow-hidden rounded-2xl"
       >
-        <span className="pointer-events-none absolute -right-4 -top-4 text-[100px] opacity-20">
-          🍾
-        </span>
-        <p className="text-[16px] font-semibold">加入智能藏酒，回饋天天領</p>
-        <p className="mt-1 text-[14px] text-white/70">
-          不需懂酒品選擇，歷史回饋率達 9.1%
-        </p>
+        <img
+          src="/banners/ai-select-promo.png"
+          alt="加入智能選酒，回饋天天領"
+          className="size-full object-cover"
+        />
       </Link>
 
+      {/* 我的酒窖：持有現值，凸顯成主要資訊卡 */}
       <Link
         href="/v5/collection"
-        className="mx-4 mb-3 flex items-center gap-3 rounded-2xl bg-gray-000 px-4 py-3"
+        className="mx-4 mb-3 flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-4 shadow-[0_2px_10px_rgba(0,0,0,0.05)]"
       >
         <div className="flex -space-x-2">
           {HOLDINGS.slice(0, 3).map((h) => (
             <div
               key={h.id}
-              className={`flex size-9 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br text-[16px] ${h.gradient}`}
+              className={`flex size-11 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br text-[20px] ${h.gradient}`}
             >
               {h.emoji}
             </div>
           ))}
         </div>
         <div className="flex-1">
-          <p className="text-[13px] text-gray-500">我的酒窖</p>
-          <p className="text-[15px] font-semibold text-gray-800">
+          <p className="text-[13px] font-medium text-gray-500">🛢️ 我的酒窖</p>
+          <p className="mt-0.5 text-[22px] font-bold text-gray-900">
             ${TOTAL_PORTFOLIO_VALUE.toLocaleString()}{" "}
-            <span className="text-[13px] font-medium text-emerald-600">
+            <span className="text-[14px] font-semibold text-emerald-600">
               (+{TOTAL_PORTFOLIO_CHANGE_PCT}%)
             </span>
           </p>

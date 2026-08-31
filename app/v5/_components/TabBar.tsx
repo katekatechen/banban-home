@@ -6,8 +6,8 @@ import Icon from "./Icon";
 
 const TABS = [
   { href: "/v5/banbun", label: "伴伴", icon: "/icons/tab-banbun.svg" },
+  { href: "/v5/ai-select", label: "智能選酒", icon: "/icons/tab-ai-select.svg" },
   { href: "/v5/wine-select", label: "線上藏酒", icon: "/icons/tab-wine-select.svg" },
-  { href: "/v5/ai-select", label: "智能藏酒", icon: "/icons/tab-ai-select.svg" },
   { href: "/v5/experience", label: "體驗", icon: "/icons/tab-experience.svg" },
   { href: "/v5/account", label: "帳號", icon: "/icons/tab-account.svg" },
 ] as const;
