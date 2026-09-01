@@ -8,16 +8,12 @@ type HistoryDrawerProps = {
   onNewChat: () => void;
   onOpenConversation: (id: string) => void;
   onBanbun: () => void;
-  onWineSelect: () => void;
-  onAiSelect: () => void;
   onOrders: () => void;
   onAccount: () => void;
 };
 
 const NAV_ITEMS = [
   { key: "banbun", label: "伴伴", icon: "/icons/tab-banbun.svg" },
-  { key: "ai", label: "智能選酒", icon: "/icons/tab-ai-select.svg" },
-  { key: "wine", label: "線上藏酒", icon: "/icons/tab-wine-select.svg" },
   { key: "orders", label: "訂單紀錄", icon: "/icons/tab-experience.svg" },
 ] as const;
 
@@ -28,15 +24,11 @@ export default function HistoryDrawer({
   onNewChat,
   onOpenConversation,
   onBanbun,
-  onWineSelect,
-  onAiSelect,
   onOrders,
   onAccount,
 }: HistoryDrawerProps) {
   const NAV_HANDLERS: Record<(typeof NAV_ITEMS)[number]["key"], () => void> = {
     banbun: onBanbun,
-    ai: onAiSelect,
-    wine: onWineSelect,
     orders: onOrders,
   };
   return (

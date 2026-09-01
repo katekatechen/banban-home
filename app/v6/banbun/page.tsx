@@ -6,46 +6,19 @@ import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import HistoryDrawer from "../_components/HistoryDrawer";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
-import {
-  PRODUCTS,
-  HOLDINGS,
-  TOTAL_PORTFOLIO_VALUE,
-  TOTAL_PORTFOLIO_CHANGE_PCT,
-} from "../_lib/mock-data";
 
-const SERVICES = [
-  {
-    key: "wine",
-    label: "買酒",
-    desc: "送禮、投資、自己喝",
-    emoji: "🍷",
-    href: "/v6/banbun/chat?prompt=幫我找一支適合送禮的酒",
-    disabled: false,
-  },
-  {
-    key: "daily",
-    label: "買日用品",
-    desc: "生活雜貨，下單送到家",
-    emoji: "🧴",
-    href: "/v6/banbun/chat?prompt=我想買日用品",
-    disabled: false,
-  },
-  {
-    key: "bill",
-    label: "代繳帳單",
-    desc: "房租／房貸／信用卡，即將推出",
-    emoji: "💳",
-    href: "#",
-    disabled: true,
-  },
-] as const;
-
-// v6 沒有 tab bar，原本體驗頁跟兩個酒的分頁都變成首頁上的預覽卡片，
-// 「看更多」才進到各自完整的頁面
-const MORE_SERVICES = [
-  { key: "tesla", label: "買特斯拉", tag: "消費", emoji: "🚗" },
-  { key: "btc", label: "買比特幣", tag: "投資", emoji: "₿" },
-  { key: "solar", label: "太陽能板發電", tag: "投資", emoji: "☀️" },
+// 首頁的三格服務入口，每次隨機抽 3 個，讓用戶感受到伴伴能碰的服務很廣，
+// 故意混雜投資（智能選酒/匯率預測）、消費（買特斯拉）、購物（線上藏酒）、
+// 遊戲化（回饋許願池），不特別歸類
+const SERVICE_POOL = [
+  { key: "ai-select", label: "智能選酒", emoji: "🥃", href: "/v6/ai-select", disabled: false },
+  { key: "wine-select", label: "線上藏酒", emoji: "🍷", href: "/v6/wine-select", disabled: false },
+  { key: "reward-marketplace", label: "回饋許願池", emoji: "🎁", href: "/v6/reward-marketplace", disabled: false },
+  { key: "rate-forecast", label: "匯率預測", emoji: "💱", href: "/v6/rate-forecast", disabled: false },
+  { key: "bill", label: "代繳帳單", emoji: "💳", href: "#", disabled: true },
+  { key: "tesla", label: "買特斯拉", emoji: "🚗", href: "#", disabled: true },
+  { key: "btc", label: "買比特幣", emoji: "₿", href: "#", disabled: true },
+  { key: "solar", label: "太陽能板發電", emoji: "☀️", href: "#", disabled: true },
 ] as const;
 
 const PROMPT_CHIPS = [
@@ -75,9 +48,12 @@ export default function BanbunHomePage() {
   const [headline, setHeadline] = useState(HEADLINES[0]);
   // chips 固定先顯示前 4 個（跟 SSR 結果一致），掛載後才從全部裡隨機抽 4 個
   const [chips, setChips] = useState(PROMPT_CHIPS.slice(0, 4));
+  // 服務入口同理：固定先顯示前 3 個，掛載後才從全部裡隨機抽 3 個
+  const [services, setServices] = useState(SERVICE_POOL.slice(0, 3));
   useEffect(() => {
     setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
     setChips([...PROMPT_CHIPS].sort(() => Math.random() - 0.5).slice(0, 4));
+    setServices([...SERVICE_POOL].sort(() => Math.random() - 0.5).slice(0, 3));
   }, []);
 
   const submitHomeInput = () => {
@@ -90,7 +66,6 @@ export default function BanbunHomePage() {
   // 純粹打開看一眼、按 X 關掉的話會留在首頁，不會憑空多一個空對話。
   const conversations = drawerOpen ? loadConversations() : [];
   const activeId = drawerOpen ? (loadActiveId() ?? undefined) : undefined;
-  const aiSelectPreview = HOLDINGS[1] ?? HOLDINGS[0];
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-white">
@@ -104,8 +79,6 @@ export default function BanbunHomePage() {
             router.push(`/v6/banbun/chat?open=${id}`)
           }
           onBanbun={() => setDrawerOpen(false)}
-          onWineSelect={() => router.push("/v6/wine-select")}
-          onAiSelect={() => router.push("/v6/ai-select")}
           onOrders={() => router.push("/v6/orders")}
           onAccount={() => router.push("/v6/account")}
         />
@@ -158,7 +131,7 @@ export default function BanbunHomePage() {
           </div>
         </div>
 
-        {/* 首頁是唯一的常駐入口，其他功能都收成這裡的預覽卡片，
+        {/* 首頁是唯一的常駐入口，服務三宮格隨機抽樣展現廣度，
             對話框 sticky 在捲動內容最下面，隨時可見、隨時可以直接問 */}
         <div className="no-scrollbar flex-1 overflow-y-auto">
           <div className="flex flex-col gap-8 px-4 pb-4 pt-2">
@@ -176,9 +149,9 @@ export default function BanbunHomePage() {
               </div>
             </Link>
 
-            {/* 三大服務發現 */}
+            {/* 三大服務發現：從 SERVICE_POOL 隨機抽 3 個 */}
             <div className="grid grid-cols-3 gap-2.5">
-              {SERVICES.map((s) =>
+              {services.map((s) =>
                 s.disabled ? (
                   <div
                     key={s.key}
@@ -208,115 +181,9 @@ export default function BanbunHomePage() {
                 ),
               )}
             </div>
-
-            {/* 線上藏酒 預覽 */}
-            <Section title="線上藏酒" moreHref="/v6/wine-select">
-              <div className="no-scrollbar flex gap-3 overflow-x-auto">
-                {PRODUCTS.slice(0, 3).map((p) => (
-                  <Link
-                    key={p.id}
-                    href="/v6/wine-select"
-                    className="flex w-[104px] shrink-0 flex-col gap-1.5"
-                  >
-                    <div
-                      className={`flex aspect-square items-center justify-center rounded-2xl bg-gradient-to-br text-[36px] ${p.gradient}`}
-                    >
-                      {p.emoji}
-                    </div>
-                    <p className="line-clamp-2 text-[12px] text-gray-700">
-                      {p.name}
-                    </p>
-                    <p className="text-[13px] font-medium text-gray-800">
-                      ${p.price}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </Section>
-
-            {/* 智能選酒 預覽：放錢進去、持有賺回饋 */}
-            <Section title="智能選酒" moreHref="/v6/ai-select">
-              <Link
-                href="/v6/ai-select"
-                className="flex items-center gap-3 rounded-2xl bg-gray-900 px-4 py-4 text-white"
-              >
-                <span className="text-[28px]">🥃</span>
-                <div className="flex-1">
-                  <p className="text-[12px] text-gray-400">今天收到回饋</p>
-                  <p className="text-[20px] font-bold text-brand">+0.22</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[12px] text-gray-400">持有現值</p>
-                  <p className="text-[15px] font-semibold">
-                    ${TOTAL_PORTFOLIO_VALUE.toLocaleString()}{" "}
-                    <span className="text-[12px] font-medium text-emerald-400">
-                      (+{TOTAL_PORTFOLIO_CHANGE_PCT}%)
-                    </span>
-                  </p>
-                </div>
-              </Link>
-            </Section>
-
-            {/* 回饋許願池 預覽 */}
-            <Section title="回饋許願池" moreHref="/v6/reward-marketplace">
-              <Link
-                href="/v6/reward-marketplace"
-                className="relative flex h-[110px] flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 p-4 text-white"
-              >
-                <span className="pointer-events-none absolute right-3 top-3 text-[32px] opacity-40">
-                  🥽
-                </span>
-                <p className="text-[14px] font-bold">Apple Vision Pro</p>
-                <p className="text-[12px] text-white/80">
-                  現實與虛擬完美融合的新體驗
-                </p>
-              </Link>
-            </Section>
-
-            {/* 匯率預測 預覽 */}
-            <Section title="匯率預測" moreHref="/v6/rate-forecast">
-              <Link
-                href="/v6/rate-forecast"
-                className="flex items-center justify-between rounded-2xl bg-gray-000 px-4 py-3.5"
-              >
-                <div>
-                  <p className="text-[12px] text-gray-500">本期累積獎金</p>
-                  <p className="text-[20px] font-bold text-gray-800">
-                    10,000
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[12px] text-gray-500">我的號碼</p>
-                  <p className="text-[13px] text-gray-400">尚未預測</p>
-                </div>
-              </Link>
-            </Section>
-
-            {/* 伴伴還能幫你：故意放性質不同的東西並排（消費/投資），
-                重點是讓用戶感受到廣度，不是把它們歸成同一類 */}
-            <Section title="伴伴還能幫你">
-              <div className="grid grid-cols-3 gap-2.5">
-                {MORE_SERVICES.map((s) => (
-                  <div
-                    key={s.key}
-                    className="flex flex-col items-center gap-1.5 rounded-2xl border border-dashed border-gray-300 px-2 py-4 text-center"
-                  >
-                    <span className="text-[28px] opacity-50 grayscale">
-                      {s.emoji}
-                    </span>
-                    <p className="text-[13px] font-semibold text-gray-400">
-                      {s.label}
-                    </p>
-                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-                      {s.tag}．敬請期待
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Section>
           </div>
 
-          {/* 對話框：sticky 在捲動內容最下面，往下滑其他預覽時也一直看得到 */}
+          {/* 對話框：sticky 在捲動內容最下面 */}
           <div className="sticky bottom-0 flex flex-col gap-2 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2 backdrop-blur">
             <div className="no-scrollbar flex gap-2 overflow-x-auto">
               {chips.map((p) => (
@@ -353,30 +220,6 @@ export default function BanbunHomePage() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  moreHref,
-  children,
-}: {
-  title: string;
-  moreHref?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <p className="text-[16px] font-semibold text-gray-800">{title}</p>
-        {moreHref && (
-          <Link href={moreHref} className="text-[13px] text-gray-400">
-            看更多 ›
-          </Link>
-        )}
-      </div>
-      {children}
     </div>
   );
 }
