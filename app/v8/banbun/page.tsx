@@ -8,7 +8,6 @@ import Icon from "../_components/Icon";
 import SidebarPanel from "./SidebarPanel";
 import { TODAY_REWARD_AMOUNT } from "../_lib/mock-data";
 import { getOrders, type Order } from "../_lib/orders";
-import { SERVICE_POOL } from "../_lib/services";
 
 type Panel = "sidebar" | "home";
 const PANEL_INDEX: Record<Panel, number> = { sidebar: 0, home: 1 };
@@ -24,7 +23,6 @@ const CARD_ICON_WRAP = "flex size-9 items-center justify-center rounded-full";
 export default function BanbunHomePage() {
   const router = useRouter();
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const servicesRef = useRef<HTMLDivElement>(null);
   const [homeInput, setHomeInput] = useState("");
   // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
   // 掛載後才隨機換一句
@@ -80,7 +78,7 @@ export default function BanbunHomePage() {
       : []),
     {
       key: "reward-source",
-      href: "/v8/ai-select",
+      href: "/v8/rewards",
       bg: "bg-brand",
       text: "text-white",
       subtext: "text-white/85",
@@ -157,6 +155,7 @@ export default function BanbunHomePage() {
           onBackToHome={() => scrollToPanel("home")}
           onAccount={() => router.push("/v8/account")}
           onOrders={() => router.push("/v8/orders")}
+          onRewards={() => router.push("/v8/rewards")}
         />
       </div>
 
@@ -205,111 +204,35 @@ export default function BanbunHomePage() {
           </div>
 
           {/* 對話框固定在畫面最下面，隨時可見、隨時可以直接問；
-              個人化建議、賺回饋是兩個乾脆切換的整頁，不是同一頁裡硬撐出來的假捲動——
-              往下滑會俐落地切到賺回饋，不是連續捲動穿過一大塊空白 */}
-          <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto">
-            {/* 第一頁：個人化建議，永遠佔滿一整屏 */}
-            <div className="flex h-full shrink-0 snap-start flex-col gap-6 pb-4 pt-4">
-              <div className="flex flex-1 flex-col justify-center gap-6">
-              {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
-              <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
-                {headline}
-              </p>
+              賺回饋收進側邊欄，不再佔用首頁版面，首頁只剩個人化建議 */}
+          <div className="no-scrollbar flex flex-1 touch-pan-y flex-col justify-center gap-6 overflow-y-auto pb-4 pt-4">
+            {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
+            <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
+              {headline}
+            </p>
 
-              {/* 我可以替你準備：橫向捲動的建議卡片，用 icon 取代 emoji，比例比原本更大 */}
-              <div className="no-scrollbar flex gap-3 overflow-x-auto px-4">
-                {suggestionCards.map((c) => (
-                  <Link
-                    key={c.key}
-                    href={c.href}
-                    className={`flex w-[190px] shrink-0 flex-col gap-4 rounded-2xl ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
-                  >
-                    <div className={`${CARD_ICON_WRAP} ${c.iconBg}`}>
-                      {c.icon}
-                    </div>
-                    <div>
-                      <p className="text-[16px] font-bold leading-snug">
-                        {c.title}
-                      </p>
-                      <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
-                        {c.description}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-              </div>
-
-              {/* 往下滑提示：釘在第一屏底部，只留箭頭、加彈跳動效，
-                  不用文字說明，靠動效直覺提示還可以往下滑 */}
-              <button
-                onClick={() =>
-                  servicesRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  })
-                }
-                title="往下滑看賺回饋的方法"
-                className="flex animate-bounce items-center justify-center text-gray-400"
-              >
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            {/* 我可以替你準備：橫向捲動的建議卡片，用 icon 取代 emoji，比例比原本更大 */}
+            <div className="no-scrollbar flex gap-3 overflow-x-auto px-4">
+              {suggestionCards.map((c) => (
+                <Link
+                  key={c.key}
+                  href={c.href}
+                  className={`flex w-[190px] shrink-0 flex-col gap-4 rounded-2xl ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
                 >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
+                  <div className={`${CARD_ICON_WRAP} ${c.iconBg}`}>
+                    {c.icon}
+                  </div>
+                  <div>
+                    <p className="text-[16px] font-bold leading-snug">
+                      {c.title}
+                    </p>
+                    <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
+                      {c.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
             </div>
-
-            {/* 第二頁：賺回饋，乾脆切過來的獨立整頁，跟上面的個人化建議刻意做出區隔 */}
-            <div
-              ref={servicesRef}
-              className="flex min-h-full shrink-0 snap-start flex-col gap-2.5 px-4 pt-6"
-            >
-                <p className="px-1 text-[13px] font-medium text-gray-400">
-                  賺回饋
-                </p>
-                {SERVICE_POOL.map((s) =>
-                  s.disabled ? (
-                    <div
-                      key={s.key}
-                      className="flex items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-3.5"
-                    >
-                      <span className="text-[24px] opacity-50 grayscale">
-                        {s.emoji}
-                      </span>
-                      <p className="flex-1 text-[15px] font-semibold text-gray-400">
-                        {s.label}
-                      </p>
-                      <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-500">
-                        敬請期待
-                      </span>
-                    </div>
-                  ) : (
-                    <Link
-                      key={s.key}
-                      href={s.href}
-                      className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-000 px-4 py-3.5 transition-transform active:scale-[0.98]"
-                    >
-                      <span className="text-[24px]">{s.emoji}</span>
-                      <p className="flex-1 text-[15px] font-semibold text-gray-800">
-                        {s.label}
-                      </p>
-                      <img
-                        src="/icons/acc-nav-arrow-right.svg"
-                        alt=""
-                        className="size-5"
-                      />
-                    </Link>
-                  ),
-                )}
-              </div>
           </div>
 
           {/* 對話框：固定在畫面最下面，不隨內容捲動 */}

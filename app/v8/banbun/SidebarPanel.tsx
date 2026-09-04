@@ -1,17 +1,21 @@
 import StatusBar from "../_components/StatusBar";
+import Icon from "../_components/Icon";
 
 type SidebarPanelProps = {
   onAccount: () => void;
   onOrders: () => void;
+  onRewards: () => void;
   onBackToHome: () => void;
 };
 
 // 側邊欄現在是水平輪播的最左格，不再是覆蓋整頁的抽屜——
-// v8 沒有對話紀錄、也沒有「開新對話」（永遠接續同一段對話），
-// 只放訂單紀錄跟帳號設定。
+// v8 沒有對話紀錄、也沒有「開新對話」（永遠接續同一段對話）。
+// 呼應會議討論：回饋是跟「設定」同一層級的導覽項目，收在這裡，
+// 不佔用首頁版面，也不需要額外的滑動手勢才找得到。
 export default function SidebarPanel({
   onAccount,
   onOrders,
+  onRewards,
   onBackToHome,
 }: SidebarPanelProps) {
   return (
@@ -40,6 +44,14 @@ export default function SidebarPanel({
       </div>
 
       <div className="flex flex-col px-4">
+        <button
+          onClick={onRewards}
+          className="flex items-center gap-3 py-3 text-left"
+        >
+          <Icon src="/icons/nav-reward.svg" className="size-[22px] shrink-0 text-gray-800" />
+          <p className="text-[16px] font-medium text-gray-800">賺回饋</p>
+        </button>
+
         <button
           onClick={onOrders}
           className="flex items-center gap-3 py-3 text-left"
