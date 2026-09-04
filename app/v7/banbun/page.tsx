@@ -227,7 +227,8 @@ export default function BanbunHomePage() {
               </div>
               </div>
 
-              {/* 往下滑提示：釘在第一屏底部，點下去或滑下去都會切到第二頁 */}
+              {/* 往下滑提示：釘在第一屏底部，只留箭頭、加彈跳動效，
+                  不用文字說明，靠動效直覺提示還可以往下滑 */}
               <button
                 onClick={() =>
                   servicesRef.current?.scrollIntoView({
@@ -235,16 +236,16 @@ export default function BanbunHomePage() {
                     block: "start",
                   })
                 }
-                className="flex flex-col items-center gap-1 text-gray-300"
+                title="往下滑看全部功能"
+                className="flex animate-bounce items-center justify-center text-gray-400"
               >
-                <p className="text-[12px]">往下滑看全部功能</p>
                 <svg
-                  width="16"
-                  height="16"
+                  width="28"
+                  height="28"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
