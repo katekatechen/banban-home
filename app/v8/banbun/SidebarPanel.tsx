@@ -23,7 +23,7 @@ export default function SidebarPanel({
           <img
             src="/icons/logo-aifian-mark.svg"
             alt="AIFIAN"
-            className="h-11"
+            className="h-[51px]"
           />
         </button>
         <button
