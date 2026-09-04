@@ -19,7 +19,13 @@ export default function SidebarPanel({
     <div className="relative flex h-full flex-col bg-white">
       <StatusBar />
       <div className="flex items-center justify-between px-4 pb-3 pt-1">
-        <img src="/icons/logo-aifian-mark.svg" alt="AIFIAN" className="h-11" />
+        <button onClick={onBackToHome} title="回到伴伴">
+          <img
+            src="/icons/logo-aifian-mark.svg"
+            alt="AIFIAN"
+            className="h-11"
+          />
+        </button>
         <button
           onClick={onBackToHome}
           title="回到伴伴"

@@ -11,6 +11,16 @@ import { getOrders, type Order } from "../_lib/orders";
 
 type Panel = "sidebar" | "home";
 const PANEL_INDEX: Record<Panel, number> = { sidebar: 0, home: 1 };
+const STORAGE_LAST_PANEL = "banbun-v8-last-panel";
+
+function loadLastPanel(): Panel {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_LAST_PANEL);
+    return saved === "sidebar" ? "sidebar" : "home";
+  } catch {
+    return "home";
+  }
+}
 
 // 標題每次進首頁隨機換一句，其中一句直接呼應「賺回饋」這個主軸
 const HEADLINES = [
@@ -33,11 +43,12 @@ export default function BanbunHomePage() {
   useEffect(() => {
     setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
     setActiveOrder(getOrders().find((o) => o.status === "進行中") ?? null);
-    // 一開始就定位在中間（伴伴）那一格，不要讓用戶先看到側邊欄再滑過去——
+    // 一開始定位在「上次離開時的那一格」——如果是從側邊欄的功能項目點進去，
+    // 按返回應該回到側邊欄，而不是每次都被拉回伴伴首頁。
     // 直接寫 scrollLeft，不能用 scrollTo({behavior:"instant"})：
     // 部分瀏覽器對 instant 的支援不穩定，會讓這次定位變成看得到的滑動動畫
     const el = scrollerRef.current;
-    if (el) el.scrollLeft = el.clientWidth * PANEL_INDEX.home;
+    if (el) el.scrollLeft = el.clientWidth * PANEL_INDEX[loadLastPanel()];
   }, []);
 
   const scrollToPanel = (panel: Panel) => {
@@ -145,6 +156,18 @@ export default function BanbunHomePage() {
   return (
     <div
       ref={scrollerRef}
+      onScroll={(e) => {
+        const el = e.currentTarget;
+        const panel: Panel =
+          Math.round(el.scrollLeft / el.clientWidth) === PANEL_INDEX.sidebar
+            ? "sidebar"
+            : "home";
+        try {
+          sessionStorage.setItem(STORAGE_LAST_PANEL, panel);
+        } catch {
+          // ignore
+        }
+      }}
       // touch-pan-x：只認橫向手勢，垂直手勢交給裡面的內容自己滾動——
       // 沒有這個，橫向 snap carousel 會把垂直捲動手勢也搶走
       className="no-scrollbar flex h-full w-full touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
