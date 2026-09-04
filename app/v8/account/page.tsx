@@ -64,7 +64,11 @@ const SETTINGS_2: Row[] = [
 
 export default function AccountPage() {
   return (
-    <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white">
+    <div
+      className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white"
+      data-page-root
+      style={{ animation: "pageIn 0.28s cubic-bezier(.2,.9,.25,1)" }}
+    >
       <StatusBar />
       <div className="flex flex-col gap-1 px-4 pb-4 pt-2">
         <div className="flex items-center gap-2">
