@@ -78,7 +78,7 @@ export default function BanbunHomePage() {
       : []),
     {
       key: "reward-source",
-      href: "/v8/rewards",
+      href: "/v8/ai-select",
       bg: "bg-brand",
       text: "text-white",
       subtext: "text-white/85",
@@ -149,13 +149,11 @@ export default function BanbunHomePage() {
       // 沒有這個，橫向 snap carousel 會把垂直捲動手勢也搶走
       className="no-scrollbar flex h-full w-full touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
     >
-      {/* 左格：側邊欄，訂單紀錄 + 帳號設定（v8 沒有對話紀錄） */}
+      {/* 左格：側邊欄，功能清單 + 帳號設定（v8 沒有對話紀錄，訂單紀錄收進帳號頁） */}
       <div className="h-full w-full shrink-0 snap-center">
         <SidebarPanel
           onBackToHome={() => scrollToPanel("home")}
           onAccount={() => router.push("/v8/account")}
-          onOrders={() => router.push("/v8/orders")}
-          onRewards={() => router.push("/v8/rewards")}
         />
       </div>
 

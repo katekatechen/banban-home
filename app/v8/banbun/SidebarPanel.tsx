@@ -1,21 +1,18 @@
+import Link from "next/link";
 import StatusBar from "../_components/StatusBar";
-import Icon from "../_components/Icon";
+import { SERVICE_POOL } from "../_lib/services";
 
 type SidebarPanelProps = {
   onAccount: () => void;
-  onOrders: () => void;
-  onRewards: () => void;
   onBackToHome: () => void;
 };
 
 // 側邊欄現在是水平輪播的最左格，不再是覆蓋整頁的抽屜——
 // v8 沒有對話紀錄、也沒有「開新對話」（永遠接續同一段對話）。
-// 呼應會議討論：回饋是跟「設定」同一層級的導覽項目，收在這裡，
-// 不佔用首頁版面，也不需要額外的滑動手勢才找得到。
+// 智能選酒/線上藏酒等功能直接列在這裡，不用多繞一層「賺回饋」頁；
+// 訂單紀錄收進帳號頁裡（帳號頁本來就有「歷史交易紀錄」入口），這裡不重複放。
 export default function SidebarPanel({
   onAccount,
-  onOrders,
-  onRewards,
   onBackToHome,
 }: SidebarPanelProps) {
   return (
@@ -43,39 +40,35 @@ export default function SidebarPanel({
         </button>
       </div>
 
-      <div className="flex flex-col px-4">
-        <button
-          onClick={onRewards}
-          className="flex items-center gap-3 py-3 text-left"
-        >
-          <Icon src="/icons/nav-reward.svg" className="size-[22px] shrink-0 text-gray-800" />
-          <p className="text-[16px] font-medium text-gray-800">賺回饋</p>
-        </button>
-
-        <button
-          onClick={onOrders}
-          className="flex items-center gap-3 py-3 text-left"
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="shrink-0 text-gray-800"
-          >
-            <path d="m21 8.5-9-4.5-9 4.5v8l9 4.5 9-4.5Z" />
-            <path d="m3 8.5 9 4.5 9-4.5" />
-            <path d="M12 13v8" />
-          </svg>
-          <p className="text-[16px] font-medium text-gray-800">訂單紀錄</p>
-        </button>
+      <div className="no-scrollbar flex-1 overflow-y-auto px-4">
+        {SERVICE_POOL.map((s) =>
+          s.disabled ? (
+            <div
+              key={s.key}
+              className="flex items-center gap-3 py-3 text-left opacity-50"
+            >
+              <span className="text-[20px] grayscale">{s.emoji}</span>
+              <p className="flex-1 text-[16px] font-medium text-gray-500">
+                {s.label}
+              </p>
+              <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                敬請期待
+              </span>
+            </div>
+          ) : (
+            <Link
+              key={s.key}
+              href={s.href}
+              className="flex items-center gap-3 py-3 text-left"
+            >
+              <span className="text-[20px]">{s.emoji}</span>
+              <p className="text-[16px] font-medium text-gray-800">
+                {s.label}
+              </p>
+            </Link>
+          ),
+        )}
       </div>
-
-      <div className="flex-1" />
 
       <button
         onClick={onAccount}
