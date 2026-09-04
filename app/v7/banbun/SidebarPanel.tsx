@@ -137,7 +137,7 @@ export default function SidebarPanel({
         <div className="flex size-9 items-center justify-center rounded-full bg-gray-100 text-[17px]">
           🧑
         </div>
-        <p className="flex-1 text-[15px] font-medium text-gray-800">阿福</p>
+        <p className="flex-1 text-[15px] font-medium text-gray-800">Ben</p>
         <img src="/icons/acc-settings.svg" alt="" className="size-5" />
       </button>
     </div>

@@ -13,15 +13,6 @@ import {
 import { getOrders, type Order } from "../_lib/orders";
 import { SERVICE_POOL } from "../_lib/services";
 
-const PROMPT_CHIPS = [
-  "🥃 第一次喝威士忌，入門推薦",
-  "🤔 普發一萬花在哪裡最划算？",
-  "🎈 這個月有什麼回饋活動？",
-  "💰 我想了解報稅的事情",
-  "👍 乾拌麵推薦",
-  "🌀 防災乾糧",
-];
-
 type Panel = "sidebar" | "home";
 const PANEL_INDEX: Record<Panel, number> = { sidebar: 0, home: 1 };
 
@@ -30,13 +21,10 @@ export default function BanbunHomePage() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const [homeInput, setHomeInput] = useState("");
-  // chips 固定先顯示前 4 個（跟 SSR 結果一致），掛載後才從全部裡隨機抽 4 個
-  const [chips, setChips] = useState(PROMPT_CHIPS.slice(0, 4));
   // 進行中的訂單，用來在首頁顯示「你自己的」狀態，掛載後才讀 sessionStorage
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    setChips([...PROMPT_CHIPS].sort(() => Math.random() - 0.5).slice(0, 4));
     setActiveOrder(getOrders().find((o) => o.status === "進行中") ?? null);
     // 一開始就定位在中間（伴伴）那一格，不要讓用戶先看到側邊欄再滑過去——
     // 直接寫 scrollLeft，不能用 scrollTo({behavior:"instant"})：
@@ -141,15 +129,15 @@ export default function BanbunHomePage() {
           </div>
 
           {/* 對話框固定在畫面最下面，隨時可見、隨時可以直接問；
-              往下滑會看到全部功能——首頁不是空空等你發問，而是先幫你準備好 */}
-          <div className="no-scrollbar flex-1 touch-pan-y overflow-y-auto">
-            {/* 第一眼只看到問候+建議卡+往下滑提示，全部功能永遠在第一屏之外——
-                min-h-full 撐滿至少一整屏的高度，不管裝置螢幕多高，都要滑過去才看得到 */}
-            <div className="flex min-h-full flex-col justify-between gap-6 pb-4 pt-4">
+              個人化建議、全部功能是兩個乾脆切換的整頁，不是同一頁裡硬撐出來的假捲動——
+              往下滑會俐落地切到全部功能，不是連續捲動穿過一大塊空白 */}
+          <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto">
+            {/* 第一頁：個人化建議，永遠佔滿一整屏 */}
+            <div className="flex h-full shrink-0 snap-start flex-col justify-between gap-6 pb-4 pt-4">
               <div className="flex flex-col gap-6">
               {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
               <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
-                嗨 阿福，{"\n"}你今天可能會需要
+                嗨 Ben，{"\n"}你今天可能會需要
               </p>
 
               {/* 我可以替你準備：橫向捲動的建議卡片，取代原本上下堆疊的個人化狀態卡 */}
@@ -239,8 +227,16 @@ export default function BanbunHomePage() {
               </div>
               </div>
 
-              {/* 往下滑提示：釘在第一屏底部，告訴用戶下面還有全部功能可以看 */}
-              <div className="flex flex-col items-center gap-1 text-gray-300">
+              {/* 往下滑提示：釘在第一屏底部，點下去或滑下去都會切到第二頁 */}
+              <button
+                onClick={() =>
+                  servicesRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                className="flex flex-col items-center gap-1 text-gray-300"
+              >
                 <p className="text-[12px]">往下滑看全部功能</p>
                 <svg
                   width="16"
@@ -254,11 +250,14 @@ export default function BanbunHomePage() {
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
-              </div>
+              </button>
             </div>
 
-            {/* 全部功能：靜態、完整的功能清單，永遠在第一屏之外，跟上面的個人化建議刻意做出區隔 */}
-              <div ref={servicesRef} className="flex flex-col gap-2.5 px-4">
+            {/* 第二頁：全部功能，乾脆切過來的獨立整頁，跟上面的個人化建議刻意做出區隔 */}
+            <div
+              ref={servicesRef}
+              className="flex min-h-full shrink-0 snap-start flex-col gap-2.5 px-4 pt-6"
+            >
                 <p className="px-1 text-[13px] font-medium text-gray-400">
                   全部功能
                 </p>
@@ -301,36 +300,64 @@ export default function BanbunHomePage() {
 
           {/* 對話框：固定在畫面最下面，不隨內容捲動 */}
           <div className="flex shrink-0 flex-col gap-2 bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
-            <div className="no-scrollbar flex gap-2 overflow-x-auto">
-              {chips.map((p) => (
-                <Link
-                  key={p}
-                  href={`/v7/banbun/chat?prompt=${encodeURIComponent(p)}`}
-                  className="shrink-0 rounded-full border border-gray-300 bg-white px-3.5 py-2 text-[13px] text-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-                >
-                  {p}
-                </Link>
-              ))}
-            </div>
-
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 submitHomeInput();
               }}
-              className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1.5 shadow-[0_2px_10px_rgba(0,0,0,0.1)]"
+              className="flex items-center gap-2 rounded-full bg-white py-1.5 pl-3 pr-1.5 shadow-[0_2px_16px_rgba(0,0,0,0.08)]"
             >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                className="shrink-0 text-gray-800"
+              >
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
               <input
                 value={homeInput}
                 onChange={(e) => setHomeInput(e.target.value)}
                 placeholder="想做什麼，跟伴伴說"
-                className="flex-1 bg-transparent px-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+                className="flex-1 bg-transparent px-1 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
               />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0 text-gray-800"
+              >
+                <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+                <path d="M12 18v4" />
+              </svg>
               <button
                 type="submit"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gray-800 text-white"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
               >
-                ↑
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 19V5" />
+                  <path d="m5 12 7-7 7 7" />
+                </svg>
               </button>
             </form>
           </div>
