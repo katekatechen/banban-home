@@ -7,7 +7,10 @@ export default function AiSelectPage() {
   const preview = HOLDINGS[1] ?? HOLDINGS[0];
 
   return (
-    <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-gray-900 text-white">
+    <div
+      className="no-scrollbar flex h-full flex-col overflow-y-auto bg-gray-900 text-white"
+      style={{ animation: "pageIn 0.28s cubic-bezier(.2,.9,.25,1)" }}
+    >
       <StatusBar dark />
       <div className="flex items-center justify-between px-4 pb-2 pt-1">
         <div className="flex items-center gap-2">

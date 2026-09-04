@@ -133,8 +133,8 @@ export default function BanbunHomePage() {
               往下滑會俐落地切到全部功能，不是連續捲動穿過一大塊空白 */}
           <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto">
             {/* 第一頁：個人化建議，永遠佔滿一整屏 */}
-            <div className="flex h-full shrink-0 snap-start flex-col justify-between gap-6 pb-4 pt-4">
-              <div className="flex flex-col gap-6">
+            <div className="flex h-full shrink-0 snap-start flex-col gap-6 pb-4 pt-4">
+              <div className="flex flex-1 flex-col justify-center gap-6">
               {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
               <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
                 嗨 Ben，{"\n"}你今天可能會需要

@@ -48,6 +48,17 @@ body {
   }
 }
 
+/* 從「全部功能」點進去的頁面，用這個做出頁面往左推進來的效果，
+   呼應原生 App 的 push navigation 感 */
+@keyframes pageIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @keyframes sheetUp {
   from {
     transform: translateY(100%);

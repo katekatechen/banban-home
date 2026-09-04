@@ -33,7 +33,10 @@ export default function WineSelectPage() {
       : PRODUCTS.filter((p) => p.wineType === category);
 
   return (
-    <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white">
+    <div
+      className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white"
+      style={{ animation: "pageIn 0.28s cubic-bezier(.2,.9,.25,1)" }}
+    >
       <StatusBar />
       <div className="flex items-center justify-between px-4 pb-3 pt-1">
         <div className="flex items-center gap-2">
