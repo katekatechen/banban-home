@@ -5,6 +5,7 @@ export default function RateForecastPage() {
   return (
     <div
       className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white"
+      data-page-root
       style={{ animation: "pageIn 0.28s cubic-bezier(.2,.9,.25,1)" }}
     >
       <StatusBar />

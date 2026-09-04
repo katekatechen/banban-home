@@ -59,6 +59,16 @@ body {
   }
 }
 
+/* 按返回時，讓目前頁面往右滑出去再真的導航離開，跟 pageIn 對稱 */
+@keyframes pageOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes sheetUp {
   from {
     transform: translateY(100%);
