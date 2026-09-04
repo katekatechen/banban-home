@@ -48,6 +48,9 @@ export default function SidebarPanel({
       </div>
 
       <div className="no-scrollbar flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-2">
+        <p className="px-1 pb-0.5 text-[13px] font-medium text-gray-400">
+          回饋功能
+        </p>
         {SERVICE_POOL.map((s) =>
           s.disabled ? (
             <div
