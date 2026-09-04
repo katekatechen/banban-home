@@ -120,7 +120,7 @@ export default function BanbunHomePage() {
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <img src="/icons/nav-reward.svg" alt="" className="size-4" />
+                <img src="/icons/nav-reward.svg" alt="" className="size-6" />
                 <span className="text-[14px] font-medium text-gray-800">
                   999,999
                 </span>
