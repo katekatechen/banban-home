@@ -84,6 +84,20 @@ body {
   }
 }
 
+/* 回到首頁時（從聊天室或功能頁返回），跟 homeRecede 對稱的進場效果 */
+@keyframes homeApproach {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
+  }
+}
+
 @keyframes sheetUp {
   from {
     transform: translateY(100%);
