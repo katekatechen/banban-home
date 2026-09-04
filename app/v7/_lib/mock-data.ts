@@ -115,3 +115,4 @@ export const TOTAL_PORTFOLIO_VALUE = HOLDINGS.reduce(
   0,
 );
 export const TOTAL_PORTFOLIO_CHANGE_PCT = 8.09;
+export const TODAY_REWARD_AMOUNT = 451.1;

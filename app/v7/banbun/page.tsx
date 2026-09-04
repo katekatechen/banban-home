@@ -4,27 +4,37 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
+import Icon from "../_components/Icon";
 import SidebarPanel from "./SidebarPanel";
 import { loadConversations, loadActiveId } from "../_lib/chat-storage";
-import {
-  TOTAL_PORTFOLIO_VALUE,
-  TOTAL_PORTFOLIO_CHANGE_PCT,
-} from "../_lib/mock-data";
+import { TODAY_REWARD_AMOUNT } from "../_lib/mock-data";
 import { getOrders, type Order } from "../_lib/orders";
 import { SERVICE_POOL } from "../_lib/services";
 
 type Panel = "sidebar" | "home";
 const PANEL_INDEX: Record<Panel, number> = { sidebar: 0, home: 1 };
 
+// 標題每次進首頁隨機換一句，其中一句直接呼應「賺回饋」這個主軸
+const HEADLINES = [
+  "嗨 Ben，\n你今天可能會需要",
+  "嗨 Ben，\n你今天的回饋突破 300 了",
+];
+
+const CARD_ICON_WRAP = "flex size-9 items-center justify-center rounded-full";
+
 export default function BanbunHomePage() {
   const router = useRouter();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const [homeInput, setHomeInput] = useState("");
+  // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
+  // 掛載後才隨機換一句
+  const [headline, setHeadline] = useState(HEADLINES[0]);
   // 進行中的訂單，用來在首頁顯示「你自己的」狀態，掛載後才讀 sessionStorage
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
   useEffect(() => {
+    setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
     setActiveOrder(getOrders().find((o) => o.status === "進行中") ?? null);
     // 一開始就定位在中間（伴伴）那一格，不要讓用戶先看到側邊欄再滑過去——
     // 直接寫 scrollLeft，不能用 scrollTo({behavior:"instant"})：
@@ -50,6 +60,96 @@ export default function BanbunHomePage() {
     conversations: ReturnType<typeof loadConversations>;
     activeId?: string;
   }>({ conversations: [] });
+
+  // 個人化建議卡：用 icon 取代 emoji，訂單媒合中只在有進行中訂單時才插進來，
+  // 顏色特地跟其他卡不同（深藍），讓它在一排卡片裡明顯凸顯出來
+  const suggestionCards = [
+    ...(activeOrder
+      ? [
+          {
+            key: "order",
+            href: `/v7/orders/${activeOrder.id}`,
+            bg: "bg-[#2B3A55]",
+            text: "text-white",
+            subtext: "text-white/80",
+            iconBg: "bg-white/15",
+            icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21 8.5-9-4.5-9 4.5v7l9 4.5 9-4.5Z" />
+                <path d="m3 8.5 9 4.5 9-4.5" />
+                <path d="M12 13v7" />
+              </svg>
+            ),
+            title: "訂單媒合中",
+            description: activeOrder.name,
+          },
+        ]
+      : []),
+    {
+      key: "reward-source",
+      href: "/v7/ai-select",
+      bg: "bg-brand",
+      text: "text-white",
+      subtext: "text-white/85",
+      iconBg: "bg-white/20",
+      icon: <Icon src="/icons/nav-reward.svg" className="size-5 text-white" />,
+      title: "查看我的回饋來源",
+      description: `今天收到 ${TODAY_REWARD_AMOUNT} 回饋`,
+    },
+    {
+      key: "weekend-wine",
+      href: "/v7/banbun/chat?prompt=推薦適合週末喝的酒",
+      bg: "bg-[#FF7A6B]",
+      text: "text-white",
+      subtext: "text-white/85",
+      iconBg: "bg-white/20",
+      icon: <Icon src="/icons/cat-redwine.svg" className="size-5 text-white" />,
+      title: "推薦週末適合的酒",
+      description: "你之前看過的梅酒，現在有新選擇",
+    },
+    {
+      key: "birthday-gift",
+      href: "/v7/banbun/chat?prompt=幫我挑一份生日禮物",
+      bg: "bg-[#FFD6CE]",
+      text: "text-gray-800",
+      subtext: "text-gray-600",
+      iconBg: "bg-black/5",
+      icon: <Icon src="/icons/acc-gift.svg" className="size-5 text-gray-800" />,
+      title: "送人的生日禮物",
+      description: "隔壁鄰居家的狗，生日快到了",
+    },
+    {
+      key: "zero-coke",
+      href: "/v7/banbun/chat?prompt=我想買零卡可樂",
+      bg: "bg-gray-100",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-white",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="7" y="4" width="10" height="16" rx="2" />
+          <path d="M9 8h6" />
+        </svg>
+      ),
+      title: "零卡可樂",
+      description: "上次買的零卡可樂要不要補貨？",
+    },
+    {
+      key: "new-things",
+      href: "/v7/wine-select",
+      bg: "bg-gray-800",
+      text: "text-white",
+      subtext: "text-white/85",
+      iconBg: "bg-white/20",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
+        </svg>
+      ),
+      title: "看看新東西",
+      description: "大家都在買這個",
+    },
+  ];
 
   return (
     <div
@@ -129,101 +229,38 @@ export default function BanbunHomePage() {
           </div>
 
           {/* 對話框固定在畫面最下面，隨時可見、隨時可以直接問；
-              個人化建議、全部功能是兩個乾脆切換的整頁，不是同一頁裡硬撐出來的假捲動——
-              往下滑會俐落地切到全部功能，不是連續捲動穿過一大塊空白 */}
+              個人化建議、賺回饋是兩個乾脆切換的整頁，不是同一頁裡硬撐出來的假捲動——
+              往下滑會俐落地切到賺回饋，不是連續捲動穿過一大塊空白 */}
           <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto">
             {/* 第一頁：個人化建議，永遠佔滿一整屏 */}
             <div className="flex h-full shrink-0 snap-start flex-col gap-6 pb-4 pt-4">
               <div className="flex flex-1 flex-col justify-center gap-6">
               {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
               <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
-                嗨 Ben，{"\n"}你今天可能會需要
+                {headline}
               </p>
 
-              {/* 我可以替你準備：橫向捲動的建議卡片，取代原本上下堆疊的個人化狀態卡 */}
-              <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
-                <Link
-                  href="/v7/collection"
-                  className="flex w-[160px] shrink-0 flex-col gap-3 rounded-2xl bg-brand p-4 text-white transition-transform active:scale-[0.98]"
-                >
-                  <span className="text-[20px]">🛢️</span>
-                  <div>
-                    <p className="text-[15px] font-bold leading-snug">
-                      我的酒窖現值
-                    </p>
-                    <p className="mt-1 text-[12px] leading-snug text-white/85">
-                      ${TOTAL_PORTFOLIO_VALUE.toLocaleString()}，比上週 +
-                      {TOTAL_PORTFOLIO_CHANGE_PCT}%
-                    </p>
-                  </div>
-                </Link>
-
-                {activeOrder ? (
+              {/* 我可以替你準備：橫向捲動的建議卡片，用 icon 取代 emoji，比例比原本更大 */}
+              <div className="no-scrollbar flex gap-3 overflow-x-auto px-4">
+                {suggestionCards.map((c) => (
                   <Link
-                    href={`/v7/orders/${activeOrder.id}`}
-                    className="flex w-[160px] shrink-0 flex-col gap-3 rounded-2xl bg-[#FF7A6B] p-4 text-white transition-transform active:scale-[0.98]"
+                    key={c.key}
+                    href={c.href}
+                    className={`flex w-[190px] shrink-0 flex-col gap-4 rounded-2xl ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
                   >
-                    <span className="text-[20px]">📦</span>
+                    <div className={`${CARD_ICON_WRAP} ${c.iconBg}`}>
+                      {c.icon}
+                    </div>
                     <div>
-                      <p className="text-[15px] font-bold leading-snug">
-                        訂單媒合中
+                      <p className="text-[16px] font-bold leading-snug">
+                        {c.title}
                       </p>
-                      <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/85">
-                        {activeOrder.name}
+                      <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
+                        {c.description}
                       </p>
                     </div>
                   </Link>
-                ) : (
-                  <Link
-                    href="/v7/banbun/chat?prompt=今晚想喝點什麼，幫我挑一支"
-                    className="flex w-[160px] shrink-0 flex-col gap-3 rounded-2xl bg-[#FF7A6B] p-4 text-white transition-transform active:scale-[0.98]"
-                  >
-                    <span className="text-[20px]">🍷</span>
-                    <div>
-                      <p className="text-[15px] font-bold leading-snug">
-                        今晚想喝點什麼
-                      </p>
-                      <p className="mt-1 text-[12px] leading-snug text-white/85">
-                        跟伴伴說，我幫你挑
-                      </p>
-                    </div>
-                  </Link>
-                )}
-
-                <Link
-                  href="/v7/banbun/chat?prompt=幫我挑一份送禮的禮物"
-                  className="flex w-[160px] shrink-0 flex-col gap-3 rounded-2xl bg-[#FFD6CE] p-4 text-gray-800 transition-transform active:scale-[0.98]"
-                >
-                  <span className="text-[20px]">🎁</span>
-                  <div>
-                    <p className="text-[15px] font-bold leading-snug">
-                      送禮靈感
-                    </p>
-                    <p className="mt-1 text-[12px] leading-snug text-gray-600">
-                      跟伴伴說要送誰，幫你挑
-                    </p>
-                  </div>
-                </Link>
-
-                <button
-                  onClick={() =>
-                    servicesRef.current?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    })
-                  }
-                  className="flex w-[160px] shrink-0 flex-col gap-3 rounded-2xl bg-gray-800 p-4 text-left text-white transition-transform active:scale-[0.98]"
-                >
-                  <span className="text-[20px]">✨</span>
-                  <div>
-                    <p className="text-[15px] font-bold leading-snug">
-                      看看新東西
-                    </p>
-                    <p className="mt-1 text-[12px] leading-snug text-white/85">
-                      全部功能都在下面
-                    </p>
-                  </div>
-                </button>
+                ))}
               </div>
               </div>
 
@@ -236,7 +273,7 @@ export default function BanbunHomePage() {
                     block: "start",
                   })
                 }
-                title="往下滑看全部功能"
+                title="往下滑看賺回饋的方法"
                 className="flex animate-bounce items-center justify-center text-gray-400"
               >
                 <svg
@@ -254,13 +291,13 @@ export default function BanbunHomePage() {
               </button>
             </div>
 
-            {/* 第二頁：全部功能，乾脆切過來的獨立整頁，跟上面的個人化建議刻意做出區隔 */}
+            {/* 第二頁：賺回饋，乾脆切過來的獨立整頁，跟上面的個人化建議刻意做出區隔 */}
             <div
               ref={servicesRef}
               className="flex min-h-full shrink-0 snap-start flex-col gap-2.5 px-4 pt-6"
             >
                 <p className="px-1 text-[13px] font-medium text-gray-400">
-                  全部功能
+                  賺回饋
                 </p>
                 {SERVICE_POOL.map((s) =>
                   s.disabled ? (
