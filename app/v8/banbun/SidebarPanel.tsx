@@ -46,15 +46,17 @@ export default function SidebarPanel({
         </button>
       </div>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto px-4">
+      <div className="no-scrollbar flex flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-2">
         {SERVICE_POOL.map((s) =>
           s.disabled ? (
             <div
               key={s.key}
-              className="flex items-center gap-3 py-3 text-left opacity-50"
+              className="flex items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-3.5 text-left"
             >
-              <span className="text-[20px] grayscale">{s.emoji}</span>
-              <p className="flex-1 text-[16px] font-medium text-gray-500">
+              <span className="text-[22px] opacity-50 grayscale">
+                {s.emoji}
+              </span>
+              <p className="flex-1 text-[15px] font-semibold text-gray-400">
                 {s.label}
               </p>
               <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-500">
@@ -65,12 +67,17 @@ export default function SidebarPanel({
             <Link
               key={s.key}
               href={s.href}
-              className="flex items-center gap-3 py-3 text-left"
+              className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-000 px-4 py-3.5 text-left transition-transform active:scale-[0.98]"
             >
-              <span className="text-[20px]">{s.emoji}</span>
-              <p className="text-[16px] font-medium text-gray-800">
+              <span className="text-[22px]">{s.emoji}</span>
+              <p className="flex-1 text-[15px] font-semibold text-gray-800">
                 {s.label}
               </p>
+              <img
+                src="/icons/acc-nav-arrow-right.svg"
+                alt=""
+                className="size-5"
+              />
             </Link>
           ),
         )}
