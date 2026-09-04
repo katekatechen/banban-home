@@ -41,7 +41,8 @@ export default function SidebarPanel({
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="m9 6 6 6-6 6" />
+            <path d="m6 6 12 12" />
+            <path d="m18 6-12 12" />
           </svg>
         </button>
       </div>
