@@ -1,0 +1,382 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import StatusBar from "../_components/StatusBar";
+import Icon from "../_components/Icon";
+import SidebarPanel from "./SidebarPanel";
+import { TODAY_REWARD_AMOUNT } from "../_lib/mock-data";
+import { getOrders, type Order } from "../_lib/orders";
+import { SERVICE_POOL } from "../_lib/services";
+
+type Panel = "sidebar" | "home";
+const PANEL_INDEX: Record<Panel, number> = { sidebar: 0, home: 1 };
+
+// 標題每次進首頁隨機換一句，其中一句直接呼應「賺回饋」這個主軸
+const HEADLINES = [
+  "嗨 Ben，\n你今天可能會需要",
+  "嗨 Ben，\n你今天的回饋突破 300 了",
+];
+
+const CARD_ICON_WRAP = "flex size-9 items-center justify-center rounded-full";
+
+export default function BanbunHomePage() {
+  const router = useRouter();
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const servicesRef = useRef<HTMLDivElement>(null);
+  const [homeInput, setHomeInput] = useState("");
+  // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
+  // 掛載後才隨機換一句
+  const [headline, setHeadline] = useState(HEADLINES[0]);
+  // 進行中的訂單，用來在首頁顯示「你自己的」狀態，掛載後才讀 sessionStorage
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+
+  useEffect(() => {
+    setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+    setActiveOrder(getOrders().find((o) => o.status === "進行中") ?? null);
+    // 一開始就定位在中間（伴伴）那一格，不要讓用戶先看到側邊欄再滑過去——
+    // 直接寫 scrollLeft，不能用 scrollTo({behavior:"instant"})：
+    // 部分瀏覽器對 instant 的支援不穩定，會讓這次定位變成看得到的滑動動畫
+    const el = scrollerRef.current;
+    if (el) el.scrollLeft = el.clientWidth * PANEL_INDEX.home;
+  }, []);
+
+  const scrollToPanel = (panel: Panel) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: el.clientWidth * PANEL_INDEX[panel], behavior: "smooth" });
+  };
+
+  const submitHomeInput = () => {
+    const text = homeInput.trim();
+    if (!text) return;
+    router.push(`/v8/banbun/chat?prompt=${encodeURIComponent(text)}`);
+  };
+
+  // 個人化建議卡：用 icon 取代 emoji，訂單媒合中只在有進行中訂單時才插進來，
+  // 顏色特地跟其他卡不同（深藍），讓它在一排卡片裡明顯凸顯出來
+  const suggestionCards = [
+    ...(activeOrder
+      ? [
+          {
+            key: "order",
+            href: `/v8/orders/${activeOrder.id}`,
+            bg: "bg-[#2B3A55]",
+            text: "text-white",
+            subtext: "text-white/80",
+            iconBg: "bg-white/15",
+            icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21 8.5-9-4.5-9 4.5v8l9 4.5 9-4.5Z" />
+                <path d="m3 8.5 9 4.5 9-4.5" />
+                <path d="M12 13v8" />
+              </svg>
+            ),
+            title: "訂單媒合中",
+            description: activeOrder.name,
+          },
+        ]
+      : []),
+    {
+      key: "reward-source",
+      href: "/v8/ai-select",
+      bg: "bg-brand",
+      text: "text-white",
+      subtext: "text-white/85",
+      iconBg: "bg-white/20",
+      icon: <Icon src="/icons/nav-reward.svg" className="size-5 text-white" />,
+      title: "查看我的回饋來源",
+      description: `今天收到 ${TODAY_REWARD_AMOUNT} 回饋`,
+    },
+    {
+      key: "weekend-wine",
+      href: "/v8/banbun/chat?prompt=推薦適合週末喝的酒",
+      bg: "bg-[#FF7A6B]",
+      text: "text-white",
+      subtext: "text-white/85",
+      iconBg: "bg-white/20",
+      icon: <Icon src="/icons/cat-redwine.svg" className="size-5 text-white" />,
+      title: "推薦週末適合的酒",
+      description: "你之前看過的梅酒，現在有新選擇",
+    },
+    {
+      key: "birthday-gift",
+      href: "/v8/banbun/chat?prompt=幫我挑一份生日禮物",
+      bg: "bg-[#FFD6CE]",
+      text: "text-gray-800",
+      subtext: "text-gray-600",
+      iconBg: "bg-black/5",
+      icon: <Icon src="/icons/acc-gift.svg" className="size-5 text-gray-800" />,
+      title: "送人的生日禮物",
+      description: "隔壁鄰居家的狗，生日快到了",
+    },
+    {
+      key: "zero-coke",
+      href: "/v8/banbun/chat?prompt=我想買零卡可樂",
+      bg: "bg-gray-100",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-white",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="7" y="4" width="10" height="16" rx="2" />
+          <path d="M9 8h6" />
+        </svg>
+      ),
+      title: "零卡可樂",
+      description: "上次買的零卡可樂要不要補貨？",
+    },
+    {
+      key: "new-things",
+      href: "/v8/wine-select",
+      bg: "bg-gray-800",
+      text: "text-white",
+      subtext: "text-white/85",
+      iconBg: "bg-white/20",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
+        </svg>
+      ),
+      title: "看看新東西",
+      description: "大家都在買這個",
+    },
+  ];
+
+  return (
+    <div
+      ref={scrollerRef}
+      // touch-pan-x：只認橫向手勢，垂直手勢交給裡面的內容自己滾動——
+      // 沒有這個，橫向 snap carousel 會把垂直捲動手勢也搶走
+      className="no-scrollbar flex h-full w-full touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
+    >
+      {/* 左格：側邊欄，訂單紀錄 + 帳號設定（v8 沒有對話紀錄） */}
+      <div className="h-full w-full shrink-0 snap-center">
+        <SidebarPanel
+          onBackToHome={() => scrollToPanel("home")}
+          onAccount={() => router.push("/v8/account")}
+          onOrders={() => router.push("/v8/orders")}
+        />
+      </div>
+
+      {/* 中格：伴伴首頁 */}
+      <div className="relative h-full w-full shrink-0 snap-center">
+        <div className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white">
+          <StatusBar />
+
+          {/* header：拿掉 AIFIAN logo，回饋數字也不用灰底大膠囊，
+              避免搶了「伴伴」本身的存在感——只有這個首頁的 header 這樣調整，
+              其他頁面的共用 header 不動 */}
+          <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-1">
+            <button
+              onClick={() => scrollToPanel("sidebar")}
+              title="選單"
+              className="flex size-8 items-center justify-center text-gray-800"
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+              >
+                <line x1="4" x2="20" y1="6" y2="6" />
+                <line x1="4" x2="20" y1="12" y2="12" />
+                <line x1="4" x2="20" y1="18" y2="18" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="relative flex size-8 items-center justify-center">
+                <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
+                  9
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <img src="/icons/nav-reward.svg" alt="" className="size-6" />
+                <span className="text-[14px] font-medium text-gray-800">
+                  999,999
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 對話框固定在畫面最下面，隨時可見、隨時可以直接問；
+              個人化建議、賺回饋是兩個乾脆切換的整頁，不是同一頁裡硬撐出來的假捲動——
+              往下滑會俐落地切到賺回饋，不是連續捲動穿過一大塊空白 */}
+          <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto">
+            {/* 第一頁：個人化建議，永遠佔滿一整屏 */}
+            <div className="flex h-full shrink-0 snap-start flex-col gap-6 pb-4 pt-4">
+              <div className="flex flex-1 flex-col justify-center gap-6">
+              {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
+              <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
+                {headline}
+              </p>
+
+              {/* 我可以替你準備：橫向捲動的建議卡片，用 icon 取代 emoji，比例比原本更大 */}
+              <div className="no-scrollbar flex gap-3 overflow-x-auto px-4">
+                {suggestionCards.map((c) => (
+                  <Link
+                    key={c.key}
+                    href={c.href}
+                    className={`flex w-[190px] shrink-0 flex-col gap-4 rounded-2xl ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
+                  >
+                    <div className={`${CARD_ICON_WRAP} ${c.iconBg}`}>
+                      {c.icon}
+                    </div>
+                    <div>
+                      <p className="text-[16px] font-bold leading-snug">
+                        {c.title}
+                      </p>
+                      <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
+                        {c.description}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              </div>
+
+              {/* 往下滑提示：釘在第一屏底部，只留箭頭、加彈跳動效，
+                  不用文字說明，靠動效直覺提示還可以往下滑 */}
+              <button
+                onClick={() =>
+                  servicesRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                title="往下滑看賺回饋的方法"
+                className="flex animate-bounce items-center justify-center text-gray-400"
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 第二頁：賺回饋，乾脆切過來的獨立整頁，跟上面的個人化建議刻意做出區隔 */}
+            <div
+              ref={servicesRef}
+              className="flex min-h-full shrink-0 snap-start flex-col gap-2.5 px-4 pt-6"
+            >
+                <p className="px-1 text-[13px] font-medium text-gray-400">
+                  賺回饋
+                </p>
+                {SERVICE_POOL.map((s) =>
+                  s.disabled ? (
+                    <div
+                      key={s.key}
+                      className="flex items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-4 py-3.5"
+                    >
+                      <span className="text-[24px] opacity-50 grayscale">
+                        {s.emoji}
+                      </span>
+                      <p className="flex-1 text-[15px] font-semibold text-gray-400">
+                        {s.label}
+                      </p>
+                      <span className="shrink-0 rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                        敬請期待
+                      </span>
+                    </div>
+                  ) : (
+                    <Link
+                      key={s.key}
+                      href={s.href}
+                      className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-000 px-4 py-3.5 transition-transform active:scale-[0.98]"
+                    >
+                      <span className="text-[24px]">{s.emoji}</span>
+                      <p className="flex-1 text-[15px] font-semibold text-gray-800">
+                        {s.label}
+                      </p>
+                      <img
+                        src="/icons/acc-nav-arrow-right.svg"
+                        alt=""
+                        className="size-5"
+                      />
+                    </Link>
+                  ),
+                )}
+              </div>
+          </div>
+
+          {/* 對話框：固定在畫面最下面，不隨內容捲動 */}
+          <div className="flex shrink-0 flex-col gap-2 bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitHomeInput();
+              }}
+              className="flex items-center gap-2 rounded-full bg-white py-1.5 pl-3 pr-1.5 shadow-[0_2px_16px_rgba(0,0,0,0.08)]"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                className="shrink-0 text-gray-800"
+              >
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+              <input
+                value={homeInput}
+                onChange={(e) => setHomeInput(e.target.value)}
+                placeholder="想做什麼，跟伴伴說"
+                className="flex-1 bg-transparent px-1 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+              />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0 text-gray-800"
+              >
+                <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+                <path d="M12 18v4" />
+              </svg>
+              <button
+                type="submit"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 19V5" />
+                  <path d="m5 12 7-7 7 7" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
