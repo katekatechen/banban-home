@@ -69,6 +69,21 @@ body {
   }
 }
 
+/* 首頁點輸入框進聊天室前，讓畫面往後模糊淡出、縮小，
+   營造「往後退一層」的空間感，再真的導航離開 */
+@keyframes homeRecede {
+  from {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.96);
+  }
+}
+
 @keyframes sheetUp {
   from {
     transform: translateY(100%);
