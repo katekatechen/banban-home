@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import Icon from "../_components/Icon";
 import SidebarPanel from "./SidebarPanel";
-import { TODAY_REWARD_AMOUNT } from "../_lib/mock-data";
+import { TODAY_REWARD_AMOUNT, PRODUCTS, HOLDINGS } from "../_lib/mock-data";
 import { getOrders, type Order } from "../_lib/orders";
 
 type Panel = "sidebar" | "home";
@@ -75,8 +75,11 @@ export default function BanbunHomePage() {
     setTimeout(() => router.push("/v8/banbun/chat"), HOME_RECEDE_MS);
   };
 
-  // 個人化建議卡：用 icon 取代 emoji，訂單媒合中只在有進行中訂單時才插進來，
-  // 顏色特地跟其他卡不同（深藍），讓它在一排卡片裡明顯凸顯出來
+  // 個人化建議：直式清單，訂單媒合中/回饋來源用實色卡凸顯優先序，
+  // 其他都用統一的白底卡片＋彩色 icon 圓點做出區隔，避免整排都是飽和色太吵
+  const trackedProduct = PRODUCTS.find((p) => p.id === "macallan-12")!;
+  const sellCandidate = HOLDINGS.find((h) => h.id === "kinmen-58")!;
+
   const suggestionCards = [
     ...(activeOrder
       ? [
@@ -87,6 +90,7 @@ export default function BanbunHomePage() {
             text: "text-white",
             subtext: "text-white/80",
             iconBg: "bg-white/15",
+            iconColor: "text-white",
             icon: (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m21 8.5-9-4.5-9 4.5v8l9 4.5 9-4.5Z" />
@@ -106,39 +110,77 @@ export default function BanbunHomePage() {
       text: "text-white",
       subtext: "text-white/85",
       iconBg: "bg-white/20",
+      iconColor: "text-white",
       icon: <Icon src="/icons/nav-reward.svg" className="size-5 text-white" />,
       title: "查看我的回饋來源",
       description: `今天收到 ${TODAY_REWARD_AMOUNT} 回饋`,
     },
     {
+      key: "price-watch",
+      href: `/v8/wine-select/${trackedProduct.id}`,
+      bg: "bg-gray-000",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-red-50",
+      iconColor: "text-brand",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12.59 2.59 4 11.17V20a2 2 0 0 0 2 2h8.83l8.58-8.59a2 2 0 0 0 0-2.82l-8.4-8.4a2 2 0 0 0-2.42-.6Z" />
+          <path d="M7.5 7.5h.01" />
+        </svg>
+      ),
+      title: "追蹤的酒款降價了",
+      description: `${trackedProduct.name}現在 $${trackedProduct.price}，比你上次追蹤時更划算`,
+    },
+    {
+      key: "sell-advice",
+      href: `/v8/collection/${sellCandidate.id}`,
+      bg: "bg-gray-000",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 17l6-6 4 4 8-8" />
+          <path d="M15 7h6v6" />
+        </svg>
+      ),
+      title: "建議獲利了結",
+      description: `${sellCandidate.name}上漲 ${sellCandidate.changePct}%，可以考慮賣出`,
+    },
+    {
       key: "weekend-wine",
       href: "/v8/banbun/chat?prompt=推薦適合週末喝的酒",
-      bg: "bg-[#FF7A6B]",
-      text: "text-white",
-      subtext: "text-white/85",
-      iconBg: "bg-white/20",
-      icon: <Icon src="/icons/cat-redwine.svg" className="size-5 text-white" />,
+      bg: "bg-gray-000",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-rose-50",
+      iconColor: "text-rose-500",
+      icon: <Icon src="/icons/cat-redwine.svg" className="size-5 text-rose-500" />,
       title: "推薦週末適合的酒",
       description: "你之前看過的梅酒，現在有新選擇",
     },
     {
       key: "birthday-gift",
       href: "/v8/banbun/chat?prompt=幫我挑一份生日禮物",
-      bg: "bg-[#FFD6CE]",
+      bg: "bg-gray-000",
       text: "text-gray-800",
-      subtext: "text-gray-600",
-      iconBg: "bg-black/5",
-      icon: <Icon src="/icons/acc-gift.svg" className="size-5 text-gray-800" />,
+      subtext: "text-gray-500",
+      iconBg: "bg-pink-50",
+      iconColor: "text-pink-500",
+      icon: <Icon src="/icons/acc-gift.svg" className="size-5 text-pink-500" />,
       title: "送人的生日禮物",
       description: "隔壁鄰居家的狗，生日快到了",
     },
     {
       key: "zero-coke",
       href: "/v8/banbun/chat?prompt=我想買零卡可樂",
-      bg: "bg-gray-100",
+      bg: "bg-gray-000",
       text: "text-gray-800",
       subtext: "text-gray-500",
-      iconBg: "bg-white",
+      iconBg: "bg-sky-50",
+      iconColor: "text-sky-500",
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="7" y="4" width="10" height="16" rx="2" />
@@ -151,10 +193,11 @@ export default function BanbunHomePage() {
     {
       key: "new-things",
       href: "/v8/wine-select",
-      bg: "bg-gray-800",
-      text: "text-white",
-      subtext: "text-white/85",
-      iconBg: "bg-white/20",
+      bg: "bg-gray-000",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-violet-50",
+      iconColor: "text-violet-500",
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
@@ -241,28 +284,28 @@ export default function BanbunHomePage() {
 
           {/* 對話框固定在畫面最下面，隨時可見、隨時可以直接問；
               賺回饋收進側邊欄，不再佔用首頁版面，首頁只剩個人化建議 */}
-          <div className="no-scrollbar flex flex-1 touch-pan-y flex-col justify-center gap-6 overflow-y-auto pb-4 pt-4">
+          <div className="no-scrollbar flex flex-1 touch-pan-y flex-col gap-6 overflow-y-auto pb-4 pt-4">
             {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
             <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
               {headline}
             </p>
 
-            {/* 我可以替你準備：橫向捲動的建議卡片，用 icon 取代 emoji，比例比原本更大 */}
-            <div className="no-scrollbar flex gap-3 overflow-x-auto px-4">
+            {/* 我可以替你準備：直式清單，一行一張，範例夠多時比橫向捲動更好瀏覽 */}
+            <div className="flex flex-col gap-3 px-4">
               {suggestionCards.map((c) => (
                 <Link
                   key={c.key}
                   href={c.href}
-                  className={`flex w-[190px] shrink-0 flex-col gap-4 rounded-2xl ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
+                  className={`flex items-center gap-3 rounded-2xl ${c.bg} p-4 ${c.text} transition-transform active:scale-[0.98] ${c.bg === "bg-gray-000" ? "border border-gray-100" : ""}`}
                 >
-                  <div className={`${CARD_ICON_WRAP} ${c.iconBg}`}>
+                  <div className={`${CARD_ICON_WRAP} ${c.iconBg} ${c.iconColor} shrink-0`}>
                     {c.icon}
                   </div>
-                  <div>
-                    <p className="text-[16px] font-bold leading-snug">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-bold leading-snug">
                       {c.title}
                     </p>
-                    <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
+                    <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${c.subtext}`}>
                       {c.description}
                     </p>
                   </div>
