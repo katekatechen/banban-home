@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
 import ProductSheet from "../../_components/ProductSheet";
 import { getCart, toggleCartItem, ensureInCart } from "../../_lib/cart";
+import { PRODUCTS, HOLDINGS } from "../../_lib/mock-data";
+import { getOrders } from "../../_lib/orders";
 import {
   type Message,
   type RecCard,
@@ -120,6 +122,64 @@ export default function ChatClient() {
       return;
     }
 
+    // 首頁大卡片帶進來的 prompt，要接得住，不然會落到「酒」關鍵字誤判成送禮流程
+    if (text.includes("降價") || text.includes("追蹤")) {
+      const p = PRODUCTS.find((p) => p.id === "macallan-12")!;
+      await pushBot({
+        text: `你追蹤的${p.name}降價了，現在只要 $${p.price}，要不要趁現在入手？`,
+      });
+      await pushBot({
+        card: {
+          name: p.name,
+          desc: `${p.subtitle} · 降價中`,
+          price: p.price,
+          emoji: p.emoji,
+          gradient: p.gradient,
+        },
+      });
+      return;
+    }
+
+    if (text.includes("獲利了結") || text.includes("賣出")) {
+      const h = HOLDINGS.find((h) => h.id === "kinmen-58")!;
+      await pushBot({
+        text: `你的${h.name}已經漲了 ${h.changePct}%，這個時間點賣出滿划算的，要幫你安排轉售嗎？`,
+        quickReplies: ["查看藏酒明細"],
+      });
+      return;
+    }
+
+    if (text.includes("訂單") || text.includes("進度")) {
+      const activeOrder = getOrders().find((o) => o.status === "進行中");
+      if (activeOrder) {
+        await pushBot({
+          text: `你的「${activeOrder.name}」還在媒合中，媒合完成我會馬上通知你。`,
+        });
+      } else {
+        await pushBot({
+          text: "目前沒有進行中的訂單喔，之前的訂單都可以在帳號裡的歷史交易紀錄查到。",
+        });
+      }
+      return;
+    }
+
+    if (text.includes("大家都在買") || text.includes("新東西")) {
+      const p = PRODUCTS.find((p) => p.id === "louve-cortez")!;
+      await pushBot({
+        text: `最近很多人在看${p.name}，是這個月新上架的酒款，要不要看看？`,
+      });
+      await pushBot({
+        card: {
+          name: p.name,
+          desc: `${p.subtitle} · 新上架`,
+          price: p.price,
+          emoji: p.emoji,
+          gradient: p.gradient,
+        },
+      });
+      return;
+    }
+
     // 關鍵字判斷（模擬伴伴對話邏輯，非本次改版範圍，這裡只是 mock）
     if (text.includes("送禮") || (text.includes("酒") && !text.includes("日用品"))) {
       setStage("await_wine_budget");
@@ -163,6 +223,10 @@ export default function ChatClient() {
   const handleQuickReply = (reply: string) => {
     if (reply === "去看回饋許願池") {
       router.push("/v8/reward-marketplace");
+      return;
+    }
+    if (reply === "查看藏酒明細") {
+      router.push("/v8/collection/kinmen-58");
       return;
     }
     handleSend(reply);

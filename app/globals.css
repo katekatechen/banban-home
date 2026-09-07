@@ -124,3 +124,23 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* 建議卡全部關掉後，重新生成前的骨架卡片：跑動漸層暗示「伴伴正在準備新建議」 */
+@keyframes shimmerSweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.shimmer-card {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-gray-100) 30%,
+    var(--color-gray-300) 50%,
+    var(--color-gray-100) 70%
+  );
+  background-size: 300% 100%;
+  animation: shimmerSweep 1.3s ease-in-out infinite;
+}

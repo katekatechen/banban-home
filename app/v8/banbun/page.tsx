@@ -22,13 +22,31 @@ function loadLastPanel(): Panel {
   }
 }
 
-// 標題每次進首頁隨機換一句，其中一句直接呼應「賺回饋」這個主軸
-const HEADLINES = [
-  "嗨 Ben，\n你今天可能會需要",
-  "嗨 Ben，\n你今天的回饋突破 300 了",
-];
+// 被關掉/略過的建議卡，記在 sessionStorage，這次瀏覽就不會再出現
+const STORAGE_DISMISSED_CARDS = "banbun-v8-dismissed-cards";
 
-const CARD_ICON_WRAP = "flex size-9 items-center justify-center rounded-full";
+function loadDismissedCards(): Set<string> {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_DISMISSED_CARDS);
+    if (saved) return new Set(JSON.parse(saved));
+  } catch {
+    // ignore
+  }
+  return new Set();
+}
+
+function saveDismissedCards(keys: Set<string>) {
+  try {
+    sessionStorage.setItem(STORAGE_DISMISSED_CARDS, JSON.stringify([...keys]));
+  } catch {
+    // ignore
+  }
+}
+
+const HEADLINE = "嗨 Ben，\n你今天可能會需要";
+
+const HERO_CTA =
+  "mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-[13px] font-semibold text-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.12)]";
 
 const HOME_RECEDE_MS = 220;
 
@@ -36,15 +54,24 @@ export default function BanbunHomePage() {
   const router = useRouter();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
-  // 標題固定從第一句開始 render（跟 SSR 結果一致，避免 hydration mismatch），
-  // 掛載後才隨機換一句
-  const [headline, setHeadline] = useState(HEADLINES[0]);
   // 進行中的訂單，用來在首頁顯示「你自己的」狀態，掛載後才讀 sessionStorage
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  // 被關掉/略過的建議卡，掛載後才讀 sessionStorage（避免 SSR/CSR 不一致）
+  const [dismissedCards, setDismissedCards] = useState<Set<string>>(new Set());
+  // 卡片全部被關掉時，先顯示骨架卡片，模擬伴伴正在重新生成建議
+  const [regenerating, setRegenerating] = useState(false);
+
+  const dismissCard = (key: string) => {
+    setDismissedCards((prev) => {
+      const next = new Set(prev).add(key);
+      saveDismissedCards(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
-    setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
     setActiveOrder(getOrders().find((o) => o.status === "進行中") ?? null);
+    setDismissedCards(loadDismissedCards());
     // 一開始定位在「上次離開時的那一格」——如果是從側邊欄的功能項目點進去，
     // 按返回應該回到側邊欄，而不是每次都被拉回伴伴首頁。
     // 直接寫 scrollLeft，不能用 scrollTo({behavior:"instant"})：
@@ -85,7 +112,6 @@ export default function BanbunHomePage() {
       ? [
           {
             key: "order",
-            wide: true,
             href: `/v8/orders/${activeOrder.id}`,
             bg: "bg-[#2B3A55]",
             text: "text-white",
@@ -93,7 +119,7 @@ export default function BanbunHomePage() {
             iconBg: "bg-white/15",
             iconColor: "text-white",
             icon: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m21 8.5-9-4.5-9 4.5v8l9 4.5 9-4.5Z" />
                 <path d="m3 8.5 9 4.5 9-4.5" />
                 <path d="M12 13v8" />
@@ -101,101 +127,119 @@ export default function BanbunHomePage() {
             ),
             title: "訂單媒合中",
             description: activeOrder.name,
+            cta: "查看訂單",
           },
         ]
       : []),
     {
       key: "price-watch",
-      href: `/v8/wine-select/${trackedProduct.id}`,
+      href: "/v8/banbun/chat?prompt=我追蹤的酒降價了嗎？",
+      image: "/products/macallan-12.jpg",
       bg: "bg-gray-000",
       text: "text-gray-800",
       subtext: "text-gray-500",
       iconBg: "bg-red-50",
       iconColor: "text-brand",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12.59 2.59 4 11.17V20a2 2 0 0 0 2 2h8.83l8.58-8.59a2 2 0 0 0 0-2.82l-8.4-8.4a2 2 0 0 0-2.42-.6Z" />
           <path d="M7.5 7.5h.01" />
         </svg>
       ),
       title: "追蹤的酒款降價了",
       description: `${trackedProduct.name}現在 $${trackedProduct.price}，比你上次追蹤時更划算`,
+      cta: "查看酒款",
     },
     {
       key: "sell-advice",
-      href: `/v8/collection/${sellCandidate.id}`,
+      href: "/v8/banbun/chat?prompt=我手上的酒可以獲利了結了嗎？",
+      image: "/products/kinmen-58.jpg",
       bg: "bg-gray-000",
       text: "text-gray-800",
       subtext: "text-gray-500",
       iconBg: "bg-emerald-50",
       iconColor: "text-emerald-600",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 17l6-6 4 4 8-8" />
           <path d="M15 7h6v6" />
         </svg>
       ),
       title: "建議獲利了結",
       description: `${sellCandidate.name}上漲 ${sellCandidate.changePct}%，可以考慮賣出`,
+      cta: "考慮賣出",
     },
     {
       key: "weekend-wine",
       href: "/v8/banbun/chat?prompt=推薦適合週末喝的酒",
+      image: "/products/plum-wine.jpg",
       bg: "bg-gray-000",
       text: "text-gray-800",
       subtext: "text-gray-500",
       iconBg: "bg-rose-50",
       iconColor: "text-rose-500",
-      icon: <Icon src="/icons/cat-redwine.svg" className="size-5 text-rose-500" />,
+      icon: <Icon src="/icons/cat-redwine.svg" className="size-6 text-rose-500" />,
       title: "推薦週末適合的酒",
       description: "你之前看過的梅酒，現在有新選擇",
-    },
-    {
-      key: "birthday-gift",
-      href: "/v8/banbun/chat?prompt=幫我挑一份生日禮物",
-      bg: "bg-gray-000",
-      text: "text-gray-800",
-      subtext: "text-gray-500",
-      iconBg: "bg-pink-50",
-      iconColor: "text-pink-500",
-      icon: <Icon src="/icons/acc-gift.svg" className="size-5 text-pink-500" />,
-      title: "送人的生日禮物",
-      description: "隔壁鄰居家的狗，生日快到了",
+      cta: "看看推薦",
     },
     {
       key: "zero-coke",
       href: "/v8/banbun/chat?prompt=我想買零卡可樂",
+      image: "/products/coke-zero.jpg",
       bg: "bg-gray-000",
       text: "text-gray-800",
       subtext: "text-gray-500",
       iconBg: "bg-sky-50",
       iconColor: "text-sky-500",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <rect x="7" y="4" width="10" height="16" rx="2" />
           <path d="M9 8h6" />
         </svg>
       ),
       title: "零卡可樂",
       description: "上次買的零卡可樂要不要補貨？",
+      cta: "去補貨",
     },
     {
       key: "new-things",
-      href: "/v8/wine-select",
+      href: "/v8/banbun/chat?prompt=最近大家都在買什麼？",
+      image: "/products/ps5.jpg",
       bg: "bg-gray-000",
       text: "text-gray-800",
       subtext: "text-gray-500",
       iconBg: "bg-violet-50",
       iconColor: "text-violet-500",
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
         </svg>
       ),
       title: "看看新東西",
       description: "大家都在買這個",
+      cta: "看新品",
     },
   ];
+
+  const visibleCards = suggestionCards.filter((c) => !dismissedCards.has(c.key));
+
+  // 卡片全部被關掉／略過後，模擬伴伴重新生成一批新建議：
+  // 先跳出跑動漸層的骨架卡撐一下場面，延遲結束後把 dismissed 清空，讓卡片重新出現。
+  // 依賴陣列只放 visibleCards.length，不能加 regenerating——效果內部會呼叫
+  // setRegenerating(true)，若把它列進依賴，state 一變就會立刻觸發 cleanup
+  // 把剛設的 timer 清掉，卡片就會卡在骨架畫面永遠回不來。
+  useEffect(() => {
+    if (visibleCards.length > 0) return;
+    setRegenerating(true);
+    const timer = setTimeout(() => {
+      setDismissedCards(new Set());
+      saveDismissedCards(new Set());
+      setRegenerating(false);
+    }, 1100);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleCards.length]);
 
   return (
     <div
@@ -272,57 +316,107 @@ export default function BanbunHomePage() {
             </div>
           </div>
 
-          {/* 對話框固定在畫面最下面，隨時可見、隨時可以直接問；
-              賺回饋收進側邊欄，不再佔用首頁版面，首頁只剩個人化建議 */}
-          <div className="no-scrollbar flex flex-1 touch-pan-y flex-col gap-6 overflow-y-auto pb-4 pt-4">
-            {/* 個人化問候：左對齊、不用插畫，把版面讓給下面的建議卡片 */}
-            <p className="whitespace-pre-line px-4 text-[26px] font-black leading-[1.25] text-gray-800">
-              {headline}
-            </p>
+          {/* 個人化問候：固定在卡片區上方，不隨卡片捲動——
+              呼應參考圖「What Are You Kraving」那種常駐標題感 */}
+          <p className="shrink-0 whitespace-pre-line px-4 pb-3 text-[26px] font-black leading-[1.25] text-gray-800">
+            {HEADLINE}
+          </p>
 
-            {/* 我可以替你準備：優先卡（訂單/回饋來源）維持整排橫式，
-                其餘用兩欄方格排版——跟側邊欄那種單欄一條一條的清單拉開節奏差異 */}
-            <div className="grid grid-cols-2 gap-3 px-4">
-              {suggestionCards.map((c) =>
-                c.wide ? (
+          {/* 建議卡：改成一次一張的大卡＋明確 CTA（參考 Kraving 那組大卡片設計），
+              直式 snap 捲動，捲到下一張時上一張的下緣會先探出頭，暗示還可以往下滑。
+              賺回饋收進側邊欄，不再佔用首頁版面，首頁只剩個人化建議 */}
+          <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto px-4 pb-4">
+            {regenerating &&
+              [0, 1, 2].map((i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="shimmer-card mb-4 h-[260px] shrink-0 rounded-[32px]"
+                />
+              ))}
+            {visibleCards.map((c) =>
+              c.image ? (
+                // 有實際商品圖的卡：圖片滿版鋪底，上面疊一層由下往上的黑色漸層
+                // 讓白色文字在任何圖片上都維持可讀性，CTA 膠囊維持白底黑字不變
+                <div key={c.key} className="relative mb-4 h-[260px] shrink-0 snap-start">
                   <Link
-                    key={c.key}
                     href={c.href}
-                    className={`col-span-2 flex items-center gap-3 rounded-3xl ${c.bg} p-4 ${c.text} transition-transform active:scale-[0.98]`}
+                    className="relative flex h-full flex-col justify-end overflow-hidden rounded-[32px] border border-gray-100 text-white transition-transform active:scale-[0.98]"
                   >
-                    <div className={`${CARD_ICON_WRAP} ${c.iconBg} ${c.iconColor} shrink-0 shadow-[0_1px_4px_rgba(0,0,0,0.08)]`}>
-                      {c.icon}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-bold leading-snug">
+                    <img
+                      src={c.image}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+                    <div className="relative z-10 p-5">
+                      <p className="text-[19px] font-black leading-tight">
                         {c.title}
                       </p>
-                      <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${c.subtext}`}>
+                      <p className="mt-1 line-clamp-1 text-[13px] leading-snug text-white/85">
                         {c.description}
                       </p>
+                      <span className={HERO_CTA}>
+                        {c.cta}
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M13 6l6 6-6 6" />
+                        </svg>
+                      </span>
                     </div>
                   </Link>
-                ) : (
-                  <Link
-                    key={c.key}
-                    href={c.href}
-                    className={`flex flex-col gap-3 rounded-3xl border border-gray-100 ${c.bg} p-4 ${c.text} transition-transform active:scale-[0.98]`}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      dismissCard(c.key);
+                    }}
+                    title="略過"
+                    className="absolute right-3 top-3 z-20 flex size-7 items-center justify-center text-white"
                   >
-                    <div className={`${CARD_ICON_WRAP} ${c.iconBg} ${c.iconColor}`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <path d="m6 6 12 12" />
+                      <path d="m18 6-12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div key={c.key} className="relative mb-4 h-[260px] shrink-0 snap-start">
+                  <Link
+                    href={c.href}
+                    className={`flex h-full flex-col justify-between overflow-hidden rounded-[32px] border border-gray-100 ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
+                  >
+                    <div className={`flex size-12 items-center justify-center rounded-full ${c.iconBg} ${c.iconColor} shadow-[0_2px_8px_rgba(0,0,0,0.08)]`}>
                       {c.icon}
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold leading-snug">
+                      <p className="text-[19px] font-black leading-tight">
                         {c.title}
                       </p>
-                      <p className={`mt-1 line-clamp-2 text-[12px] leading-snug ${c.subtext}`}>
+                      <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
                         {c.description}
                       </p>
+                      <span className={HERO_CTA}>
+                        {c.cta}
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M13 6l6 6-6 6" />
+                        </svg>
+                      </span>
                     </div>
                   </Link>
-                ),
-              )}
-            </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      dismissCard(c.key);
+                    }}
+                    title="略過"
+                    className={`absolute right-3 top-3 z-20 flex size-7 items-center justify-center ${c.text}`}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <path d="m6 6 12 12" />
+                      <path d="m18 6-12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ),
+            )}
           </div>
 
           {/* 對話框：固定在畫面最下面，不隨內容捲動。
