@@ -341,7 +341,7 @@ export default function BanbunHomePage() {
 
           {/* 個人化問候：固定在卡片區上方，不隨卡片捲動——
               呼應參考圖「What Are You Kraving」那種常駐標題感 */}
-          <p className="shrink-0 whitespace-pre-line px-4 pb-7 text-[26px] font-black leading-[1.25] text-gray-800">
+          <p className="shrink-0 whitespace-pre-line px-4 pb-3 text-[26px] font-black leading-[1.25] text-gray-800">
             {HEADLINE}
           </p>
 
