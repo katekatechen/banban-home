@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import Icon from "../_components/Icon";
 import SidebarPanel from "./SidebarPanel";
-import { TODAY_REWARD_AMOUNT, PRODUCTS, HOLDINGS } from "../_lib/mock-data";
+import { PRODUCTS, HOLDINGS } from "../_lib/mock-data";
 import { getOrders, type Order } from "../_lib/orders";
 
 type Panel = "sidebar" | "home";
@@ -85,6 +85,7 @@ export default function BanbunHomePage() {
       ? [
           {
             key: "order",
+            wide: true,
             href: `/v8/orders/${activeOrder.id}`,
             bg: "bg-[#2B3A55]",
             text: "text-white",
@@ -103,18 +104,6 @@ export default function BanbunHomePage() {
           },
         ]
       : []),
-    {
-      key: "reward-source",
-      href: "/v8/ai-select",
-      bg: "bg-brand",
-      text: "text-white",
-      subtext: "text-white/85",
-      iconBg: "bg-white/20",
-      iconColor: "text-white",
-      icon: <Icon src="/icons/nav-reward.svg" className="size-5 text-white" />,
-      title: "查看我的回饋來源",
-      description: `今天收到 ${TODAY_REWARD_AMOUNT} 回饋`,
-    },
     {
       key: "price-watch",
       href: `/v8/wine-select/${trackedProduct.id}`,
@@ -246,15 +235,15 @@ export default function BanbunHomePage() {
           {/* header：拿掉 AIFIAN logo，回饋數字也不用灰底大膠囊，
               避免搶了「伴伴」本身的存在感——只有這個首頁的 header 這樣調整，
               其他頁面的共用 header 不動 */}
-          <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-1">
+          <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-1">
             <button
               onClick={() => scrollToPanel("sidebar")}
               title="選單"
-              className="flex size-8 items-center justify-center text-gray-800"
+              className="flex size-11 items-center justify-center rounded-full bg-white text-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
             >
               <svg
-                width="22"
-                height="22"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -266,19 +255,20 @@ export default function BanbunHomePage() {
                 <line x1="4" x2="20" y1="18" y2="18" />
               </svg>
             </button>
-            <div className="flex items-center gap-3">
-              <div className="relative flex size-8 items-center justify-center">
-                <img src="/icons/nav-bell.svg" alt="通知" className="size-6" />
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-white">
-                  9
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <img src="/icons/nav-reward.svg" alt="" className="size-6" />
-                <span className="text-[14px] font-medium text-gray-800">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 rounded-full bg-white py-1.5 pl-1.5 pr-3 shadow-[0_2px_10px_rgba(0,0,0,0.08)]">
+                <img src="/icons/nav-reward.svg" alt="" className="size-7" />
+                <span className="text-[15px] font-semibold text-gray-800">
                   999,999
                 </span>
               </div>
+              <button
+                title="通知"
+                className="relative flex size-11 items-center justify-center rounded-full bg-white text-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
+              >
+                <img src="/icons/nav-bell.svg" alt="通知" className="size-5" />
+                <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-brand" />
+              </button>
             </div>
           </div>
 
@@ -290,27 +280,48 @@ export default function BanbunHomePage() {
               {headline}
             </p>
 
-            {/* 我可以替你準備：直式清單，一行一張，範例夠多時比橫向捲動更好瀏覽 */}
-            <div className="flex flex-col gap-3 px-4">
-              {suggestionCards.map((c) => (
-                <Link
-                  key={c.key}
-                  href={c.href}
-                  className={`flex items-center gap-3 rounded-2xl ${c.bg} p-4 ${c.text} transition-transform active:scale-[0.98] ${c.bg === "bg-gray-000" ? "border border-gray-100" : ""}`}
-                >
-                  <div className={`${CARD_ICON_WRAP} ${c.iconBg} ${c.iconColor} shrink-0`}>
-                    {c.icon}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-bold leading-snug">
-                      {c.title}
-                    </p>
-                    <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${c.subtext}`}>
-                      {c.description}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+            {/* 我可以替你準備：優先卡（訂單/回饋來源）維持整排橫式，
+                其餘用兩欄方格排版——跟側邊欄那種單欄一條一條的清單拉開節奏差異 */}
+            <div className="grid grid-cols-2 gap-3 px-4">
+              {suggestionCards.map((c) =>
+                c.wide ? (
+                  <Link
+                    key={c.key}
+                    href={c.href}
+                    className={`col-span-2 flex items-center gap-3 rounded-3xl ${c.bg} p-4 ${c.text} transition-transform active:scale-[0.98]`}
+                  >
+                    <div className={`${CARD_ICON_WRAP} ${c.iconBg} ${c.iconColor} shrink-0 shadow-[0_1px_4px_rgba(0,0,0,0.08)]`}>
+                      {c.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-bold leading-snug">
+                        {c.title}
+                      </p>
+                      <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${c.subtext}`}>
+                        {c.description}
+                      </p>
+                    </div>
+                  </Link>
+                ) : (
+                  <Link
+                    key={c.key}
+                    href={c.href}
+                    className={`flex flex-col gap-3 rounded-3xl border border-gray-100 ${c.bg} p-4 ${c.text} transition-transform active:scale-[0.98]`}
+                  >
+                    <div className={`${CARD_ICON_WRAP} ${c.iconBg} ${c.iconColor}`}>
+                      {c.icon}
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-bold leading-snug">
+                        {c.title}
+                      </p>
+                      <p className={`mt-1 line-clamp-2 text-[12px] leading-snug ${c.subtext}`}>
+                        {c.description}
+                      </p>
+                    </div>
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 
