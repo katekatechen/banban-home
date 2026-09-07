@@ -84,7 +84,7 @@ export default function SidebarPanel({
 
       <div className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto px-4 pb-2">
         <p className="px-1 pb-1 text-[13px] font-medium text-gray-400">
-          伴伴能幫你
+          功能列表
         </p>
         {SERVICE_POOL.map((s) => {
           const meta = ICON_META[s.key];

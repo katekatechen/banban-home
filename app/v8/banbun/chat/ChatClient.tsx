@@ -140,6 +140,23 @@ export default function ChatClient() {
       return;
     }
 
+    if (text.includes("關注")) {
+      const p = PRODUCTS.find((p) => p.id === "louve-cortez")!;
+      await pushBot({
+        text: `你關注的${p.name}目前是 $${p.price}，我會持續幫你留意價格變化。`,
+      });
+      await pushBot({
+        card: {
+          name: p.name,
+          desc: `${p.subtitle} · 持續關注中`,
+          price: p.price,
+          emoji: p.emoji,
+          gradient: p.gradient,
+        },
+      });
+      return;
+    }
+
     if (text.includes("獲利了結") || text.includes("賣出")) {
       const h = HOLDINGS.find((h) => h.id === "kinmen-58")!;
       await pushBot({

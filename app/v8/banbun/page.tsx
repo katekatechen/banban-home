@@ -46,7 +46,7 @@ function saveDismissedCards(keys: Set<string>) {
 const HEADLINE = "嗨 Ben，\n你今天可能會需要";
 
 const HERO_CTA =
-  "mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-[13px] font-semibold text-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.12)]";
+  "mt-3 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-[15px] font-bold text-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.12)]";
 
 const HOME_RECEDE_MS = 220;
 
@@ -60,6 +60,9 @@ export default function BanbunHomePage() {
   const [dismissedCards, setDismissedCards] = useState<Set<string>>(new Set());
   // 卡片全部被關掉時，先顯示骨架卡片，模擬伴伴正在重新生成建議
   const [regenerating, setRegenerating] = useState(false);
+  // 卡片重新生成的世代編號，混進 key 裡強迫 React 真的卸載重掛卡片節點，
+  // 進場動畫才會重播（單純改 dismissedCards 的話，同 key 節點只會更新不會重新進場）
+  const [cardCycle, setCardCycle] = useState(0);
 
   const dismissCard = (key: string) => {
     setDismissedCards((prev) => {
@@ -105,6 +108,7 @@ export default function BanbunHomePage() {
   // 個人化建議：直式清單，訂單媒合中/回饋來源用實色卡凸顯優先序，
   // 其他都用統一的白底卡片＋彩色 icon 圓點做出區隔，避免整排都是飽和色太吵
   const trackedProduct = PRODUCTS.find((p) => p.id === "macallan-12")!;
+  const trackedProduct2 = PRODUCTS.find((p) => p.id === "louve-cortez")!;
   const sellCandidate = HOLDINGS.find((h) => h.id === "kinmen-58")!;
 
   const suggestionCards = [
@@ -127,7 +131,7 @@ export default function BanbunHomePage() {
             ),
             title: "訂單媒合中",
             description: activeOrder.name,
-            cta: "查看訂單",
+            cta: "查看訂單進度",
           },
         ]
       : []),
@@ -148,7 +152,25 @@ export default function BanbunHomePage() {
       ),
       title: "追蹤的酒款降價了",
       description: `${trackedProduct.name}現在 $${trackedProduct.price}，比你上次追蹤時更划算`,
-      cta: "查看酒款",
+      cta: `$${trackedProduct.price} 入手`,
+    },
+    {
+      key: "price-watch-2",
+      href: "/v8/banbun/chat?prompt=我關注的另一支酒現在多少錢？",
+      bg: "bg-gray-000",
+      text: "text-gray-800",
+      subtext: "text-gray-500",
+      iconBg: "bg-violet-50",
+      iconColor: "text-violet-500",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      ),
+      title: "持續幫你盯緊價格",
+      description: `${trackedProduct2.name}現在 $${trackedProduct2.price}，我會持續幫你留意`,
+      cta: `$${trackedProduct2.price} 查看`,
     },
     {
       key: "sell-advice",
@@ -167,7 +189,7 @@ export default function BanbunHomePage() {
       ),
       title: "建議獲利了結",
       description: `${sellCandidate.name}上漲 ${sellCandidate.changePct}%，可以考慮賣出`,
-      cta: "考慮賣出",
+      cta: `漲 ${sellCandidate.changePct}% 賣出`,
     },
     {
       key: "weekend-wine",
@@ -181,7 +203,7 @@ export default function BanbunHomePage() {
       icon: <Icon src="/icons/cat-redwine.svg" className="size-6 text-rose-500" />,
       title: "推薦週末適合的酒",
       description: "你之前看過的梅酒，現在有新選擇",
-      cta: "看看推薦",
+      cta: "看看這款梅酒",
     },
     {
       key: "zero-coke",
@@ -200,7 +222,7 @@ export default function BanbunHomePage() {
       ),
       title: "零卡可樂",
       description: "上次買的零卡可樂要不要補貨？",
-      cta: "去補貨",
+      cta: "馬上補貨",
     },
     {
       key: "new-things",
@@ -218,7 +240,7 @@ export default function BanbunHomePage() {
       ),
       title: "看看新東西",
       description: "大家都在買這個",
-      cta: "看新品",
+      cta: "看看這台 PS5",
     },
   ];
 
@@ -236,6 +258,7 @@ export default function BanbunHomePage() {
       setDismissedCards(new Set());
       saveDismissedCards(new Set());
       setRegenerating(false);
+      setCardCycle((n) => n + 1);
     }, 1100);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,26 +341,36 @@ export default function BanbunHomePage() {
 
           {/* 個人化問候：固定在卡片區上方，不隨卡片捲動——
               呼應參考圖「What Are You Kraving」那種常駐標題感 */}
-          <p className="shrink-0 whitespace-pre-line px-4 pb-3 text-[26px] font-black leading-[1.25] text-gray-800">
+          <p className="shrink-0 whitespace-pre-line px-4 pb-7 text-[26px] font-black leading-[1.25] text-gray-800">
             {HEADLINE}
           </p>
 
           {/* 建議卡：改成一次一張的大卡＋明確 CTA（參考 Kraving 那組大卡片設計），
               直式 snap 捲動，捲到下一張時上一張的下緣會先探出頭，暗示還可以往下滑。
               賺回饋收進側邊欄，不再佔用首頁版面，首頁只剩個人化建議 */}
-          <div className="no-scrollbar flex-1 touch-pan-y snap-y snap-mandatory overflow-y-auto px-4 pb-4">
-            {regenerating &&
+          <div className="relative min-h-0 flex-1">
+            {/* 頂部漸層遮罩：起始色要跟標題背景（白色）完全一致，才不會自己變成
+                一條看得出來的分隔線——卡片滑到這裡會先融進背景再淡出，
+                而不是撞上一塊顏色不一樣的色塊 */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-white to-transparent" />
+            <div className="no-scrollbar h-full touch-pan-y snap-y snap-mandatory overflow-y-auto px-4 pb-4">
+              {regenerating &&
               [0, 1, 2].map((i) => (
                 <div
                   key={`skeleton-${i}`}
                   className="shimmer-card mb-4 h-[260px] shrink-0 rounded-[32px]"
                 />
               ))}
-            {visibleCards.map((c) =>
+            {visibleCards.map((c, i) =>
               c.image ? (
                 // 有實際商品圖的卡：圖片滿版鋪底，上面疊一層由下往上的黑色漸層
-                // 讓白色文字在任何圖片上都維持可讀性，CTA 膠囊維持白底黑字不變
-                <div key={c.key} className="relative mb-4 h-[260px] shrink-0 snap-start">
+                // 讓白色文字在任何圖片上都維持可讀性，CTA 膠囊維持白底黑字不變。
+                // key 帶入 cardCycle：卡片重新生成時強迫重新掛載，進場動畫才會重播
+                <div
+                  key={`${c.key}-${cardCycle}`}
+                  className="card-enter relative mb-4 h-[260px] shrink-0 snap-start"
+                  style={{ animationDelay: `${i * 70}ms` }}
+                >
                   <Link
                     href={c.href}
                     className="relative flex h-full flex-col justify-end overflow-hidden rounded-[32px] border border-gray-100 text-white transition-transform active:scale-[0.98]"
@@ -357,7 +390,7 @@ export default function BanbunHomePage() {
                       </p>
                       <span className={HERO_CTA}>
                         {c.cta}
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M5 12h14M13 6l6 6-6 6" />
                         </svg>
                       </span>
@@ -378,45 +411,36 @@ export default function BanbunHomePage() {
                   </button>
                 </div>
               ) : (
-                <div key={c.key} className="relative mb-4 h-[260px] shrink-0 snap-start">
+                // 目前只有訂單媒合中會走這個分支（其餘建議卡都已經換成商品圖），
+                // 高度跟著文字內容走，不用跟其他大卡一樣固定 260px
+                <div
+                  key={`${c.key}-${cardCycle}`}
+                  className="card-enter mb-4 shrink-0 snap-start"
+                  style={{ animationDelay: `${i * 70}ms` }}
+                >
                   <Link
                     href={c.href}
-                    className={`flex h-full flex-col justify-between overflow-hidden rounded-[32px] border border-gray-100 ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
+                    className={`flex items-center gap-4 overflow-hidden rounded-[32px] border border-gray-100 ${c.bg} p-5 ${c.text} transition-transform active:scale-[0.98]`}
                   >
-                    <div className={`flex size-12 items-center justify-center rounded-full ${c.iconBg} ${c.iconColor} shadow-[0_2px_8px_rgba(0,0,0,0.08)]`}>
+                    <div className={`flex size-12 shrink-0 items-center justify-center rounded-full ${c.iconBg} ${c.iconColor} shadow-[0_2px_8px_rgba(0,0,0,0.08)]`}>
                       {c.icon}
                     </div>
-                    <div>
-                      <p className="text-[19px] font-black leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[16px] font-black leading-tight">
                         {c.title}
                       </p>
-                      <p className={`mt-1 line-clamp-2 text-[13px] leading-snug ${c.subtext}`}>
+                      <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${c.subtext}`}>
                         {c.description}
                       </p>
-                      <span className={HERO_CTA}>
-                        {c.cta}
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14M13 6l6 6-6 6" />
-                        </svg>
-                      </span>
                     </div>
-                  </Link>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      dismissCard(c.key);
-                    }}
-                    title="略過"
-                    className={`absolute right-3 top-3 z-20 flex size-7 items-center justify-center ${c.text}`}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                      <path d="m6 6 12 12" />
-                      <path d="m18 6-12 12" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <path d="m9 6 6 6-6 6" />
                     </svg>
-                  </button>
+                  </Link>
                 </div>
               ),
             )}
+            </div>
           </div>
 
           {/* 對話框：固定在畫面最下面，不隨內容捲動。
