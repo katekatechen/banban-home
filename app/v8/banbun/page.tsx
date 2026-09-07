@@ -352,14 +352,14 @@ export default function BanbunHomePage() {
             {/* 頂部漸層遮罩：起始色要跟標題背景（白色）完全一致，才不會自己變成
                 一條看得出來的分隔線——卡片滑到這裡會先融進背景再淡出，
                 而不是撞上一塊顏色不一樣的色塊 */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-9 bg-gradient-to-b from-white to-transparent" />
             <div className="no-scrollbar h-full touch-pan-y snap-y snap-mandatory overflow-y-auto px-4 pb-4">
               {/* 純粹的留白，不能用 padding-top 代替：snap-mandatory 一律會找
                   最近的 snap 對齊點靠齊，padding 不是有效的 snap 點，一載入
                   就會被直接跳過（scrollTop 自動變成 padding 的量，卡片還是貼齊
                   遮罩底下）。這裡额外給 snap-start，讓「留白本身」變成合法的
                   第一個停靠點，捲動起始位置才會真的停在這裡而不是被跳過 */}
-              <div className="h-16 shrink-0 snap-start" />
+              <div className="h-9 shrink-0 snap-start" />
               {regenerating &&
               [0, 1, 2].map((i) => (
                 <div
