@@ -146,7 +146,7 @@ export default function FaceIdOrderSheet({
               <path d="M9.5 15.5c1.5 1.2 3.5 1.2 5 0" />
             </svg>
           )}
-          {stage === "idle" && "一鍵刷臉下單"}
+          {stage === "idle" && "確認下單"}
           {stage === "scanning" && "驗證中…"}
           {stage === "success" && "驗證成功"}
         </button>
