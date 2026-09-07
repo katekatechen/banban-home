@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
 import ProductSheet from "../../_components/ProductSheet";
-import { getCart, toggleCartItem, ensureInCart } from "../../_lib/cart";
+import FaceIdOrderSheet from "../../_components/FaceIdOrderSheet";
+import { getCart, toggleCartItem } from "../../_lib/cart";
 import { PRODUCTS, HOLDINGS } from "../../_lib/mock-data";
-import { getOrders } from "../../_lib/orders";
+import { getOrders, addOrder } from "../../_lib/orders";
 import {
   type Message,
   type RecCard,
@@ -33,6 +34,7 @@ export default function ChatClient() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [sheetCard, setSheetCard] = useState<RecCard | null>(null);
+  const [confirmCard, setConfirmCard] = useState<RecCard | null>(null);
   const [cartKeys, setCartKeys] = useState<Set<string>>(
     () => new Set(getCart().map((i) => i.key)),
   );
@@ -268,10 +270,32 @@ export default function ChatClient() {
     });
   };
 
+  // 立即購買不再跳去結帳頁，直接開一個確認明細＋一鍵刷臉下單的 sheet，
+  // 讓伴伴把整件事在對話裡辦完，不用把使用者丟到另一個獨立流程
   const handleBuyNow = (card: RecCard) => {
-    ensureInCart(toCartItem(card));
     setSheetCard(null);
-    router.push("/v8/checkout");
+    setConfirmCard(card);
+  };
+
+  const handleConfirmOrder = (finalTotal: number) => {
+    if (!confirmCard) return;
+    addOrder({
+      name: confirmCard.name,
+      price: finalTotal,
+      emoji: confirmCard.emoji,
+      gradient: confirmCard.gradient,
+      source: "伴伴對話",
+    });
+    setConfirmCard(null);
+    setMessages((m) => [
+      ...m,
+      {
+        id: genId(),
+        role: "bot",
+        orderConfirmed: true,
+        text: `已用 Face ID 確認，「${confirmCard.name}」訂單成立，媒合完成我會馬上通知你。`,
+      },
+    ]);
   };
 
   useEffect(() => {
@@ -362,6 +386,14 @@ export default function ChatClient() {
           onClose={() => setSheetCard(null)}
           onToggleCart={() => handleToggleCart(sheetCard)}
           onBuyNow={() => handleBuyNow(sheetCard)}
+        />
+      )}
+
+      {confirmCard && (
+        <FaceIdOrderSheet
+          card={confirmCard}
+          onClose={() => setConfirmCard(null)}
+          onConfirm={handleConfirmOrder}
         />
       )}
     </div>
