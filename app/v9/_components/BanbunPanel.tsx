@@ -41,6 +41,9 @@ export default function BanbunPanel() {
   // 只留最多 4 則，且每次進來都重新抽一批，貼在輸入框正上方——
   // 掛載後才計算（getOrders 讀 sessionStorage、抽籤也不能在 SSR 跟 CSR 兜不起來）
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  // 首頁的輸入框現在是真的可以打字，打完送出才進聊天室（帶著這句話），
+  // 不是點下去就直接跳轉
+  const [homeInput, setHomeInput] = useState("");
 
   const openChat = (prompt?: string) => {
     const el = homeContentRef.current;
@@ -197,29 +200,41 @@ export default function BanbunPanel() {
       </div>
 
       <div className="flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-4">
-        <button
-          onClick={() => openChat()}
-          className="flex items-center gap-2 rounded-full bg-white py-1.5 pl-3 pr-1.5 text-left shadow-[0_2px_16px_rgba(0,0,0,0.08)]"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const text = homeInput.trim();
+            if (!text) return;
+            setHomeInput("");
+            openChat(text);
+          }}
+          className="flex items-center gap-2 rounded-full bg-white py-1.5 pl-3 pr-1.5 shadow-[0_2px_16px_rgba(0,0,0,0.08)]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="shrink-0 text-gray-800">
             <path d="M12 5v14" />
             <path d="M5 12h14" />
           </svg>
-          <span className="flex-1 px-1 text-[14px] text-gray-400">
-            想做什麼，跟伴伴說
-          </span>
+          <input
+            value={homeInput}
+            onChange={(e) => setHomeInput(e.target.value)}
+            placeholder="想做什麼，跟伴伴說"
+            className="flex-1 px-1 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+          />
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-800">
             <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
             <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
             <path d="M12 18v4" />
           </svg>
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+          <button
+            type="submit"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 19V5" />
               <path d="m5 12 7-7 7 7" />
             </svg>
-          </span>
-        </button>
+          </button>
+        </form>
       </div>
     </div>
   );
