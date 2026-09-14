@@ -42,7 +42,7 @@ export default function ProductDetail({
   );
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col ios-backdrop">
       <div className="no-scrollbar flex-1 overflow-y-auto">
         <div className="relative">
           <div
@@ -55,11 +55,15 @@ export default function ProductDetail({
             <div className="flex items-center justify-between px-4 pt-1">
               <button
                 onClick={() => router.back()}
-                className="flex size-9 items-center justify-center rounded-full bg-white/90 text-[18px] text-gray-800"
+                aria-label="返回"
+                className="ios-surface ios-pressable ios-round flex size-10 items-center justify-center text-[18px] text-gray-800"
               >
                 ‹
               </button>
-              <button className="flex size-9 items-center justify-center rounded-full bg-white/90 text-[16px]">
+              <button
+                aria-label="播放語音介紹"
+                className="ios-surface ios-pressable ios-round flex size-10 items-center justify-center text-[16px]"
+              >
                 🎧
               </button>
             </div>
@@ -75,9 +79,9 @@ export default function ProductDetail({
           <p className="text-[22px] font-bold text-gray-800">
             ${price.toLocaleString()}
           </p>
-          <p className="text-[12px] text-gray-400">最後更新：{lastUpdated}</p>
+          <p className="text-[12px] text-gray-500">最後更新：{lastUpdated}</p>
         </div>
-        <div className="inline-flex w-fit items-center gap-1 rounded-lg border border-brand px-3 py-1.5">
+        <div className="ios-surface inline-flex w-fit items-center gap-1 px-3 py-1.5">
           <span className="text-[12px] font-semibold text-brand">
             AIFIAN Rating
           </span>
@@ -89,23 +93,19 @@ export default function ProductDetail({
 
         {holding ? (
           <>
-            <div className="mt-3 flex gap-6 border-b border-gray-100">
+            <div className="mt-3 flex gap-2">
               <button
                 onClick={() => setTab("status")}
-                className={`pb-2.5 text-[14px] font-semibold ${
-                  tab === "status"
-                    ? "border-b-2 border-brand text-brand"
-                    : "text-gray-400"
+                className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-shadow ${
+                  tab === "status" ? "ios-inset text-brand" : "text-gray-500"
                 }`}
               >
                 持有狀態
               </button>
               <button
                 onClick={() => setTab("info")}
-                className={`pb-2.5 text-[14px] font-semibold ${
-                  tab === "info"
-                    ? "border-b-2 border-brand text-brand"
-                    : "text-gray-400"
+                className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-shadow ${
+                  tab === "info" ? "ios-inset text-brand" : "text-gray-500"
                 }`}
               >
                 基本資訊
@@ -113,7 +113,7 @@ export default function ProductDetail({
             </div>
 
             {tab === "status" ? (
-              <div className="mt-2 grid grid-cols-2 gap-4 rounded-2xl bg-gray-000 p-4">
+              <div className="ios-inset mt-2 grid grid-cols-2 gap-4 p-4">
                 <Stat label="持有現值" value={`$${holding.currentValue.toLocaleString()}`} />
                 <Stat
                   label="總變化"
@@ -126,7 +126,7 @@ export default function ProductDetail({
                 <Stat label="持有瓶數" value={`${holding.qty}`} />
               </div>
             ) : (
-              <div className="mt-2 flex flex-col gap-2 rounded-2xl bg-gray-000 p-4 text-[13px] text-gray-600">
+              <div className="ios-inset mt-2 flex flex-col gap-2 p-4 text-[13px] text-gray-600">
                 <p>容量／酒精濃度：{subtitle}</p>
                 <p>存放狀態：AIFIAN 代管酒窖</p>
                 <p>最後更新：{lastUpdated}</p>
@@ -134,7 +134,7 @@ export default function ProductDetail({
             )}
           </>
         ) : (
-          <div className="mt-2 flex flex-col gap-2 rounded-2xl bg-gray-000 p-4 text-[13px] text-gray-600">
+          <div className="ios-inset mt-2 flex flex-col gap-2 p-4 text-[13px] text-gray-600">
             <p>{subtitle}</p>
             <p>由伴伴精選，直接寄送到你手上，不會存放在 AIFIAN 裡面。</p>
           </div>
@@ -158,19 +158,19 @@ export default function ProductDetail({
       </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 border-t border-gray-100 bg-white px-4 pb-2 pt-3">
+      <div className="flex shrink-0 items-center gap-2 ios-backdrop px-4 pb-2 pt-3">
         {holding && (
           <>
             <button
               onClick={() => setAction("redeemed")}
-              className="flex flex-col items-center gap-0.5 rounded-2xl border border-gray-300 px-4 py-2.5 text-gray-700"
+              className="ios-surface ios-pressable flex flex-col items-center gap-0.5 px-4 py-2.5 text-gray-700"
             >
               <span className="text-[16px]">🚚</span>
               <span className="text-[11px]">領回</span>
             </button>
             <button
               onClick={() => setAction("sold")}
-              className="flex flex-1 flex-col items-center gap-0.5 rounded-2xl border border-brand px-4 py-2.5 text-brand"
+              className="ios-surface ios-pressable flex flex-1 flex-col items-center gap-0.5 px-4 py-2.5 text-brand"
             >
               <span className="text-[13px] font-semibold">賣出</span>
               <span className="text-[11px]">可賣出：{holding.qty} 瓶</span>
@@ -182,7 +182,7 @@ export default function ProductDetail({
             setAction("bought");
             addOrder({ name, price, emoji, gradient, source });
           }}
-          className="flex flex-[1.4] flex-col items-center justify-center rounded-2xl bg-brand py-2.5 text-white"
+          className="ios-accent ios-pressable flex flex-[1.4] flex-col items-center justify-center py-2.5 text-white"
         >
           <span className="text-[14px] font-semibold">買入</span>
           <span className="text-[11px] text-white/80">

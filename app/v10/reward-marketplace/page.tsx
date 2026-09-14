@@ -4,14 +4,14 @@ import BackButton from "../_components/BackButton";
 import { REWARD_BALANCE } from "../_lib/mock-data";
 
 const UPCOMING = [
-  { name: "Ricoh GR III 相機", emoji: "📷", diff: "1,200", gradient: "from-gray-700 to-gray-900" },
-  { name: "斑比跳跳頂級豪華露營", emoji: "🏕️", diff: "3,400", gradient: "from-emerald-700 to-emerald-950" },
+  { name: "Ricoh GR III 相機", emoji: "📷", diff: "1,200", bg: "bg-gray-800" },
+  { name: "斑比跳跳頂級豪華露營", emoji: "🏕️", diff: "3,400", bg: "bg-emerald-800" },
 ];
 
 export default function RewardMarketplacePage() {
   return (
     <div
-      className="no-scrollbar flex h-full flex-col overflow-y-auto bg-white"
+      className="no-scrollbar flex h-full flex-col overflow-y-auto ios-backdrop"
       data-page-root
       style={{ animation: "pageIn 0.28s cubic-bezier(.2,.9,.25,1)" }}
     >
@@ -23,7 +23,7 @@ export default function RewardMarketplacePage() {
         </div>
         <Link
           href="/v10/reward-history"
-          className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1"
+          className="ios-surface ios-pressable ios-round flex items-center gap-1 px-2.5 py-1"
         >
           <img src="/icons/nav-reward.svg" alt="" className="size-4" />
           <span className="text-[14px] font-medium text-gray-800">
@@ -38,7 +38,7 @@ export default function RewardMarketplacePage() {
             最新願望
           </p>
           <div
-            className="relative flex h-[150px] flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 p-4 text-white"
+            className="ios-shadow relative flex h-[150px] flex-col justify-end overflow-hidden rounded-2xl bg-indigo-950 p-4 text-white"
           >
             <span className="absolute right-3 top-3 text-[40px] opacity-40">
               🥽
@@ -48,7 +48,7 @@ export default function RewardMarketplacePage() {
               現實與虛擬完美融合的新體驗
             </p>
             <p className="mt-2 text-[12px] font-semibold text-brand">
-              中獎價 {"{{ value }}"}
+              中獎價 $399
             </p>
           </div>
         </div>
@@ -61,7 +61,7 @@ export default function RewardMarketplacePage() {
             {UPCOMING.map((u) => (
               <div key={u.name} className="flex flex-col gap-1.5">
                 <div
-                  className={`relative flex aspect-square items-center justify-center rounded-2xl bg-gradient-to-br text-[40px] ${u.gradient}`}
+                  className={`ios-shadow relative flex aspect-square items-center justify-center rounded-2xl text-[40px] ${u.bg}`}
                 >
                   <span className="absolute left-2 top-2 rounded-lg bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
                     差 {u.diff}

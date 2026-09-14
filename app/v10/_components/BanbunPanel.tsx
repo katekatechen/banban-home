@@ -4,25 +4,22 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusBar from "./StatusBar";
 import TopNav from "./TopNav";
-import Icon from "./Icon";
 import { PRODUCTS, HOLDINGS } from "../_lib/mock-data";
 import { getOrders, type Order } from "../_lib/orders";
 
-const EYEBROW = "嗨，Ben";
-const HEADLINE = "你今天可能會需要";
+const HEADLINE = "嗨，今天想要做什麼？";
 const HOME_RECEDE_MS = 220;
 const MAX_SUGGESTIONS = 4;
 
-// 建議改成標籤（tag）樣式：統一灰階、不再每個分類配一種顏色，
-// 文案也從完整句子縮成 4 個字左右的方向詞，一眼掃過去就知道每個標籤在講什麼；
-// 實際的完整問句留給進聊天室之後由伴伴回答，標籤本身只負責「指方向」。
+// 建議維持標籤（tag）樣式：一句完整口氣的短句 + emoji，跟 Figma 首頁例圖
+// （可樂補貨／每日回饋／中秋烤肉）同一種調性——實際的完整問句留給進聊天室
+// 之後由伴伴回答，標籤本身只負責「指方向」。
 type Suggestion = {
   key: string;
   // 訂單媒合中直接連到訂單詳情，其他都是丟一句 prompt 進聊天室
   href?: string;
   prompt?: string;
-  iconColor: string;
-  icon: React.ReactNode;
+  emoji: string;
   label: string;
 };
 
@@ -41,9 +38,65 @@ export default function BanbunPanel() {
   // 只留最多 4 則，且每次進來都重新抽一批，貼在輸入框正上方——
   // 掛載後才計算（getOrders 讀 sessionStorage、抽籤也不能在 SSR 跟 CSR 兜不起來）
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  // 每次重新抽籤就 +1，讓標籤的 key 一定變動、逼 React 整批重新掛載，
+  // 進場動畫（tag-enter）才會在按下「換一批」時重播，不會因為同名標籤
+  // 剛好又被抽到、DOM 節點被沿用而跳過動畫
+  const [batch, setBatch] = useState(0);
   // 首頁的輸入框現在是真的可以打字，打完送出才進聊天室（帶著這句話），
   // 不是點下去就直接跳轉
   const [homeInput, setHomeInput] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
+  const hasInput = homeInput.trim().length > 0;
+
+  // 「換一批」改成用往下拉標籤堆疊觸發，不再是常駐按鈕：手感參考 Threads
+  // 串文底部那顆會隨拉動距離放大的圓形指示器。pull 是目前的拉動距離（px，
+  // 含阻尼），只用來畫面渲染；真正判斷放手時要不要觸發一律讀 ref
+  // （pullRef／draggingRef），避免快速滑動時 pointerup 讀到還沒 flush
+  // 的舊 state、導致明明拉超過門檻卻沒有觸發
+  const PULL_TRIGGER = 56;
+  const PULL_MAX = 90;
+  const [pull, setPull] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const pullRef = useRef(0);
+  const draggingRef = useRef(false);
+  const dragStartY = useRef<number | null>(null);
+
+  const handlePullStart = (e: React.PointerEvent) => {
+    dragStartY.current = e.clientY;
+  };
+
+  const handlePullMove = (e: React.PointerEvent) => {
+    if (dragStartY.current === null) return;
+    const delta = e.clientY - dragStartY.current;
+    if (!draggingRef.current) {
+      // 8px 誤差範圍內先不接手，讓標籤原本的點擊（進聊天室）維持正常；
+      // 往上滑則直接放棄這次手勢，不要跟原生滾動搶
+      if (delta < 8) {
+        if (delta < -8) dragStartY.current = null;
+        return;
+      }
+      draggingRef.current = true;
+      setIsDragging(true);
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    }
+    e.preventDefault();
+    const damped =
+      delta <= PULL_MAX ? delta : PULL_MAX + (delta - PULL_MAX) * 0.25;
+    const next = Math.max(damped, 0);
+    pullRef.current = next;
+    setPull(next);
+  };
+
+  const handlePullEnd = () => {
+    if (draggingRef.current && pullRef.current >= PULL_TRIGGER) {
+      rollSuggestions();
+    }
+    dragStartY.current = null;
+    draggingRef.current = false;
+    pullRef.current = 0;
+    setIsDragging(false);
+    setPull(0);
+  };
 
   const openChat = (prompt?: string) => {
     const el = homeContentRef.current;
@@ -63,12 +116,8 @@ export default function BanbunPanel() {
     setTimeout(() => router.push(target), HOME_RECEDE_MS);
   };
 
-  useEffect(() => {
-    const content = homeContentRef.current;
-    if (content) content.style.animation = "homeApproach 220ms ease-out";
-
+  const rollSuggestions = () => {
     const trackedProduct = PRODUCTS.find((p) => p.id === "macallan-12")!;
-    const trackedProduct2 = PRODUCTS.find((p) => p.id === "louve-cortez")!;
     const sellCandidate = HOLDINGS.find((h) => h.id === "kinmen-58")!;
     const activeOrder = getOrders().find((o) => o.status === "進行中") ?? null;
 
@@ -76,84 +125,47 @@ export default function BanbunPanel() {
       ? {
           key: "order",
           href: `/v10/orders/${activeOrder.id}`,
-          iconColor: "text-gray-800",
-          icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m21 8.5-9-4.5-9 4.5v8l9 4.5 9-4.5Z" />
-              <path d="m3 8.5 9 4.5 9-4.5" />
-              <path d="M12 13v8" />
-            </svg>
-          ),
+          emoji: "📦",
           label: `你的${activeOrder.name}還在媒合中，再等等喔`,
         }
       : null;
 
     const pool: Suggestion[] = [
       {
+        key: "restock-drink",
+        prompt: "我想買可樂",
+        emoji: "🥤",
+        label: "上次買的可樂喝完了嗎？要不要補貨",
+      },
+      {
+        key: "daily-reward",
+        prompt: "我想看智能選品",
+        emoji: "🎉",
+        label: "你的每日回饋突破 100 元！再買點智能選品？",
+      },
+      {
+        key: "mid-autumn",
+        prompt: "推薦適合中秋烤肉喝的酒",
+        emoji: "🍖",
+        label: "中秋烤肉想喝點什麼嗎？",
+      },
+      {
         key: "price-watch",
         prompt: `${trackedProduct.name}降價了嗎？`,
-        iconColor: "text-gray-600",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12.59 2.59 4 11.17V20a2 2 0 0 0 2 2h8.83l8.58-8.59a2 2 0 0 0 0-2.82l-8.4-8.4a2 2 0 0 0-2.42-.6Z" />
-            <path d="M7.5 7.5h.01" />
-          </svg>
-        ),
+        emoji: "🏷️",
         label: `你在看的${trackedProduct.name}降價囉，要不要入手？`,
       },
       {
         key: "price-watch-2",
-        prompt: `${trackedProduct2.name}現在多少錢？`,
-        iconColor: "text-gray-500",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        ),
-        label: `還在幫你盯著${trackedProduct2.name}的價格`,
+        prompt: "PS5 Pro 現在多少錢？",
+        emoji: "👀",
+        label: "監控 PS5 Pro 的價格",
       },
       {
         key: "sell-advice",
         prompt: `${sellCandidate.name}可以獲利了結了嗎？`,
-        iconColor: "text-gray-700",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 17l6-6 4 4 8-8" />
-            <path d="M15 7h6v6" />
-          </svg>
-        ),
+        emoji: "📈",
         label: `你的${sellCandidate.name}漲不少，考慮賣掉嗎？`,
-      },
-      {
-        key: "weekend-wine",
-        prompt: "推薦適合週末喝的酒",
-        iconColor: "text-gray-500",
-        icon: <Icon src="/icons/cat-redwine.svg" className="size-5" />,
-        label: "週末想喝點什麼？這支梅酒不錯",
-      },
-      {
-        key: "zero-coke",
-        prompt: "我想買零卡可樂",
-        iconColor: "text-gray-600",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="7" y="4" width="10" height="16" rx="2" />
-            <path d="M9 8h6" />
-          </svg>
-        ),
-        label: "零卡可樂喝完了嗎？要不要補貨",
-      },
-      {
-        key: "new-things",
-        prompt: "最近大家都在買什麼？",
-        iconColor: "text-gray-500",
-        icon: (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" />
-          </svg>
-        ),
-        label: "最近大家都在搶 PS5，要看看嗎？",
       },
     ];
 
@@ -161,80 +173,162 @@ export default function BanbunPanel() {
     const remainingSlots = orderCard ? MAX_SUGGESTIONS - 1 : MAX_SUGGESTIONS;
     const picked = shuffle(pool).slice(0, remainingSlots);
     setSuggestions(orderCard ? [orderCard, ...picked] : picked);
+    setBatch((b) => b + 1);
+  };
+
+  useEffect(() => {
+    rollSuggestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div
       ref={homeContentRef}
-      className="no-scrollbar flex h-full flex-col overflow-y-auto bg-gradient-to-br from-white via-gray-100 to-gray-300"
+      className="flex h-full flex-col overflow-hidden"
+      style={{
+        backgroundImage:
+          "linear-gradient(90deg, rgb(249, 250, 251) 0%, rgb(249, 250, 251) 100%), linear-gradient(114.70823233200596deg, rgb(246, 244, 238) 14.286%, rgb(240, 242, 239) 53.571%, rgb(211, 223, 227) 85.714%)",
+      }}
     >
       <StatusBar />
       <TopNav />
 
-      {/* 標題＋標籤這一整組在 TopNav 跟輸入框之間垂直置中，
-          用 flex-1 + justify-center 讓上下留白平均分配，而不是貼齊上緣 */}
-      <div className="flex flex-1 flex-col justify-center gap-5 px-4">
-        <div>
-          <p className="text-[13px] font-medium text-gray-600">{EYEBROW}</p>
-          <p className="mt-1 text-[30px] font-bold leading-[1.2] tracking-tight text-gray-900">
-            {HEADLINE}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-start gap-3">
-          {suggestions.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => (s.href ? router.push(s.href) : openChat(s.prompt))}
-              className="flex max-w-[88%] items-center gap-3 rounded-full bg-white/90 px-5 py-3.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.06)] active:opacity-70"
-            >
-              <span className={`flex size-5 shrink-0 items-center justify-center ${s.iconColor}`}>
-                {s.icon}
-              </span>
-              <span className="line-clamp-1 min-w-0 text-[14px] font-medium text-gray-800">
-                {s.label}
-              </span>
-            </button>
-          ))}
-        </div>
+      {/* 只有大頭貼＋問候語＋標題在這個區塊垂直置中，標籤跟輸入框
+          另外分到下面那組，固定貼在 tabbar 正上方，不會被這裡的置中邏輯影響 */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+        {/* 這份頭像檔本身就包含深色圓底＋陰影＋伴伴臉，不用再另外疊 bg/shadow */}
+        <img src="/figma/hero-avatar-v2.png" alt="伴伴" className="size-[104px]" />
+        <p className="text-[24px] font-bold leading-[32px] text-[#101828]">
+          {HEADLINE}
+        </p>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+86px)] pt-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const text = homeInput.trim();
-            if (!text) return;
-            setHomeInput("");
-            openChat(text);
-          }}
-          className="flex items-center gap-2 rounded-full bg-white py-1.5 pl-3 pr-1.5 shadow-[0_2px_16px_rgba(0,0,0,0.08)]"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="shrink-0 text-gray-800">
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
-          <input
-            value={homeInput}
-            onChange={(e) => setHomeInput(e.target.value)}
-            placeholder="想做什麼，跟伴伴說"
-            className="flex-1 px-1 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
-          />
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-800">
-            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-            <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
-            <path d="M12 18v4" />
-          </svg>
-          <button
-            type="submit"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-white"
+      {/* 標籤＋輸入框固定在最下面、貼著 tabbar 上緣：標籤在輸入框正上方，
+          輸入框本身不會因為上面內容多寡而被推來推去。101px = TabBar 那顆藥丸
+          實際的高度（nav 的 py-0.5 + 分頁項目 py-9 + icon/label 內容 ≈ 59px）
+          加上 TabBar 外層 pb-[34px] 的安全區留白，再加上要求的 8px 間距 */}
+      <div className="flex shrink-0 flex-col gap-4 px-4 pb-[101px] pt-4">
+        <div className="relative">
+          {/* 往下拉標籤堆疊才會露出來的圓形指示器：藏在標籤堆疊正上方，
+              隨拉動距離淡入放大，拉超過 PULL_TRIGGER 會變成品牌紅並在放手
+              時觸發換一批；沒拉夠就跟著標籤一起彈回去、什麼都不會發生 */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 flex justify-center"
+            style={{ transform: `translateY(${pull / 2 - 16}px)` }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19V5" />
-              <path d="m5 12 7-7 7 7" />
-            </svg>
-          </button>
-        </form>
+            <div
+              className="flex size-8 items-center justify-center rounded-full"
+              style={{
+                backgroundColor:
+                  pull >= PULL_TRIGGER ? "var(--color-primary)" : "#1e2939",
+                opacity: Math.min(pull / 24, 1),
+                transform: `scale(${Math.min(0.5 + (pull / PULL_TRIGGER) * 0.5, 1)})`,
+              }}
+            >
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                className="size-3.5"
+                style={{
+                  transform: `rotate(${Math.min(pull / PULL_TRIGGER, 1) * 180}deg)`,
+                }}
+                aria-hidden
+              >
+                <path
+                  d="M3 6l5 5 5-5"
+                  stroke="white"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div
+            className="flex flex-col items-start gap-2"
+            onPointerDown={handlePullStart}
+            onPointerMove={handlePullMove}
+            onPointerUp={handlePullEnd}
+            onPointerCancel={handlePullEnd}
+            style={{
+              transform: `translateY(${pull}px)`,
+              transition: isDragging
+                ? "none"
+                : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
+              touchAction: "none",
+            }}
+          >
+            {suggestions.map((s, index) => (
+              <button
+                key={`${batch}-${s.key}`}
+                onClick={() =>
+                  s.href ? router.push(s.href) : openChat(s.prompt)
+                }
+                className="tag-enter flex max-w-full items-center gap-2 rounded-[999px] bg-white px-4 py-2.5 text-left shadow-[0px_4px_12px_0px_rgba(0,0,0,0.04)]"
+                style={{
+                  animationDelay: `${(suggestions.length - 1 - index) * 90}ms`,
+                }}
+              >
+                <span className="w-5 shrink-0 text-[20px] leading-none">
+                  {s.emoji}
+                </span>
+                <span className="line-clamp-1 min-w-0 text-[14px] text-gray-800">
+                  {s.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 外層是會跑動的漸層「邊框」：真正的邊框只是內層白色表單跟外層之間
+            露出的 1.5px 縫隙。顏色是一段比容器寬很多的橫向漸層，靠動畫把
+            background-position 往同一個方向（往右）持續平移，所有顏色永遠
+            往同一個方向跑，不會有旋轉造成兩端速度/方向看起來不一致的問題。
+            輸入框 focus 時拿掉跑動的 class，漸層顏色停在當下那個瞬間的位置 */}
+        <div
+          className={`relative rounded-[999px] p-[1.5px] shadow-[0px_4px_36px_0px_rgba(0,0,0,0.12)] ${inputFocused ? "" : "input-gradient-flow"}`}
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, #91fff8, #8b5cf6, #ff6ec7, #91fff8, #8b5cf6, #ff6ec7, #91fff8)",
+            backgroundSize: "300% 100%",
+          }}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const text = homeInput.trim();
+              if (!text) return;
+              setHomeInput("");
+              openChat(text);
+            }}
+            className="relative flex items-center gap-2 rounded-[999px] bg-white p-3"
+          >
+            <img src="/figma/plus.svg" alt="" className="size-6 shrink-0" />
+            <input
+              value={homeInput}
+              onChange={(e) => setHomeInput(e.target.value)}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              placeholder="什麼都可以問伴伴"
+              className="flex-1 text-[14px] text-gray-800 outline-none placeholder:text-[#a1a6ab]"
+            />
+            <span className="flex size-9 shrink-0 items-center justify-center">
+              <img src="/figma/mic.svg" alt="語音輸入" className="size-5" />
+            </span>
+            {/* 還沒輸入內容時按鈕是灰色，打字之後才變成品牌紅，讓「可以送出了」這件事
+                一眼就看得出來，不用等按下去才發現沒反應 */}
+            <button
+              type="submit"
+              disabled={!hasInput}
+              className={`flex size-9 shrink-0 items-center justify-center rounded-[999px] transition-colors ${
+                hasInput ? "bg-brand" : "bg-gray-400"
+              }`}
+            >
+              <img src="/figma/arrow-up.svg" alt="送出" className="size-5" />
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

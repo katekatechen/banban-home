@@ -46,12 +46,13 @@ export default function OrdersPage() {
       : [{ status: filter as OrderStatus, items: filtered }];
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col ios-backdrop">
       <StatusBar />
       <div className="flex shrink-0 items-center px-2 pb-2 pt-1">
         <button
           onClick={() => router.back()}
-          className="flex size-10 items-center justify-center text-[20px] text-gray-800"
+          aria-label="返回"
+          className="ios-surface ios-pressable ios-round flex size-10 items-center justify-center text-[18px] text-gray-800"
         >
           ‹
         </button>
@@ -61,23 +62,19 @@ export default function OrdersPage() {
         <div className="size-10" />
       </div>
 
-      <div className="flex shrink-0 gap-6 border-b border-gray-100 px-4">
+      <div className="flex shrink-0 gap-2 px-4 pb-2">
         <button
           onClick={() => setTab("訂單")}
-          className={`pb-2.5 text-[15px] font-semibold ${
-            tab === "訂單"
-              ? "border-b-2 border-gray-800 text-gray-800"
-              : "text-gray-400"
+          className={`rounded-full px-3.5 py-1.5 text-[14px] font-semibold transition-shadow ${
+            tab === "訂單" ? "ios-inset text-gray-800" : "text-gray-500"
           }`}
         >
           訂單
         </button>
         <button
           onClick={() => setTab("詢問")}
-          className={`pb-2.5 text-[15px] font-semibold ${
-            tab === "詢問"
-              ? "border-b-2 border-gray-800 text-gray-800"
-              : "text-gray-400"
+          className={`rounded-full px-3.5 py-1.5 text-[14px] font-semibold transition-shadow ${
+            tab === "詢問" ? "ios-inset text-gray-800" : "text-gray-500"
           }`}
         >
           詢問
@@ -88,7 +85,7 @@ export default function OrdersPage() {
       {tab === "詢問" ? (
         <div className="flex flex-col items-center gap-2 px-4 py-20 text-center">
           <span className="text-[40px]">💬</span>
-          <p className="text-[14px] text-gray-400">目前沒有詢問紀錄</p>
+          <p className="text-[14px] text-gray-500">目前沒有詢問紀錄</p>
         </div>
       ) : (
         <>
@@ -97,10 +94,8 @@ export default function OrdersPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold ${
-                  filter === f
-                    ? "bg-gray-800 text-white"
-                    : "border border-gray-300 text-gray-700"
+                className={`ios-pressable shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold ${
+                  filter === f ? "ios-inset text-gray-800" : "ios-surface text-gray-700"
                 }`}
               >
                 {f}
@@ -112,7 +107,7 @@ export default function OrdersPage() {
             <div className="flex flex-col items-center gap-2 px-4 py-20 text-center">
               <span className="text-[40px]">📦</span>
               <p className="text-[14px] text-gray-500">還沒有訂單紀錄</p>
-              <p className="text-[12px] text-gray-400">
+              <p className="text-[12px] text-gray-500">
                 跟伴伴說你想要什麼，下單後會出現在這裡
               </p>
             </div>
@@ -120,11 +115,11 @@ export default function OrdersPage() {
             <div className="flex flex-col gap-5 px-4 pb-6">
               {groups.map((g) => (
                 <div key={g.status} className="flex flex-col gap-3">
-                  <p className="text-[13px] text-gray-400">{g.status}</p>
+                  <p className="text-[13px] text-gray-500">{g.status}</p>
                   {g.items.map((o) => (
                     <div
                       key={o.id}
-                      className="flex flex-col gap-3 rounded-2xl border border-gray-200 p-4"
+                      className="ios-surface flex flex-col gap-3 p-4"
                     >
                       <div className="flex items-center justify-between">
                         <span
@@ -132,7 +127,7 @@ export default function OrdersPage() {
                         >
                           {o.status}
                         </span>
-                        <span className="text-[12px] text-gray-400">
+                        <span className="text-[12px] text-gray-500">
                           {formatDate(o.createdAt)}
                         </span>
                       </div>
@@ -150,7 +145,7 @@ export default function OrdersPage() {
                         </p>
                       </Link>
                       <div className="flex items-center justify-between">
-                        <p className="text-[12px] text-gray-400">
+                        <p className="text-[12px] text-gray-500">
                           訂單編號 {o.id}
                         </p>
                         <p className="text-[16px] font-bold text-gray-800">
@@ -160,7 +155,7 @@ export default function OrdersPage() {
                       {o.status !== "進行中" && (
                         <Link
                           href={`/v10/orders/${o.id}`}
-                          className="self-start rounded-full border border-brand px-4 py-1.5 text-[13px] font-semibold text-brand"
+                          className="ios-inset ios-round self-start px-4 py-1.5 text-[13px] font-semibold text-brand"
                         >
                           再買一次
                         </Link>

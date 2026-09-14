@@ -33,7 +33,7 @@ export default function OrderDetailPage() {
   if (order === null) notFound();
   if (order === undefined) {
     return (
-      <div className="flex h-full flex-col bg-white">
+      <div className="flex h-full flex-col ios-backdrop">
         <StatusBar />
       </div>
     );
@@ -60,13 +60,14 @@ export default function OrderDetailPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col ios-backdrop">
       <div className="no-scrollbar flex-1 overflow-y-auto">
         <StatusBar />
         <div className="flex items-center px-2 pb-2 pt-1">
           <button
             onClick={() => router.back()}
-            className="flex size-10 items-center justify-center text-[20px] text-gray-800"
+            aria-label="返回"
+            className="ios-surface ios-pressable ios-round flex size-10 items-center justify-center text-[18px] text-gray-800"
           >
             ‹
           </button>
@@ -86,7 +87,7 @@ export default function OrderDetailPage() {
 
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-4 pb-4 text-[13px] text-gray-400"
+          className="flex items-center gap-1.5 px-4 pb-4 text-[13px] text-gray-500"
         >
           <span>{order.id}</span>
           <svg
@@ -109,7 +110,7 @@ export default function OrderDetailPage() {
 
         <div className="px-4">
           <p className="pb-2 text-[15px] font-semibold text-gray-800">商品</p>
-          <div className="flex gap-3 border-b border-gray-100 pb-4">
+          <div className="ios-inset flex gap-3 p-3">
             <div
               className={`flex size-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-[26px] ${order.gradient}`}
             >
@@ -120,11 +121,11 @@ export default function OrderDetailPage() {
                 <p className="text-[14px] leading-[1.4] text-gray-800">
                   {order.name}
                 </p>
-                <p className="mt-1 text-[13px] text-gray-400">
+                <p className="mt-1 text-[13px] text-gray-500">
                   NT${order.price.toLocaleString()}
                 </p>
               </div>
-              <p className="shrink-0 text-[13px] text-gray-400">
+              <p className="shrink-0 text-[13px] text-gray-500">
                 x{order.qty}
               </p>
             </div>
@@ -141,14 +142,14 @@ export default function OrderDetailPage() {
               <span>運費</span>
               <span className="text-gray-800">NT$0</span>
             </div>
-            <div className="my-1 h-px bg-gray-100" />
+            <div className="my-1 h-px bg-[rgba(0,0,0,0.08)]" />
             <div className="flex justify-between text-[15px] font-semibold text-gray-800">
               <span>總計</span>
               <span>NT${subtotal.toLocaleString()}</span>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-gray-100 py-4 text-[13px]">
+          <div className="flex flex-col gap-3 border-t border-[rgba(0,0,0,0.08)] py-4 text-[13px]">
             <InfoRow label="付款方式" value="信用卡" />
             <InfoRow label="卡號" value="**** 4242" />
             <InfoRow label="收件人" value="阿福" />
@@ -162,7 +163,7 @@ export default function OrderDetailPage() {
       <div className="shrink-0 px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-2">
         <button
           onClick={handleReorder}
-          className="w-full rounded-full bg-brand py-3.5 text-[15px] font-semibold text-white"
+          className="ios-accent ios-pressable ios-round w-full py-3.5 text-[15px] font-semibold text-white"
         >
           請伴伴再買一次
         </button>
@@ -174,7 +175,7 @@ export default function OrderDetailPage() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="shrink-0 text-gray-400">{label}</span>
+      <span className="shrink-0 text-gray-500">{label}</span>
       <span className="text-right text-gray-800">{value}</span>
     </div>
   );

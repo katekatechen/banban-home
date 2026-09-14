@@ -42,7 +42,7 @@ export default function CheckoutPage() {
 
   if (done) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 bg-white px-8 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-3 ios-backdrop px-8 text-center">
         <span className="text-[48px]">🎉</span>
         <p className="text-[17px] font-semibold text-gray-800">
           訂單已成立
@@ -52,7 +52,7 @@ export default function CheckoutPage() {
         </p>
         <button
           onClick={() => router.push("/v10/banbun")}
-          className="mt-4 rounded-full bg-brand px-6 py-2.5 text-[14px] font-semibold text-white"
+          className="ios-accent ios-pressable ios-round mt-4 px-6 py-2.5 text-[14px] font-semibold text-white"
         >
           回到伴伴
         </button>
@@ -61,27 +61,28 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col ios-backdrop">
       <StatusBar />
-      <div className="flex items-center gap-2 border-b border-gray-100 px-2 pb-3 pt-1">
+      <div className="flex items-center gap-2 px-2 pb-3 pt-1">
         <button
           onClick={() => router.back()}
-          className="flex size-8 items-center justify-center text-[20px] text-gray-700"
+          aria-label="返回"
+          className="ios-surface ios-pressable ios-round flex size-9 items-center justify-center text-[18px] text-gray-700"
         >
           ‹
         </button>
         <p className="flex-1 text-[16px] font-bold text-gray-800">結帳</p>
-        <p className="pr-3 text-[13px] text-gray-400">{items.length} 件商品</p>
+        <p className="pr-3 text-[13px] text-gray-500">{items.length} 件商品</p>
       </div>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto bg-gray-000 p-4">
+      <div className="no-scrollbar flex-1 overflow-y-auto p-4">
         {items.length === 0 ? (
-          <p className="pt-20 text-center text-[14px] text-gray-400">
+          <p className="pt-20 text-center text-[14px] text-gray-500">
             購物車是空的
           </p>
         ) : (
           <>
-            <div className="flex flex-col divide-y divide-gray-100 rounded-2xl bg-white px-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="ios-surface flex flex-col divide-y divide-[rgba(0,0,0,0.06)] px-4">
               {items.map((i) => (
                 <div key={i.key} className="flex gap-3 py-4">
                   <div
@@ -99,7 +100,7 @@ export default function CheckoutPage() {
                           removeFromCart(i.key);
                           refresh();
                         }}
-                        className="flex size-7 shrink-0 items-center justify-center text-gray-400"
+                        className="flex size-7 shrink-0 items-center justify-center text-gray-500"
                       >
                         <svg
                           width="16"
@@ -116,9 +117,9 @@ export default function CheckoutPage() {
                         </svg>
                       </button>
                     </div>
-                    <p className="text-[11px] text-gray-400">{i.source}</p>
+                    <p className="text-[11px] text-gray-500">{i.source}</p>
                     <div className="mt-2 flex items-center justify-between">
-                      <div className="flex items-center overflow-hidden rounded-lg border border-gray-300">
+                      <div className="ios-inset flex items-center overflow-hidden rounded-lg">
                         <button
                           onClick={() => {
                             updateQty(i.key, i.qty - 1);
@@ -150,7 +151,7 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <div className="mt-3 flex flex-col gap-2.5 rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="ios-surface mt-3 flex flex-col gap-2.5 p-4">
               <div className="flex justify-between text-[13px] text-gray-500">
                 <span>小計</span>
                 <span className="text-gray-800">${total.toLocaleString()}</span>
@@ -159,7 +160,7 @@ export default function CheckoutPage() {
                 <span>運費</span>
                 <span className="text-emerald-600">免運</span>
               </div>
-              <div className="my-1 h-px bg-gray-100" />
+              <div className="my-1 h-px bg-[rgba(0,0,0,0.08)]" />
               <div className="flex items-baseline justify-between">
                 <span className="text-[14px] font-semibold text-gray-800">
                   總金額
@@ -174,16 +175,16 @@ export default function CheckoutPage() {
       </div>
 
       {items.length > 0 && (
-        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
+        <div className="flex shrink-0 items-center gap-3 ios-backdrop px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
           <div className="min-w-0">
-            <p className="text-[11px] text-gray-400">總金額</p>
+            <p className="text-[11px] text-gray-500">總金額</p>
             <p className="text-[18px] font-bold text-gray-800">
               ${total.toLocaleString()}
             </p>
           </div>
           <button
             onClick={handlePay}
-            className="flex-1 rounded-2xl bg-brand py-3.5 text-[15px] font-semibold text-white"
+            className="ios-accent ios-pressable flex-1 py-3.5 text-[15px] font-semibold text-white"
           >
             前往付款
           </button>

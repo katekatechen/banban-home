@@ -159,3 +159,130 @@ body {
 .card-enter {
   animation: cardEnter 360ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
 }
+
+/* 首頁快速標籤進場：從輸入框那端（右下）斜向滑入淡出，
+   搭配每顆標籤各自的 animation-delay（越靠近輸入框的標籤延遲越短，
+   由下往上依序浮現），fill-mode both 讓延遲期間維持在起始的隱形狀態 */
+@keyframes tagEnter {
+  from {
+    opacity: 0;
+    transform: translate(10px, 14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+.tag-enter {
+  animation: tagEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 首頁輸入框的跑馬燈漸層外框：底色是一段 300% 寬的橫向漸層，往同一個方向
+   平移 background-position（不是旋轉），顏色才會穩定往同一個方向跑，
+   邊框只是內層白色表單跟外層之間露出的 1.5px 縫隙——輸入框 focus 時外層
+   class 會被拿掉，動畫停在當下那個瞬間的位置 */
+@keyframes inputGradientFlow {
+  to {
+    background-position: -200% 0;
+  }
+}
+.input-gradient-flow {
+  animation: inputGradientFlow 5s linear infinite;
+}
+
+/* ============================================================
+   v10 專用：iOS（現行原生介面語言）風格 token / utility class
+   只有 app/v10 底下的元件會用到這幾個 class，刻意不動上面 v1~v9
+   共用的 --background / --color-gray-* / --color-primary，
+   避免這次改版連帶影響其他版本的畫面。
+   （上一版是 Flat Design 的 .flat-* class，這次整包改名成
+   .ios-*、重寫規則，兩套風格沒辦法共存，是覆蓋不是疊加。）
+
+   這裡指的是「現行 iOS」的介面語言（設定 App、原生列表那種質感），
+   不是 2007-2012 那個擬皮革/玻璃鈕的舊 Skeuomorphism（資料庫裡是
+   分開兩筆）。這個 app 從一開始就在模擬原生 iOS 外觀（StatusBar、
+   pageIn/pageOut push 轉場），前幾輪風格實驗都是在挑戰這個底，
+   這次算是回頭把「內容」也做成跟外面的原生殼一致：
+   - 背景用 iOS 設定 App 那個標誌性的淺灰 #F2F2F7（systemGroupedBackground）
+   - 卡片幾乎不用陰影，只用極淡的陰影 + 0.5px 髮絲邊框做出邊界
+   - 選中狀態不是變色而是「浮出一塊白色」，呼應 UISegmentedControl
+     那顆會滑動的白色選取塊
+   - 按下去是原生列表那種瞬間變暗一階，不做位移/縮放
+   ============================================================ */
+:root {
+  --ios-radius: 14px;
+  --ios-separator: rgba(60, 60, 67, 0.29);
+}
+
+/* 每一頁的底：iOS 設定 App 標誌性的淺灰分組背景 */
+.ios-backdrop {
+  background: #f2f2f7;
+}
+
+/* 預設的面（卡片、按鈕）：白底 + 幾乎看不見的陰影 + 0.5px 髮絲邊框 */
+.ios-surface {
+  background: #ffffff;
+  border: 0.5px solid var(--ios-separator);
+  border-radius: var(--ios-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* 選中的面：呼應 UISegmentedControl 滑動的白色選取塊，
+   浮在淺灰底上、帶一點陰影，不是變色 */
+.ios-inset {
+  background: #ffffff;
+  border-radius: var(--ios-radius);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12),
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
+/* 品牌色（tint color）的面：CTA、主要動作用，第三方 iOS App 常見的
+   自訂 tint 色而非系統藍，陰影非常淡 */
+.ios-accent {
+  background: var(--color-primary);
+  border-radius: var(--ios-radius);
+  box-shadow: 0 1px 3px rgba(255, 59, 59, 0.3);
+}
+
+/* 按下去的回饋：原生列表/按鈕按下去是瞬間變暗一階，不做位移或縮放 */
+.ios-pressable {
+  transition: background-color 100ms ease;
+}
+.ios-pressable:active {
+  background-color: rgba(60, 60, 67, 0.08);
+}
+.ios-pressable.ios-accent:active {
+  background-color: var(--color-primary-dark);
+}
+
+/* 只要髮絲邊框、不要填色：商品縮圖本身有自己的顏色，
+   只想借用一圈邊界，不想被 .ios-surface 蓋掉背景 */
+.ios-shadow {
+  border: 0.5px solid var(--ios-separator);
+}
+
+/* 圓形/藥丸形的面（Tab bar、底部大按鈕），比 .ios-surface 兩個 class 疊加時
+   specificity 較高，蓋得過 --ios-radius 的 14px */
+.ios-surface.ios-round,
+.ios-inset.ios-round,
+.ios-accent.ios-round {
+  border-radius: 9999px;
+}
+
+/* ai-select 那頁維持深色底，對應 iOS 深色模式的
+   secondarySystemBackground（#1C1C1E）跟 tertiarySystemBackground */
+.ios-surface-dark {
+  background: #1c1c1e;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--ios-radius);
+}
+.ios-inset-dark {
+  background: #2c2c2e;
+  border-radius: var(--ios-radius);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.ios-surface-dark.ios-round,
+.ios-inset-dark.ios-round {
+  border-radius: 9999px;
+}

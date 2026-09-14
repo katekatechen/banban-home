@@ -25,12 +25,13 @@ export default function ProductSheet({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full overflow-hidden rounded-t-[22px] bg-white"
+        className="relative w-full overflow-hidden rounded-t-[22px] ios-backdrop"
         style={{ animation: "sheetUp 0.3s cubic-bezier(.2,.9,.25,1)" }}
       >
         <button
           onClick={onClose}
-          className="absolute right-3.5 top-3.5 z-10 flex size-9 items-center justify-center rounded-full bg-white/70 text-gray-800 backdrop-blur"
+          aria-label="關閉"
+          className="ios-surface ios-pressable ios-round absolute right-3.5 top-3.5 z-10 flex size-10 items-center justify-center text-gray-800"
         >
           <svg
             width="20"
@@ -65,10 +66,8 @@ export default function ProductSheet({
           <div className="mt-4 flex gap-2.5">
             <button
               onClick={onToggleCart}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3.5 py-3 text-[14px] font-semibold ${
-                inCart
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-600"
-                  : "border-gray-300 text-gray-800"
+              className={`ios-pressable flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3.5 py-3 text-[14px] font-semibold ${
+                inCart ? "ios-inset text-emerald-600" : "ios-surface text-gray-800"
               }`}
             >
               {inCart ? (
@@ -104,7 +103,7 @@ export default function ProductSheet({
             </button>
             <button
               onClick={onBuyNow}
-              className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(255,59,59,0.32)]"
+              className="ios-accent ios-pressable flex-1 rounded-xl py-3 text-[14px] font-semibold text-white"
             >
               立即購買
             </button>

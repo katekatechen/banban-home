@@ -22,7 +22,10 @@ export default function BackButton({ dark = false }: { dark?: boolean }) {
     <button
       onClick={handleBack}
       title="返回"
-      className={`flex size-8 items-center justify-center ${dark ? "text-white" : "text-gray-800"}`}
+      aria-label="返回"
+      className={`ios-pressable ios-round flex size-11 items-center justify-center ${
+        dark ? "ios-surface-dark text-white" : "ios-surface text-gray-800"
+      }`}
     >
       <svg
         width="20"

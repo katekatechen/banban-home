@@ -20,7 +20,7 @@ export default function AiSelectPage() {
         </div>
         <Link
           href="/v10/reward-history"
-          className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1"
+          className="ios-surface-dark ios-round flex items-center gap-1 px-2.5 py-1"
         >
           <img src="/icons/nav-reward.svg" alt="" className="size-4" />
           <span className="text-[14px] font-medium">
@@ -54,7 +54,7 @@ export default function AiSelectPage() {
             查看全部
           </Link>
         </div>
-        <div className="rounded-xl bg-white/5 px-3 py-2.5 text-[13px] text-gray-300">
+        <div className="ios-inset-dark rounded-xl px-3 py-2.5 text-[13px] text-gray-300">
           進行中
         </div>
       </div>
@@ -62,14 +62,14 @@ export default function AiSelectPage() {
       <div className="mt-auto flex items-center gap-2 px-4 pb-4 pt-2">
         <Link
           href={`/v10/collection/${preview.id}`}
-          className="flex flex-1 flex-col items-center gap-0.5 rounded-2xl border border-brand px-4 py-2.5 text-brand"
+          className="ios-surface-dark ios-pressable flex flex-1 flex-col items-center gap-0.5 px-4 py-2.5 text-brand"
         >
           <span className="text-[13px] font-semibold">賣出</span>
           <span className="text-[11px]">可賣出：{preview.qty} 瓶</span>
         </Link>
         <Link
           href="/v10/wine-select"
-          className="flex flex-[1.4] flex-col items-center justify-center rounded-2xl bg-brand py-2.5 text-white"
+          className="ios-accent ios-pressable flex flex-[1.4] flex-col items-center justify-center py-2.5 text-white"
         >
           <span className="text-[14px] font-semibold">買入</span>
           <span className="text-[11px] text-white/80">NT$ 900 /瓶</span>

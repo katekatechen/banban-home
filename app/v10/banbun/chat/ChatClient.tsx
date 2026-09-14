@@ -343,13 +343,14 @@ export default function ChatClient() {
   }, [initialPrompt]);
 
   return (
-    <div className="relative flex h-full flex-col bg-white">
+    <div className="relative flex h-full flex-col ios-backdrop">
       <StatusBar />
-      <div className="flex items-center gap-1 border-b border-gray-100 px-2 pb-3 pt-1">
+      <div className="flex items-center gap-1 px-2 pb-3 pt-1">
         <button
           onClick={() => router.push("/v10/banbun")}
           title="回首頁"
-          className="flex size-8 items-center justify-center text-[20px] text-gray-700"
+          aria-label="回首頁"
+          className="ios-surface ios-pressable ios-round flex size-9 items-center justify-center text-[18px] text-gray-700"
         >
           ‹
         </button>
@@ -368,7 +369,7 @@ export default function ChatClient() {
           {hasMoreHistory && (
             <button
               onClick={loadMoreHistory}
-              className="flex items-center gap-1 self-center rounded-full bg-white px-4 py-2 text-[12px] font-medium text-gray-600 shadow-[0_2px_10px_rgba(0,0,0,0.1)] active:opacity-60"
+              className="ios-surface ios-pressable ios-round flex items-center gap-1 self-center px-4 py-2 text-[12px] font-medium text-gray-600"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 19V5" />
@@ -388,7 +389,7 @@ export default function ChatClient() {
             />
           ))}
           {typing && (
-            <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-3 self-start">
+            <div className="ios-surface flex items-center gap-1 px-4 py-3 self-start">
               <Dot delay="0ms" />
               <Dot delay="150ms" />
               <Dot delay="300ms" />
@@ -399,7 +400,7 @@ export default function ChatClient() {
               <button
                 key={q}
                 onClick={() => handleQuickReply(q)}
-                className="self-start rounded-full border border-brand px-3.5 py-2 text-[13px] font-medium text-brand"
+                className="ios-surface ios-pressable ios-round self-start px-3.5 py-2 text-[13px] font-bold text-brand"
               >
                 {q}
               </button>
@@ -412,18 +413,18 @@ export default function ChatClient() {
           e.preventDefault();
           handleSend(input);
         }}
-        className="flex items-center gap-2 border-t border-gray-100 px-3 py-2.5"
+        className="flex items-center gap-2 px-3 py-2.5"
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="跟伴伴說你想要什麼..."
           autoFocus
-          className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+          className="ios-inset ios-round flex-1 px-4 py-2.5 text-[14px] text-gray-800 outline-none placeholder:text-gray-500"
         />
         <button
           type="submit"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-white"
+          className="ios-accent ios-pressable ios-round flex size-10 shrink-0 items-center justify-center text-white"
         >
           ↑
         </button>
@@ -483,7 +484,7 @@ function ChatBubble({
   if (message.card) {
     const c = message.card;
     return (
-      <div className="flex w-full max-w-[85%] items-center gap-3 self-start rounded-2xl border border-gray-200 bg-white p-3.5">
+      <div className="ios-surface flex w-full max-w-[85%] items-center gap-3 self-start p-3.5">
         <button
           onClick={() => onOpenSheet(c)}
           className="flex min-w-0 flex-1 items-center gap-4 text-left"
@@ -506,10 +507,8 @@ function ChatBubble({
           <button
             onClick={() => onToggleCart(c)}
             title={inCart ? "已加入購物車" : "加入購物車"}
-            className={`relative flex size-[42px] items-center justify-center rounded-[10px] border transition-colors ${
-              inCart
-                ? "border-emerald-600 bg-emerald-50 text-emerald-600"
-                : "border-gray-300 text-gray-500"
+            className={`ios-pressable relative flex size-[42px] items-center justify-center rounded-[14px] transition-colors ${
+              inCart ? "ios-inset text-emerald-600" : "ios-surface text-gray-500"
             }`}
           >
             {inCart ? (
@@ -545,7 +544,7 @@ function ChatBubble({
           <button
             onClick={() => onBuyNow(c)}
             title="立即購買"
-            className="flex size-[42px] items-center justify-center rounded-[10px] bg-brand text-white shadow-[0_2px_6px_rgba(255,59,59,0.3)]"
+            className="ios-accent ios-pressable flex size-[42px] items-center justify-center rounded-[14px] text-white"
           >
             <svg
               width="17"
@@ -577,7 +576,7 @@ function ChatBubble({
   }
 
   return (
-    <div className="max-w-[85%] self-start rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-2.5 text-[14px] text-gray-800">
+    <div className="ios-surface max-w-[85%] self-start px-4 py-2.5 text-[14px] text-gray-800">
       {message.text}
     </div>
   );
