@@ -177,6 +177,17 @@ body {
   animation: tagEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* 下拉標籤觸發換一批時，指示器裡的重新整理圖示轉一圈，
+   呼應「正在重新整理」的原生 pull-to-refresh 手感 */
+@keyframes pullSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.pull-spin {
+  animation: pullSpin 600ms linear infinite;
+}
+
 /* 首頁輸入框的跑馬燈漸層外框：底色是一段 300% 寬的橫向漸層，往同一個方向
    平移 background-position（不是旋轉），顏色才會穩定往同一個方向跑，
    邊框只是內層白色表單跟外層之間露出的 1.5px 縫隙——輸入框 focus 時外層

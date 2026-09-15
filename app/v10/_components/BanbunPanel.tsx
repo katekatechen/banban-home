@@ -57,6 +57,9 @@ export default function BanbunPanel() {
   const PULL_MAX = 90;
   const [pull, setPull] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  // 真的觸發換一批之後，讓指示器停在原地轉一圈再收回去，
+  // 給使用者一個「有在重新整理」的明確回饋，不是拉過門檻就瞬間消失
+  const [refreshing, setRefreshing] = useState(false);
   const pullRef = useRef(0);
   const draggingRef = useRef(false);
   const dragStartY = useRef<number | null>(null);
@@ -90,6 +93,8 @@ export default function BanbunPanel() {
   const handlePullEnd = () => {
     if (draggingRef.current && pullRef.current >= PULL_TRIGGER) {
       rollSuggestions();
+      setRefreshing(true);
+      window.setTimeout(() => setRefreshing(false), 550);
     }
     dragStartY.current = null;
     draggingRef.current = false;
@@ -97,6 +102,10 @@ export default function BanbunPanel() {
     setIsDragging(false);
     setPull(0);
   };
+
+  // 觸發後指示器／標籤堆疊改停在固定的門檻位置轉圈，放手瞬間的實際拉動
+  // 距離（可能超過門檻）不再影響畫面，等 refreshing 結束才一起彈回原位
+  const effectivePull = refreshing ? PULL_TRIGGER : pull;
 
   const openChat = (prompt?: string) => {
     const el = homeContentRef.current;
@@ -209,35 +218,41 @@ export default function BanbunPanel() {
           加上 TabBar 外層 pb-[34px] 的安全區留白，再加上要求的 8px 間距 */}
       <div className="flex shrink-0 flex-col gap-4 px-4 pb-[101px] pt-4">
         <div className="relative">
-          {/* 往下拉標籤堆疊才會露出來的圓形指示器：藏在標籤堆疊正上方，
-              隨拉動距離淡入放大，拉超過 PULL_TRIGGER 會變成品牌紅並在放手
-              時觸發換一批；沒拉夠就跟著標籤一起彈回去、什麼都不會發生 */}
+          {/* 往下拉標籤堆疊才會露出來的重新整理指示器：藏在標籤堆疊正上方，
+              隨拉動距離淡入放大，拉超過 PULL_TRIGGER 會變成品牌紅；放手後
+              若有觸發換一批，圖示會轉一圈才收回去，不是瞬間消失 */}
           <div
             className="pointer-events-none absolute inset-x-0 top-0 flex justify-center"
-            style={{ transform: `translateY(${pull / 2 - 16}px)` }}
+            style={{ transform: `translateY(${effectivePull / 2 - 16}px)` }}
           >
             <div
               className="flex size-8 items-center justify-center rounded-full"
               style={{
                 backgroundColor:
-                  pull >= PULL_TRIGGER ? "var(--color-primary)" : "#1e2939",
-                opacity: Math.min(pull / 24, 1),
-                transform: `scale(${Math.min(0.5 + (pull / PULL_TRIGGER) * 0.5, 1)})`,
+                  refreshing || pull >= PULL_TRIGGER
+                    ? "var(--color-primary)"
+                    : "#1e2939",
+                opacity: refreshing ? 1 : Math.min(pull / 24, 1),
+                transform: `scale(${refreshing ? 1 : Math.min(0.5 + (pull / PULL_TRIGGER) * 0.5, 1)})`,
               }}
             >
               <svg
                 viewBox="0 0 16 16"
                 fill="none"
-                className="size-3.5"
-                style={{
-                  transform: `rotate(${Math.min(pull / PULL_TRIGGER, 1) * 180}deg)`,
-                }}
+                className={`size-3.5 ${refreshing ? "pull-spin" : ""}`}
+                style={
+                  refreshing
+                    ? undefined
+                    : {
+                        transform: `rotate(${Math.min(pull / PULL_TRIGGER, 1) * 270}deg)`,
+                      }
+                }
                 aria-hidden
               >
                 <path
-                  d="M3 6l5 5 5-5"
+                  d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2v3h-3"
                   stroke="white"
-                  strokeWidth="1.6"
+                  strokeWidth="1.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -252,7 +267,7 @@ export default function BanbunPanel() {
             onPointerUp={handlePullEnd}
             onPointerCancel={handlePullEnd}
             style={{
-              transform: `translateY(${pull}px)`,
+              transform: `translateY(${effectivePull}px)`,
               transition: isDragging
                 ? "none"
                 : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
