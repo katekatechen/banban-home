@@ -205,8 +205,18 @@ export default function BanbunPanel() {
       <TopNav />
 
       {/* 只有大頭貼＋問候語＋標題在這個區塊垂直置中，標籤跟輸入框
-          另外分到下面那組，固定貼在 tabbar 正上方，不會被這裡的置中邏輯影響 */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+          另外分到下面那組，固定貼在 tabbar 正上方，不會被這裡的置中邏輯影響。
+          往上滑標籤時這裡也跟著用同一個 effectivePull 位移，讓整個畫面
+          有「一起往上捲動」的感覺，不是只有標籤自己動 */}
+      <div
+        className="flex flex-1 flex-col items-center justify-center gap-6 px-4"
+        style={{
+          transform: `translateY(${-effectivePull}px)`,
+          transition: isDragging
+            ? "none"
+            : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+      >
         {/* 這份頭像檔本身就包含深色圓底＋陰影＋伴伴臉，不用再另外疊 bg/shadow */}
         <img src="/figma/hero-avatar-v2.png" alt="伴伴" className="size-[104px]" />
         <p className="text-[24px] font-bold leading-[32px] text-[#101828]">
