@@ -217,82 +217,82 @@ export default function BanbunPanel() {
           實際的高度（nav 的 py-0.5 + 分頁項目 py-9 + icon/label 內容 ≈ 59px）
           加上 TabBar 外層 pb-[34px] 的安全區留白，再加上要求的 8px 間距 */}
       <div className="flex shrink-0 flex-col gap-4 px-4 pb-[101px] pt-4">
-        <div className="relative">
-          {/* 往下拉標籤堆疊才會露出來的重新整理指示器：藏在標籤堆疊正上方，
-              隨拉動距離淡入放大，拉超過 PULL_TRIGGER 會變成品牌紅；放手後
-              若有觸發換一批，圖示會轉一圈才收回去，不是瞬間消失 */}
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 flex justify-center"
-            style={{ transform: `translateY(${effectivePull / 2 - 16}px)` }}
-          >
-            <div
-              className="flex size-8 items-center justify-center rounded-full"
+        <div
+          className="flex flex-col items-start gap-2"
+          onPointerDown={handlePullStart}
+          onPointerMove={handlePullMove}
+          onPointerUp={handlePullEnd}
+          onPointerCancel={handlePullEnd}
+          style={{ touchAction: "none" }}
+        >
+          {suggestions.map((s, index) => (
+            <button
+              key={`${batch}-${s.key}`}
+              onClick={() =>
+                s.href ? router.push(s.href) : openChat(s.prompt)
+              }
+              className="tag-enter flex max-w-full items-center gap-2 rounded-[999px] bg-white px-4 py-2.5 text-left shadow-[0px_4px_12px_0px_rgba(0,0,0,0.04)]"
               style={{
-                backgroundColor:
-                  refreshing || pull >= PULL_TRIGGER
-                    ? "var(--color-primary)"
-                    : "#1e2939",
-                opacity: refreshing ? 1 : Math.min(pull / 24, 1),
-                transform: `scale(${refreshing ? 1 : Math.min(0.5 + (pull / PULL_TRIGGER) * 0.5, 1)})`,
+                animationDelay: `${(suggestions.length - 1 - index) * 90}ms`,
               }}
             >
-              <svg
-                viewBox="0 0 16 16"
-                fill="none"
-                className={`size-3.5 ${refreshing ? "pull-spin" : ""}`}
-                style={
-                  refreshing
-                    ? undefined
-                    : {
-                        transform: `rotate(${Math.min(pull / PULL_TRIGGER, 1) * 270}deg)`,
-                      }
-                }
-                aria-hidden
-              >
-                <path
-                  d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2v3h-3"
-                  stroke="white"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          </div>
+              <span className="w-5 shrink-0 text-[20px] leading-none">
+                {s.emoji}
+              </span>
+              <span className="line-clamp-1 min-w-0 text-[14px] text-gray-800">
+                {s.label}
+              </span>
+            </button>
+          ))}
+        </div>
 
+        {/* 往下拉標籤才會長出來的重新整理指示器：標籤本身不動，
+            指示器出現在標籤「下方」、輸入框上方那段空間，隨拉動距離
+            長高＋淡入放大；marginTop 用來抵銷父層 gap-4 已經給的 16px，
+            靜止時（height:0）跟原本的間距完全一樣，不會多出空隙。
+            拉超過 PULL_TRIGGER 放開，圖示轉一圈確認換一批後才收回去 */}
+        <div
+          className="flex items-center justify-center overflow-hidden"
+          style={{
+            height: effectivePull,
+            marginTop: -16,
+            transition: isDragging
+              ? "none"
+              : "height 320ms cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
           <div
-            className="flex flex-col items-start gap-2"
-            onPointerDown={handlePullStart}
-            onPointerMove={handlePullMove}
-            onPointerUp={handlePullEnd}
-            onPointerCancel={handlePullEnd}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full"
             style={{
-              transform: `translateY(${effectivePull}px)`,
-              transition: isDragging
-                ? "none"
-                : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
-              touchAction: "none",
+              backgroundColor:
+                refreshing || pull >= PULL_TRIGGER
+                  ? "var(--color-primary)"
+                  : "#1e2939",
+              opacity: refreshing ? 1 : Math.min(pull / 24, 1),
+              transform: `scale(${refreshing ? 1 : Math.min(0.5 + (pull / PULL_TRIGGER) * 0.5, 1)})`,
             }}
           >
-            {suggestions.map((s, index) => (
-              <button
-                key={`${batch}-${s.key}`}
-                onClick={() =>
-                  s.href ? router.push(s.href) : openChat(s.prompt)
-                }
-                className="tag-enter flex max-w-full items-center gap-2 rounded-[999px] bg-white px-4 py-2.5 text-left shadow-[0px_4px_12px_0px_rgba(0,0,0,0.04)]"
-                style={{
-                  animationDelay: `${(suggestions.length - 1 - index) * 90}ms`,
-                }}
-              >
-                <span className="w-5 shrink-0 text-[20px] leading-none">
-                  {s.emoji}
-                </span>
-                <span className="line-clamp-1 min-w-0 text-[14px] text-gray-800">
-                  {s.label}
-                </span>
-              </button>
-            ))}
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              className={`size-3.5 ${refreshing ? "pull-spin" : ""}`}
+              style={
+                refreshing
+                  ? undefined
+                  : {
+                      transform: `rotate(${Math.min(pull / PULL_TRIGGER, 1) * 270}deg)`,
+                    }
+              }
+              aria-hidden
+            >
+              <path
+                d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2v3h-3"
+                stroke="white"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
         </div>
 
