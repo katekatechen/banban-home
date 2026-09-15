@@ -48,11 +48,12 @@ export default function BanbunPanel() {
   const [inputFocused, setInputFocused] = useState(false);
   const hasInput = homeInput.trim().length > 0;
 
-  // 「換一批」改成用往下拉標籤堆疊觸發，不再是常駐按鈕：手感參考 Threads
-  // 串文底部那顆會隨拉動距離放大的圓形指示器。pull 是目前的拉動距離（px，
-  // 含阻尼），只用來畫面渲染；真正判斷放手時要不要觸發一律讀 ref
-  // （pullRef／draggingRef），避免快速滑動時 pointerup 讀到還沒 flush
-  // 的舊 state、導致明明拉超過門檻卻沒有觸發
+  // 「換一批」用手指往上滑（像捲動頁面那樣）觸發，不是常駐按鈕：
+  // 手感參考 Threads 串文捲到底、繼續往上拉才會長出來的圓形指示器。
+  // 標籤本身會跟著手指一起往上跑，下方讓出來的空間裡長出重新整理按鈕。
+  // pull 是目前的拉動距離（px，含阻尼），只用來畫面渲染；真正判斷放手
+  // 時要不要觸發一律讀 ref（pullRef／draggingRef），避免快速滑動時
+  // pointerup 讀到還沒 flush 的舊 state、導致明明拉超過門檻卻沒有觸發
   const PULL_TRIGGER = 56;
   const PULL_MAX = 90;
   const [pull, setPull] = useState(0);
@@ -70,10 +71,11 @@ export default function BanbunPanel() {
 
   const handlePullMove = (e: React.PointerEvent) => {
     if (dragStartY.current === null) return;
-    const delta = e.clientY - dragStartY.current;
+    // 手指往上移動才算數：delta 用「起點 - 目前」，往上滑動時是正值
+    const delta = dragStartY.current - e.clientY;
     if (!draggingRef.current) {
       // 8px 誤差範圍內先不接手，讓標籤原本的點擊（進聊天室）維持正常；
-      // 往上滑則直接放棄這次手勢，不要跟原生滾動搶
+      // 往下滑則直接放棄這次手勢，不要跟原生滾動搶
       if (delta < 8) {
         if (delta < -8) dragStartY.current = null;
         return;
@@ -223,7 +225,13 @@ export default function BanbunPanel() {
           onPointerMove={handlePullMove}
           onPointerUp={handlePullEnd}
           onPointerCancel={handlePullEnd}
-          style={{ touchAction: "none" }}
+          style={{
+            transform: `translateY(${-effectivePull}px)`,
+            transition: isDragging
+              ? "none"
+              : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
+            touchAction: "none",
+          }}
         >
           {suggestions.map((s, index) => (
             <button
@@ -246,11 +254,11 @@ export default function BanbunPanel() {
           ))}
         </div>
 
-        {/* 往下拉標籤才會長出來的重新整理指示器：標籤本身不動，
-            指示器出現在標籤「下方」、輸入框上方那段空間，隨拉動距離
-            長高＋淡入放大；marginTop 用來抵銷父層 gap-4 已經給的 16px，
-            靜止時（height:0）跟原本的間距完全一樣，不會多出空隙。
-            拉超過 PULL_TRIGGER 放開，圖示轉一圈確認換一批後才收回去 */}
+        {/* 手指往上滑、標籤跟著往上跑之後，標籤跟輸入框之間讓出來的空間裡
+            長出重新整理指示器，隨拉動距離長高＋淡入放大；marginTop 用來
+            抵銷父層 gap-4 已經給的 16px，靜止時（height:0）跟原本的間距
+            完全一樣，不會多出空隙。拉超過 PULL_TRIGGER 放開，圖示轉一圈
+            確認換一批後才收回去，標籤也跟著彈回原位 */}
         <div
           className="flex items-center justify-center overflow-hidden"
           style={{
