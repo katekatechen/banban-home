@@ -75,7 +75,7 @@ export default function RewardHistoryPage() {
         <p className="text-[15px] font-semibold text-gray-900">回饋</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         <div className="flex flex-col items-center gap-1 pb-5 pt-2">
           <p className="flex items-end gap-1">
             <span className="flex items-center gap-1.5 text-[32px] font-bold text-gray-900">

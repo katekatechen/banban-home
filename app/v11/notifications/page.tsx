@@ -60,7 +60,7 @@ export default function NotificationsPage() {
         </label>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         <div className="flex flex-col divide-y divide-gray-100">
           {rows.map((n) => (
             <div key={n.id} className="flex items-start gap-3 px-5 py-3.5">

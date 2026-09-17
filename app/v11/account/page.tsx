@@ -52,7 +52,7 @@ export default function AccountPage() {
       <StatusBar />
       <BackHeader title="帳號" onBack={() => exit(() => router.back())} />
 
-      <div className="flex-1 overflow-y-auto pb-8">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         <div className="flex items-center gap-3 px-5 py-4">
           <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-800 text-[17px] font-semibold text-white">
             {getInitials(ACCOUNT_PROFILE.handle)}

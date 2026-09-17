@@ -86,7 +86,7 @@ export default function RewardsPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-8">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-8">
         {tab === "explore" ? (
           <div className="flex flex-col gap-6">
             <div>

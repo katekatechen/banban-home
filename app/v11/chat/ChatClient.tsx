@@ -143,7 +143,10 @@ export default function ChatClient() {
     : undefined;
 
   return (
-    <div className="relative flex h-full flex-col bg-white" style={style}>
+    <div
+      className="relative flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <div className="relative flex shrink-0 items-center justify-center px-4 pb-3 pt-1">
         <button
@@ -160,7 +163,7 @@ export default function ChatClient() {
 
       <div
         ref={scrollRef}
-        className="no-scrollbar flex-1 overflow-y-auto px-4 py-4"
+        className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-4 py-4"
       >
         <div className="flex flex-col gap-3">
           {messages.map((m) => (
@@ -191,7 +194,7 @@ export default function ChatClient() {
         </div>
       </div>
 
-      <div className="px-3 pb-3 pt-1">
+      <div className="shrink-0 px-3 pb-3 pt-1">
         <div className="relative">
           <div className="pointer-events-none absolute -inset-2">
             <InputAirRing focused={focused} keystrokeTick={keystrokeTick} />
