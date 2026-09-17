@@ -221,8 +221,13 @@ const VectorField = forwardRef<VectorFieldHandle, Props>(function VectorField(
           const dy = py - ay;
           const dist = Math.hypot(dx, dy) || 1;
 
-          // 底層：緩慢漂移的基礎風向，任何模式都存在，是「待命」的骨架
-          const drift = -0.45 + 0.18 * Math.sin(t * 0.12 + gx * 0.15);
+          // 底層：緩慢漂移的基礎風向，任何模式都存在，是「待命」的骨架——
+          // 疊兩層不同速度的正弦波，就算畫面完全靜止（settled、沒有手指
+          // 互動）也還是能感覺到背景有一點微微的呼吸感，不會整個定住
+          const drift =
+            -0.45 +
+            0.26 * Math.sin(t * 0.22 + gx * 0.15) +
+            0.07 * Math.sin(t * 0.55 + gy * 0.3);
 
           // 環繞吸引點的切線方向（形成漩渦感），越靠近吸引點影響越強
           const tangential = Math.atan2(dy, dx) + Math.PI / 2;

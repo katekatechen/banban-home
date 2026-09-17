@@ -12,27 +12,78 @@ import VectorField, {
 import { ACCOUNT_PROFILE, REWARD_BALANCE, getInitials } from "./_lib/mock-data";
 
 // 首頁的建議標籤：先固定三則，跟 Figma 例圖同一種口氣的短句 + emoji，
-// 這輪重點是跟氣流場的互動，不是重新做一次 v10 那套隨機抽籤/換一批
-const SUGGESTIONS = [
+// 這輪重點是跟氣流場的互動，不是重新做一次 v10 那套隨機抽籤/換一批。
+// 圖示改用單色實心的自畫 SVG，不用彩色 emoji——跟整頁「氣流／儀表板」
+// 那種收斂、不花俏的調性一致，emoji 的多色插畫感在這裡太搶戲
+const SUGGESTIONS: {
+  key: string;
+  prompt: string;
+  icon: "drink" | "reward" | "flame";
+  label: string;
+}[] = [
   {
     key: "restock-drink",
     prompt: "我想買可樂",
-    emoji: "🥤",
+    icon: "drink",
     label: "上次買的可樂喝完了嗎？要不要補貨",
   },
   {
     key: "daily-reward",
     prompt: "我想看智能選品",
-    emoji: "🎉",
+    icon: "reward",
     label: "你的每日回饋突破 100 元！再買點智能選品？",
   },
   {
     key: "mid-autumn",
     prompt: "推薦適合中秋烤肉喝的酒",
-    emoji: "🍖",
+    icon: "flame",
     label: "中秋烤肉想喝點什麼嗎？",
   },
 ];
+
+function SuggestionIcon({ icon }: { icon: "drink" | "reward" | "flame" }) {
+  if (icon === "drink") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className="size-[18px] text-gray-700">
+        <rect
+          x="8.4"
+          y="0.6"
+          width="1.6"
+          height="4.4"
+          rx="0.8"
+          transform="rotate(18 9.2 2.8)"
+          fill="currentColor"
+        />
+        <path
+          d="M5 4h10l-1.1 12.7a2 2 0 0 1-2 1.8H8.1a2 2 0 0 1-2-1.8L5 4z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+  if (icon === "flame") {
+    return (
+      <svg viewBox="0 0 20 20" fill="none" className="size-[18px] text-gray-700">
+        <path
+          d="M10 2c2.4 3.1 5.2 6.2 5.2 9.7a5.2 5.2 0 1 1-10.4 0C4.8 8.2 7.6 5.1 10 2z"
+          fill="currentColor"
+        />
+        <path
+          d="M10 8.2c.9 1.2 1.9 2.3 1.9 3.6a1.9 1.9 0 1 1-3.8 0c0-.5.1-.9.3-1.3-.1.6.3 1 .8 1 .4 0 .7-.3.7-.7 0-.6-.4-.9-.4-1.5 0-.4.2-.8.5-1.1z"
+          fill="white"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="size-[18px] text-gray-700">
+      <path
+        d="M10 1.5c.35 3.3 1.1 5.6 2.35 6.85S15.4 9.6 18.5 10c-3.1.4-5.4 1.1-6.65 2.35S10.35 15.7 10 18.5c-.35-2.8-1.1-4.95-2.35-6.15S4.1 10.4 1.5 10c3.1-.4 5.4-1.1 6.65-2.35S9.65 4.8 10 1.5z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
 
 // 標籤進場動畫跟 v10 用同一個 tagEnter/tag-enter class（定義在共用的
 // globals.css），最後一則（最靠近輸入框）延遲最短、最先出現，
@@ -181,7 +232,19 @@ export default function V11Page() {
             才能示範「場會回應你」，輸入框跟按鈕是後面的 sibling、疊在
             視覺上層，命中測試時瀏覽器本來就會優先選最上層的元素，
             不會被下面這片畫布擋住點擊 */}
-        <div className="absolute inset-0">
+        {/* 場只鋪在問候語那一層空間，往下漸漸淡出、在標籤堆疊開始之前
+            就完全隱形——氣流感不會蓋到標籤區塊後面，兩者不重疊。
+            吸引點/障礙物的座標算法沒有變，還是用整個 hero 的比例在算，
+            只是視覺上把下半段遮罩掉，收斂的方向感還是對的 */}
+        <div
+          className="absolute inset-0"
+          style={{
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 0%, black 38%, transparent 54%)",
+            maskImage:
+              "linear-gradient(to bottom, black 0%, black 38%, transparent 54%)",
+          }}
+        >
           <VectorField
             ref={fieldRef}
             mode={heroMode}
@@ -211,8 +274,8 @@ export default function V11Page() {
                   animationDelay: `${(SUGGESTIONS.length - 1 - index) * CHIP_STAGGER_MS}ms`,
                 }}
               >
-                <span className="w-5 shrink-0 text-[20px] leading-none">
-                  {s.emoji}
+                <span className="flex w-5 shrink-0 items-center justify-center">
+                  <SuggestionIcon icon={s.icon} />
                 </span>
                 <span className="line-clamp-1 min-w-0 text-[14px] text-gray-800">
                   {s.label}
