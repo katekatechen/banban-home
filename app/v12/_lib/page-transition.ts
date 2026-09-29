@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 // 已經確實提交過的樣式之間補動畫——transition 的觸發時機沒有這種模稜兩可，
 // 這是 React 裡做進場動畫最穩的寫法。
 export const PAGE_TRANSITION_MS = 280;
-const EASING = "cubic-bezier(0.2, 0.9, 0.25, 1)";
+export const EASING = "cubic-bezier(0.2, 0.9, 0.25, 1)";
 
 type Phase = "entering" | "resting" | "exiting";
 
