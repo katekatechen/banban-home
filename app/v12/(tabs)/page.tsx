@@ -110,7 +110,12 @@ export default function V12HomePage() {
         <img src="/figma/v12-hero-mark.svg" alt="" className="size-[75px]" />
       </div>
 
-      <div className="flex shrink-0 flex-col gap-4 px-4 pb-[110px] pt-4">
+      {/* pb 要跟 tabbar 自己的高度連動，不能寫死一個不分裝置的值——
+          tabbar 在真手機（有 safe-area-inset-bottom）跟桌機預覽（固定
+          34px）底下的實際高度不一樣，這裡的 pb 沒跟著變就會跟 tabbar
+          疊在一起。算法：tabbar 本身高度（57px 膠囊 + 底部安全區）
+          再加上想要的 11px 間距 */}
+      <div className="flex shrink-0 flex-col gap-4 px-4 pb-[calc(env(safe-area-inset-bottom)+80px)] pt-4 sm:pb-[102px]">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-[16px] font-bold text-gray-800">你可能想知道</p>
