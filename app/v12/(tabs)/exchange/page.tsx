@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
 import {
-  EXCHANGE_PRODUCTS,
+  RECOMMENDED_PRODUCTS,
   REWARD_BALANCE,
+  TRENDING_PRODUCTS,
   WISHES,
 } from "../../_lib/mock-data";
 
@@ -103,11 +104,43 @@ export default function ExchangePage() {
           </div>
 
           <div>
-            <p className="text-[14px] font-bold text-gray-800">熱門商品</p>
+            <p className="text-[14px] font-bold text-gray-800">大家都在換</p>
             <p className="mb-3 text-[12px] text-gray-400">用回饋折抵商品</p>
-            <div className="grid grid-cols-2 gap-4">
-              {EXCHANGE_PRODUCTS.map((p) => (
-                <div key={p.id}>
+            {/* 卡寬用容器的百分比，不是寫死的 px，跟線上藏酒同一套做法：
+                商品數量變多時也能自然橫向捲動、露出下一張的邊緣 */}
+            <div className="no-scrollbar flex gap-4 overflow-x-auto">
+              {TRENDING_PRODUCTS.map((p) => (
+                <div key={p.id} className="w-[44%] shrink-0">
+                  {"image" in p ? (
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className="mb-2 aspect-square w-full rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="mb-2 aspect-square overflow-hidden rounded-2xl"
+                      style={{ backgroundColor: p.color }}
+                    />
+                  )}
+                  <p className="text-[11px] text-gray-400">{p.subtitle}</p>
+                  <p className="line-clamp-1 text-[13px] font-semibold text-gray-800">
+                    {p.name}
+                  </p>
+                  <p className="text-[13px] text-gray-800">
+                    ${p.price.toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[14px] font-bold text-gray-800">猜你喜歡</p>
+            <p className="mb-3 text-[12px] text-gray-400">根據你的對話</p>
+            <div className="no-scrollbar flex gap-4 overflow-x-auto">
+              {RECOMMENDED_PRODUCTS.map((p) => (
+                <div key={p.id} className="w-[44%] shrink-0">
                   {"image" in p ? (
                     <img
                       src={p.image}

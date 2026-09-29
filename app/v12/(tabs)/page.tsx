@@ -106,8 +106,9 @@ export default function V12HomePage() {
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-4">
+      <div className="flex flex-1 flex-col items-center justify-center gap-[10px] px-4">
         <img src="/figma/v12-hero-mark.svg" alt="" className="size-[75px]" />
+        <p className="text-[16px] text-gray-300">跟你一起賺回饋</p>
       </div>
 
       {/* pb 要跟 tabbar 自己的高度連動，不能寫死一個不分裝置的值——

@@ -98,31 +98,30 @@ export const WISHES = [
   },
 ];
 
-// 兌換頁「熱門商品」：用回饋折抵一般商品，刻意混 3C／酒／食品幾種類型，
-// 跟 Figma 參照的品項一致。台酒麻辣乾拌麵是使用者提供的真實商品照
-// （從 Google Drive 抓下來，原始 4.3MB 縮到 600x600 JPEG 才收進專案），
-// 其餘還沒有真的商品照，先用色塊佔位
-export const EXCHANGE_PRODUCTS = [
-  {
-    id: "taiwan-tobacco-spicy-noodles",
-    name: "台酒麻辣乾拌麵",
-    subtitle: "台酒聯名 · 4 入裝",
-    price: 150,
-    image: "/figma/product-spicy-noodles.jpg",
-  },
+// 兌換頁原本的「熱門商品」拆成兩排：大家都在換（熱門／社會認同，沒有
+// 個人化資料可掛的商品）、猜你喜歡（個人化推薦）。同一批商品刻意混
+// 3C／酒／食品幾種類型。台酒麻辣乾拌麵、20W 行動電源、威嵐旗艦款藍牙
+// 耳機都是使用者提供的真實商品照，威嵐隨行行動電源還沒有真的商品照，
+// 先用色塊佔位
+// 兩排商品混了有真的照片跟只有色塊佔位的項目，兩個欄位都設成 optional，
+// 不然某一排剛好全部都沒有 image（或都沒有 color）時，TS 會把該欄位窄化
+// 成 never，畫面上 "image" in p 判斷式就會編譯不過
+type ExchangeProduct = {
+  id: string;
+  name: string;
+  subtitle: string;
+  price: number;
+  image?: string;
+  color?: string;
+};
+
+export const TRENDING_PRODUCTS: ExchangeProduct[] = [
   {
     id: "power-bank-20w",
     name: "20W 行動電源",
     subtitle: "3C 配件",
     price: 8500,
-    color: "#1e2939",
-  },
-  {
-    id: "wailan-earbuds",
-    name: "威嵐旗艦款藍牙耳機",
-    subtitle: "3C 配件",
-    price: 4990,
-    color: "#EAE7DD",
+    image: "/figma/product-power-bank-20w.jpg",
   },
   {
     id: "wailan-power-bank",
@@ -130,6 +129,23 @@ export const EXCHANGE_PRODUCTS = [
     subtitle: "3C 配件",
     price: 1290,
     color: "#2a313c",
+  },
+];
+
+export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
+  {
+    id: "wailan-earbuds",
+    name: "威嵐旗艦款藍牙耳機",
+    subtitle: "3C 配件",
+    price: 4990,
+    image: "/figma/product-wailan-earbuds.jpg",
+  },
+  {
+    id: "taiwan-tobacco-spicy-noodles",
+    name: "台酒麻辣乾拌麵",
+    subtitle: "台酒聯名 · 4 入裝",
+    price: 150,
+    image: "/figma/product-spicy-noodles.jpg",
   },
 ];
 
