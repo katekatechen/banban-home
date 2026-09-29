@@ -24,12 +24,17 @@ import {
 const REVEAL_THRESHOLD = 64;
 
 // 導覽列改成浮在內容上面的漸層，不是佔自己一排空間的實色色塊——
-// 內容捲上來的時候是自然淡出、不是撞到一條硬邊界。FIXED_HEADER_HEIGHT
-// 是按鈕實際站的那段高度，GRADIENT_HEIGHT 要比它高一截，讓漸層的尾巴
-// 有地方可以淡出；內容的 paddingTop 要對齊 GRADIENT_HEIGHT 不是
-// FIXED_HEADER_HEIGHT，不然靜止狀態的內容會被半透明的漸層尾巴洗到
-const FIXED_HEADER_HEIGHT = 96;
-const GRADIENT_HEIGHT = 112;
+// 內容捲上來的時候是自然淡出、不是撞到一條硬邊界。頭部實際內容高度
+// 在桌機預覽（sm+，StatusBar 有假的 9:41 那行）跟真手機瀏覽器
+// （<sm，StatusBar 只留安全區、沒有文字行）差了一大截——量出來分別是
+// 96px 跟 56px，兩邊要分開設 GRADIENT 高度＋內容 paddingTop，不然真手機
+// 會照桌機的 112px 留白，跟真正的頭部高度差了 56px，看起來間距過大。
+// GRADIENT 高度都比實際內容高一截（+16px），讓漸層尾巴有地方淡出；
+// 內容的 paddingTop 對齊 GRADIENT 高度，不是實際內容高度，不然靜止狀態
+// 的內容會被半透明的漸層尾巴洗到
+const HEADER_GRADIENT_CLASS =
+  "h-[72px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_78%,rgba(255,255,255,0)_100%)] sm:h-[112px] sm:bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_85.7%,rgba(255,255,255,0)_100%)]";
+const HEADER_PADDING_CLASS = "pt-[72px] sm:pt-[112px]";
 
 export default function RewardsTabPage() {
   const router = useRouter();
@@ -44,11 +49,7 @@ export default function RewardsTabPage() {
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-white">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-10"
-        style={{
-          height: GRADIENT_HEIGHT,
-          background: `linear-gradient(to bottom, rgba(255,255,255,0.95) ${(FIXED_HEADER_HEIGHT / GRADIENT_HEIGHT) * 100}%, rgba(255,255,255,0) 100%)`,
-        }}
+        className={`pointer-events-none absolute inset-x-0 top-0 z-10 ${HEADER_GRADIENT_CLASS}`}
       >
         <div className="pointer-events-auto">
           <StatusBar />
@@ -93,8 +94,7 @@ export default function RewardsTabPage() {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-contain px-5 pb-[110px]"
-        style={{ paddingTop: GRADIENT_HEIGHT }}
+        className={`flex-1 overflow-y-auto overscroll-contain px-5 pb-[110px] ${HEADER_PADDING_CLASS}`}
       >
         <button
           onClick={() => router.push("/v12/reward-history")}
