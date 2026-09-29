@@ -18,7 +18,13 @@ export default function TabBar() {
   const pathname = usePathname();
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center pb-[34px]">
+    // pb-[34px] 是照著 Figma 那支手機外框量出來的「home indicator 安全區」，
+    // 桌機預覽（sm 以上，外面那圈手機外框）照舊用這個固定值就好；
+    // 真的用手機瀏覽器打開時（< sm），瀏覽器自己會佔掉一截高度，
+    // 34px 疊上瀏覽器本身的安全區會多墊出一大截空白，改用
+    // env(safe-area-inset-bottom) 才是那支手機真正的安全區高度，
+    // 跟 StatusBar 處理頂部安全區是同一個邏輯
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center pb-[calc(env(safe-area-inset-bottom)+12px)] sm:pb-[34px]">
       <div className="pointer-events-auto flex items-center justify-center rounded-[24px] bg-[rgba(249,250,251,0.9)] p-1 shadow-[0px_4px_60px_0px_rgba(0,0,0,0.12)] backdrop-blur-[1.5px]">
         {TABS.map((tab) => {
           const active = pathname === tab.href;

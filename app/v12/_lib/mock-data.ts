@@ -71,12 +71,32 @@ export const RATE_FORECAST_POOL = 52000;
 export const MEMBERSHIP_TIER = 1;
 export const MEMBERSHIP_LEVEL = 200;
 
-export const LATEST_WISH = {
-  name: "Apple Vision Pro",
-  subtitle: "現實與虛擬完美融合的新體驗，標題超過兩行會點點點",
-  price: 1890,
-  image: "/figma/wish-visionpro.png",
-};
+// 許願池可以往右滑看更多，卡片沿用同一套視覺（圖＋漸層＋疊字），
+// 每張都要有「中獎價」，跟熱門商品那種一次性折抵不同——許願池是
+// 投入回饋衝高好運，價格代表要衝到多高的池子才開獎
+export const WISHES = [
+  {
+    id: "vision-pro",
+    name: "Apple Vision Pro",
+    subtitle: "現實與虛擬完美融合的新體驗，標題超過兩行會點點點",
+    price: 1890,
+    image: "/figma/wish-visionpro.png",
+  },
+  {
+    id: "ricoh-gr3",
+    name: "Ricoh GR III 相機",
+    subtitle: "經典復古機身，隨手街拍神器",
+    price: 400,
+    image: "/figma/wish-camera.png",
+  },
+  {
+    id: "bambi-glamping",
+    name: "斑比跳跳頂級豪華露營",
+    subtitle: "森林裡的豪華帳篷，兩天一夜",
+    price: 256,
+    image: "/figma/wish-camping.png",
+  },
+];
 
 // 兌換頁「熱門商品」：用回饋折抵一般商品，刻意混 3C／酒／食品幾種類型，
 // 跟 Figma 參照的品項一致。台酒麻辣乾拌麵是使用者提供的真實商品照
@@ -110,21 +130,6 @@ export const EXCHANGE_PRODUCTS = [
     subtitle: "3C 配件",
     price: 1290,
     color: "#2a313c",
-  },
-];
-
-export const UPCOMING_WISHES = [
-  {
-    id: "ricoh-gr3",
-    name: "Ricoh GR III 相機",
-    remaining: 400,
-    image: "/figma/wish-camera.png",
-  },
-  {
-    id: "bambi-glamping",
-    name: "斑比跳跳頂級豪華露營",
-    remaining: 256,
-    image: "/figma/wish-camping.png",
   },
 ];
 

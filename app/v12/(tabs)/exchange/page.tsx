@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import StatusBar from "../../_components/StatusBar";
 import {
   EXCHANGE_PRODUCTS,
-  LATEST_WISH,
   REWARD_BALANCE,
+  WISHES,
 } from "../../_lib/mock-data";
 
 // 導覽列浮在內容上面用漸層，不是佔自己一排空間的實色色塊，跟回饋分頁
@@ -74,22 +74,32 @@ export default function ExchangePage() {
           <div>
             <p className="text-[14px] font-bold text-gray-800">許願池</p>
             <p className="mb-3 text-[12px] text-gray-400">用回饋換喜歡的東西</p>
-            <div className="relative h-[168px] overflow-hidden rounded-2xl bg-gray-200">
-              <img
-                src={LATEST_WISH.image}
-                alt={LATEST_WISH.name}
-                className="absolute inset-0 size-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                <p className="text-[13px] font-semibold">{LATEST_WISH.name}</p>
-                <p className="line-clamp-2 text-[12px] text-white/85">
-                  {LATEST_WISH.subtitle}
-                </p>
-                <p className="mt-1 text-[12.5px] font-semibold">
-                  中獎價 ${LATEST_WISH.price}
-                </p>
-              </div>
+            {/* 卡寬用容器的百分比（86%），不是佔滿整排——這樣兩張卡片之間
+                永遠留得出下一張的邊緣，看得出「還可以往右滑」，
+                跟線上藏酒那排卡片同一套做法 */}
+            <div className="no-scrollbar flex gap-4 overflow-x-auto">
+              {WISHES.map((w) => (
+                <div
+                  key={w.id}
+                  className="relative h-[168px] w-[86%] shrink-0 overflow-hidden rounded-2xl bg-gray-200"
+                >
+                  <img
+                    src={w.image}
+                    alt={w.name}
+                    className="absolute inset-0 size-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <p className="text-[13px] font-semibold">{w.name}</p>
+                    <p className="line-clamp-2 text-[12px] text-white/85">
+                      {w.subtitle}
+                    </p>
+                    <p className="mt-1 text-[12.5px] font-semibold">
+                      中獎價 ${w.price}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
