@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
 import { AI_SELECT_HOLDING, REWARD_BALANCE, WINE_PICKS } from "../_lib/mock-data";
 import { usePageSlide } from "../_lib/page-transition";
@@ -19,8 +19,6 @@ import {
 export default function ChatClient() {
   const router = useRouter();
   const { style, exit } = usePageSlide();
-  const searchParams = useSearchParams();
-  const initialPrompt = searchParams.get("prompt") ?? "";
 
   const [messages, setMessages] = useState<Message[]>([
     { id: genId(), role: "bot", text: GREETING_TEXT },
@@ -28,6 +26,8 @@ export default function ChatClient() {
   const [stage, setStage] = useState<Stage>("idle");
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const sentInitial = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -126,13 +126,17 @@ export default function ChatClient() {
     handleSend(reply);
   };
 
+  // 首頁帶進來的第一句話從網址讀，但不用 useSearchParams()——那個 hook 會
+  // 讓整頁進入 Suspense，從首頁點進來時會先閃一片空白才開始滑。反正這句話
+  // 本來就只在掛載後的 effect 裡用一次，直接讀 window.location.search 就好
   useEffect(() => {
-    if (initialPrompt && !sentInitial.current) {
-      sentInitial.current = true;
-      handleSend(initialPrompt);
-    }
+    if (sentInitial.current) return;
+    const prompt = new URLSearchParams(window.location.search).get("prompt");
+    if (!prompt) return;
+    sentInitial.current = true;
+    handleSend(prompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPrompt]);
+  }, []);
 
   const lastQuickReplies = !typing
     ? messages[messages.length - 1]?.quickReplies
@@ -153,7 +157,66 @@ export default function ChatClient() {
           <img src="/figma/nav-arrow-left.svg" alt="" className="size-5" />
         </button>
         <img src="/figma/logo.svg" alt="" className="h-4 w-auto" />
+        <button
+          onClick={() => setSearchOpen((v) => !v)}
+          aria-label="搜尋對話"
+          aria-expanded={searchOpen}
+          className={`absolute right-4 flex size-9 items-center justify-center rounded-full ${
+            searchOpen ? "bg-gray-200" : "bg-gray-100"
+          }`}
+        >
+          <svg viewBox="0 0 20 20" fill="none" className="size-5">
+            <circle
+              cx="9"
+              cy="9"
+              r="5.5"
+              stroke="#1e2939"
+              strokeWidth="1.6"
+            />
+            <path
+              d="M13.2 13.2L17 17"
+              stroke="#1e2939"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </div>
+
+      {/* 搜尋對話：這版只做到入口示意，輸入框可以打字但不會真的過濾訊息，
+          先驗證「對話變長之後需要一個回頭找內容的入口」這件事放在這裡
+          順不順手，真正的搜尋邏輯之後再說 */}
+      {searchOpen && (
+        <div className="shrink-0 px-4 pb-3">
+          <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2.5">
+            <svg viewBox="0 0 20 20" fill="none" className="size-4 shrink-0">
+              <circle cx="9" cy="9" r="5.5" stroke="#99a1af" strokeWidth="1.6" />
+              <path
+                d="M13.2 13.2L17 17"
+                stroke="#99a1af"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+            <input
+              autoFocus
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="搜尋對話內容"
+              className="flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder:text-gray-400"
+            />
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSearchOpen(false);
+              }}
+              className="shrink-0 text-[13px] text-gray-400"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
 
       <div
         ref={scrollRef}

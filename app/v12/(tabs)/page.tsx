@@ -44,6 +44,13 @@ export default function V12HomePage() {
     setSuggestions(shuffle(SUGGESTION_POOL).slice(0, 3));
   }, []);
 
+  // 先把對話頁的資源抓下來備著。首頁進對話是用 router.push（不是 Link），
+  // 不會自動預抓，點下去才現抓的話會先卡住一下才開始滑，滑進來的轉場
+  // 就跟手指的動作脫節了
+  useEffect(() => {
+    router.prefetch("/v12/chat");
+  }, [router]);
+
   useEffect(() => {
     return () => {
       timersRef.current.forEach((id) => window.clearTimeout(id));
