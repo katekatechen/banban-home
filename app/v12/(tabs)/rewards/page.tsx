@@ -139,9 +139,12 @@ export default function RewardsTabPage() {
             className="flex flex-1 flex-col items-end gap-2"
           >
             <p className="text-[14px] font-semibold text-gray-800">我的回饋</p>
-            <p className="text-[24px] font-semibold leading-[32px] text-gray-800">
-              {REWARD_BALANCE.toLocaleString()}
-            </p>
+            <div className="flex items-center">
+              <p className="text-[24px] font-semibold leading-[32px] text-gray-800">
+                {REWARD_BALANCE.toLocaleString()}
+              </p>
+              <img src="/figma/nav-arrow-right.svg" alt="" className="size-6" />
+            </div>
           </button>
         </div>
 
