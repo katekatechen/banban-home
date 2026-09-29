@@ -101,8 +101,8 @@ export const WISHES = [
 // 兌換頁原本的「熱門商品」拆成兩排：大家都在換（熱門／社會認同，沒有
 // 個人化資料可掛的商品）、猜你喜歡（個人化推薦）。同一批商品刻意混
 // 3C／酒／食品幾種類型。台酒麻辣乾拌麵、20W 行動電源、威嵐旗艦款藍牙
-// 耳機都是使用者提供的真實商品照，威嵐隨行行動電源還沒有真的商品照，
-// 先用色塊佔位
+// 耳機是使用者提供的真實商品照，其餘還沒有真的商品照，先用淺灰色佔位。
+// 每排都放 3 件商品，才能橫向捲動、露出下一張的邊緣
 // 兩排商品混了有真的照片跟只有色塊佔位的項目，兩個欄位都設成 optional，
 // 不然某一排剛好全部都沒有 image（或都沒有 color）時，TS 會把該欄位窄化
 // 成 never，畫面上 "image" in p 判斷式就會編譯不過
@@ -114,6 +114,10 @@ type ExchangeProduct = {
   image?: string;
   color?: string;
 };
+
+// 還沒有真的商品照的項目統一用淺灰色佔位，不要每個各自配一個深色調，
+// 佔位色本身不該帶出「這個商品是什麼顏色」的錯誤資訊
+const PLACEHOLDER_COLOR = "#E5E7EB";
 
 export const TRENDING_PRODUCTS: ExchangeProduct[] = [
   {
@@ -128,7 +132,14 @@ export const TRENDING_PRODUCTS: ExchangeProduct[] = [
     name: "威嵐隨行行動電源",
     subtitle: "3C 配件",
     price: 1290,
-    color: "#2a313c",
+    color: PLACEHOLDER_COLOR,
+  },
+  {
+    id: "wailan-speaker",
+    name: "威嵐藍牙喇叭",
+    subtitle: "3C 配件",
+    price: 2490,
+    color: PLACEHOLDER_COLOR,
   },
 ];
 
@@ -146,6 +157,13 @@ export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
     subtitle: "台酒聯名 · 4 入裝",
     price: 150,
     image: "/figma/product-spicy-noodles.jpg",
+  },
+  {
+    id: "wailan-wireless-charger",
+    name: "威嵐無線充電盤",
+    subtitle: "3C 配件",
+    price: 990,
+    color: PLACEHOLDER_COLOR,
   },
 ];
 
