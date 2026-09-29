@@ -8,9 +8,6 @@ export const REWARD_BALANCE = 14320;
 export const REWARD_BALANCE_DECIMAL = "15";
 export const TODAY_REWARD_AMOUNT = 451.1;
 export const TODAY_REWARD_RATE_PCT = 9.03;
-// 回饋分頁頭部新增的「30 天預估增加」，跟今天增加是各自獨立的假資料，
-// 不是今天增加 x30 算出來的（真的產品邏輯應該是抓 30 天趨勢，不是單日外推）
-export const THIRTY_DAY_PROJECTED_REWARD = 12850;
 export const TOTAL_ACCUMULATED_REWARD = 45678;
 
 export type RewardTxn = {

@@ -12,7 +12,6 @@ import {
   MEMBERSHIP_TIER,
   RATE_FORECAST_POOL,
   REWARD_BALANCE,
-  THIRTY_DAY_PROJECTED_REWARD,
   TODAY_REWARD_AMOUNT,
   WINE_SHOP_PRODUCTS,
 } from "../../_lib/mock-data";
@@ -118,25 +117,20 @@ export default function RewardsTabPage() {
         onScroll={handleScroll}
         className={`flex-1 overflow-y-auto overscroll-contain px-5 pb-[110px] ${HEADER_PADDING_CLASS}`}
       >
-        <div className="flex items-center gap-3 pb-6">
+        <div className="flex items-center gap-3 border-b border-gray-100 pb-6">
           <button
             onClick={() => router.push("/v12/reward-history")}
             className="flex flex-1 flex-col items-start gap-2"
           >
             <p className="text-[14px] font-semibold text-gray-800">今天增加</p>
-            <div className="flex flex-col items-start gap-1">
-              <div className="flex items-center gap-1">
-                <img
-                  src="/figma/reward-icon-hero.svg"
-                  alt=""
-                  className="size-6"
-                />
-                <p className="text-[24px] font-semibold leading-[32px] text-brand">
-                  {todayIncrease.toFixed(1)}
-                </p>
-              </div>
-              <p className="text-[14px] text-gray-400">
-                30 天預估增加 {THIRTY_DAY_PROJECTED_REWARD.toLocaleString()}
+            <div className="flex items-center gap-1">
+              <img
+                src="/figma/reward-icon-hero.svg"
+                alt=""
+                className="size-6"
+              />
+              <p className="text-[24px] font-semibold leading-[32px] text-brand">
+                {todayIncrease.toFixed(1)}
               </p>
             </div>
           </button>
@@ -151,7 +145,7 @@ export default function RewardsTabPage() {
           </button>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="mt-6 flex flex-col gap-6">
           <div>
             <p className="text-[14px] font-bold text-gray-800">智能選品</p>
             <p className="mb-3 mt-1 text-[12.5px] text-gray-400">
