@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StatusBar from "../../_components/StatusBar";
 import {
   AI_SELECT_AGED,
@@ -12,9 +12,30 @@ import {
   MEMBERSHIP_TIER,
   RATE_FORECAST_POOL,
   REWARD_BALANCE,
+  THIRTY_DAY_PROJECTED_REWARD,
   TODAY_REWARD_AMOUNT,
   WINE_SHOP_PRODUCTS,
 } from "../../_lib/mock-data";
+
+// 今天增加的數字進頁面時從 0 往上跳，強調「還在即時累積」的感覺，
+// 跟下面靜態的總回饋餘額做出區隔——用 ease-out 讓它一開始跳得快、
+// 快到終值時放慢，不是等速跑到底
+function useCountUp(target: number, durationMs = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(target * eased);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return value;
+}
 
 // 這版回饋分頁沒有探索／許願池子分頁——許願池搬去兌換分頁了，
 // 回饋分頁本身是 tabbar 的三個根路由之一，不是推頁進來的，
@@ -40,6 +61,7 @@ export default function RewardsTabPage() {
   const router = useRouter();
   const [showBalancePill, setShowBalancePill] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const todayIncrease = useCountUp(TODAY_REWARD_AMOUNT);
 
   const handleScroll = () => {
     const top = scrollRef.current?.scrollTop ?? 0;
@@ -96,29 +118,38 @@ export default function RewardsTabPage() {
         onScroll={handleScroll}
         className={`flex-1 overflow-y-auto overscroll-contain px-5 pb-[110px] ${HEADER_PADDING_CLASS}`}
       >
-        <button
-          onClick={() => router.push("/v12/reward-history")}
-          className="flex w-full shrink-0 flex-col items-center gap-2 pb-6"
-        >
-          <p className="text-[13px] font-semibold text-gray-800">我的回饋</p>
-          <p className="flex items-center gap-1.5 text-[28px] font-bold text-gray-900">
-            <span className="flex size-6 items-center justify-center rounded-full bg-brand text-white">
-              <svg viewBox="0 0 16 16" fill="none" className="size-3">
-                <path
-                  d="M8 12.5V3.5M8 3.5L4 7.5M8 3.5l4 4"
-                  stroke="white"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+        <div className="flex items-center gap-3 pb-6">
+          <button
+            onClick={() => router.push("/v12/reward-history")}
+            className="flex flex-1 flex-col items-start gap-2"
+          >
+            <p className="text-[14px] font-semibold text-gray-800">今天增加</p>
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <img
+                  src="/figma/reward-icon-hero.svg"
+                  alt=""
+                  className="size-6"
                 />
-              </svg>
-            </span>
-            {REWARD_BALANCE.toLocaleString()}
-          </p>
-          <p className="text-[12.5px] text-gray-400">
-            今天增加 +{TODAY_REWARD_AMOUNT}
-          </p>
-        </button>
+                <p className="text-[24px] font-semibold leading-[32px] text-brand">
+                  {todayIncrease.toFixed(1)}
+                </p>
+              </div>
+              <p className="text-[14px] text-gray-400">
+                30 天預估增加 {THIRTY_DAY_PROJECTED_REWARD.toLocaleString()}
+              </p>
+            </div>
+          </button>
+          <button
+            onClick={() => router.push("/v12/reward-history")}
+            className="flex flex-1 flex-col items-end gap-2"
+          >
+            <p className="text-[14px] font-semibold text-gray-800">我的回饋</p>
+            <p className="text-[24px] font-semibold leading-[32px] text-gray-800">
+              {REWARD_BALANCE.toLocaleString()}
+            </p>
+          </button>
+        </div>
 
         <div className="flex flex-col gap-6">
           <div>
