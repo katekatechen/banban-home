@@ -154,29 +154,45 @@ export default function RewardsTabPage() {
             <p className="mb-3 mt-1 text-[12.5px] text-gray-400">
               AI 幫你選酒，每日回饋
             </p>
-            <div className="flex h-[168px] gap-4 rounded-[24px] bg-[#101828] p-6">
-              <span className="flex size-12 shrink-0 items-center justify-center">
-                <img src="/figma/ai-select-icon.svg" alt="" className="size-10" />
-              </span>
-              <div className="flex flex-1 flex-col items-end justify-between">
+            <div className="flex flex-col gap-4 rounded-2xl bg-[#101828] p-4">
+              <p className="text-[14px] text-gray-400">總瓶數</p>
+              <div className="flex items-end justify-between">
+                <p className="text-[40px] font-semibold leading-[48px] text-white">
+                  {AI_SELECT_HOLDING}
+                </p>
                 <div className="flex flex-col items-end gap-1">
-                  <p className="text-[14px] text-white/40">我的酒窖</p>
-                  <p className="text-[40px] font-semibold leading-[48px] text-white">
-                    {AI_SELECT_HOLDING}
-                  </p>
-                  <p className="whitespace-nowrap text-[14px] text-white/40">
-                    / {AI_SELECT_CAPACITY.toLocaleString()} 瓶
+                  <p className="text-[12px] text-gray-400">剩餘</p>
+                  <p className="text-[20px] font-bold leading-6 text-white">
+                    {AI_SELECT_CAPACITY - AI_SELECT_HOLDING} 瓶
                   </p>
                 </div>
-                <div className="flex w-full items-center justify-end gap-4 text-[14px] text-white/40">
-                  <p className="flex items-center gap-1.5">
+              </div>
+              <div className="flex flex-col gap-2">
+                {/* 進度條用百分比畫、不是照 Figma 匯出的固定 px——這樣不管
+                    初釀／純釀的實際數字是多少，兩段顏色跟剩餘容量的灰色
+                    尾巴都能正確按比例排列 */}
+                <div className="flex h-2 w-full overflow-hidden rounded-full bg-[#364153]">
+                  <div
+                    className="h-full bg-[#dac3a6]"
+                    style={{
+                      width: `${(AI_SELECT_FRESH / AI_SELECT_CAPACITY) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="h-full bg-[#ca9e62]"
+                    style={{
+                      width: `${(AI_SELECT_AGED / AI_SELECT_CAPACITY) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[12px] text-gray-400">
+                  <div className="flex items-center gap-1">
                     <span className="size-3 rounded-full bg-[#dac3a6]" />
-                    初醸 {AI_SELECT_FRESH}
-                  </p>
-                  <p className="flex items-center gap-1.5">
-                    <span className="size-3 rounded-full bg-[#dac3a6]" />
-                    純釀 {AI_SELECT_AGED}
-                  </p>
+                    <span>初釀 {AI_SELECT_FRESH}</span>
+                    <span className="size-3 rounded-full bg-[#ca9e62]" />
+                    <span>純釀 {AI_SELECT_AGED}</span>
+                  </div>
+                  <p>{AI_SELECT_CAPACITY.toLocaleString()} 瓶</p>
                 </div>
               </div>
             </div>
