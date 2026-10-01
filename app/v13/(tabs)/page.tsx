@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
@@ -65,7 +66,12 @@ const SUGGESTION_POOL = [
 ];
 
 const NOODLE_PICKS: RecCard[] = [
-  { id: "dashixiong", name: "大師兄銷魂麻辣粗麵", price: 129 },
+  {
+    id: "dashixiong",
+    name: "大師兄銷魂麻辣粗麵",
+    price: 129,
+    image: "/figma/v13-product-dashixiong.jpg",
+  },
   { id: "laotao", name: "老饕乾拌麵 麻醬蒜香", price: 99 },
   { id: "jinjiazhuang", name: "金家莊 蒜辣拌麵", price: 109 },
 ];
@@ -115,6 +121,12 @@ export default function V13HomePage() {
   const [stage, setStage] = useState<Stage>(chat.stage);
   const [selected, setSelected] = useState<string[]>(chat.selected);
   const [cartCount, setCartCount] = useState(chat.cartCount);
+  const [addedIds, setAddedIds] = useState<string[]>(chat.addedIds);
+  const [sheet, setSheet] = useState<{
+    cards: RecCard[];
+    index: number;
+  } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
   // 首頁預設展開建議，進到對話後收成一行，點標題可以再打開
@@ -147,8 +159,38 @@ export default function V13HomePage() {
       stage,
       selected,
       cartCount,
+      addedIds,
     });
-  }, [chatOpen, historyLoaded, messages, stage, selected, cartCount]);
+  }, [chatOpen, historyLoaded, messages, stage, selected, cartCount, addedIds]);
+
+  // 卡片上的 + ：商品圖飛進購物車，同時記下這個商品已經在購物車裡
+  const addFromCard = (from: HTMLElement, card: RecCard) => {
+    flyToCart(from);
+    setAddedIds((ids) => (ids.includes(card.id) ? ids : [...ids, card.id]));
+  };
+
+  // 細節頁的「加入購物車」是切換：沒加過就加、已經加過就拿掉
+  const toggleCartFromSheet = (card: RecCard) => {
+    if (addedIds.includes(card.id)) {
+      setAddedIds((ids) => ids.filter((id) => id !== card.id));
+      setCartCount((c) => Math.max(0, c - 1));
+    } else {
+      setAddedIds((ids) => [...ids, card.id]);
+      setCartCount((c) => c + 1);
+    }
+  };
+
+  // 這版沒有結帳頁，立即購買先放進購物車、關掉細節頁，再用提示說明
+  const buyFromSheet = (card: RecCard) => {
+    if (!addedIds.includes(card.id)) {
+      setAddedIds((ids) => [...ids, card.id]);
+      setCartCount((c) => c + 1);
+    }
+    setSheet(null);
+    setToast("已放進購物車，結帳流程這版還沒做");
+    const t = window.setTimeout(() => setToast(null), 2200);
+    timersRef.current.push(t);
+  };
 
   // 往上滑才冒出「載入上次對話」，往下滑就收起來。三種輸入都要接：
   // 內容夠長時看 scroll 方向；內容還很短、根本捲不動時，手機看手指往下拖、
@@ -671,7 +713,8 @@ export default function V13HomePage() {
                     message={m}
                     selected={selected}
                     onToggle={toggleSelected}
-                    onAdd={flyToCart}
+                    onAdd={addFromCard}
+                    onOpen={(cards, index) => setSheet({ cards, index })}
                     showDisclaimer={false}
                   />
                 ))}
@@ -684,7 +727,8 @@ export default function V13HomePage() {
                 message={m}
                 selected={selected}
                 onToggle={toggleSelected}
-                onAdd={flyToCart}
+                onAdd={addFromCard}
+                onOpen={(cards, index) => setSheet({ cards, index })}
                 showDisclaimer={
                   !typing && m === lastMessage && m.role === "bot"
                 }
@@ -833,6 +877,28 @@ export default function V13HomePage() {
           </button>
         </form>
       </div>
+
+      {sheet && (
+        <ProductSheet
+          cards={sheet.cards}
+          startIndex={sheet.index}
+          addedIds={addedIds}
+          onToggleCart={toggleCartFromSheet}
+          onBuy={buyFromSheet}
+          onClose={() => setSheet(null)}
+        />
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center px-4">
+          <p
+            className="rounded-full bg-gray-800/90 px-4 py-2 text-[13px] text-white shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
+            style={{ animation: "fadeIn 200ms ease" }}
+          >
+            {toast}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -864,12 +930,14 @@ function ChatMessage({
   selected,
   onToggle,
   onAdd,
+  onOpen,
   showDisclaimer,
 }: {
   message: Message;
   selected: string[];
   onToggle: (id: string) => void;
-  onAdd: (from: HTMLElement) => void;
+  onAdd: (from: HTMLElement, card: RecCard) => void;
+  onOpen: (cards: RecCard[], index: number) => void;
   showDisclaimer: boolean;
 }) {
   if (message.role === "user") {
@@ -895,11 +963,12 @@ function ChatMessage({
           checked={selected.includes(cards[0].id)}
           onToggle={onToggle}
           onAdd={onAdd}
+          onOpen={() => onOpen(cards, 0)}
         />
       )}
       {cards.length > 1 && (
         <div className="flex gap-4">
-          {cards.map((c) => (
+          {cards.map((c, i) => (
             <ProductCard
               key={c.id}
               card={c}
@@ -907,6 +976,7 @@ function ChatMessage({
               checked={selected.includes(c.id)}
               onToggle={onToggle}
               onAdd={onAdd}
+              onOpen={() => onOpen(cards, i)}
             />
           ))}
         </div>
@@ -921,24 +991,33 @@ function ChatMessage({
 }
 
 // 商品卡照 Figma：上方方形圖（還沒有實拍的先用灰底）、右上角圓圈勾選、
-// 下方品名＋價格＋紅色加入購物車按鈕
+// 下方品名＋價格＋紅色加入購物車按鈕。點卡片其他地方打開商品細節頁，
+// 勾選圈跟 + 按鈕各自擋掉冒泡，不會順便打開細節頁
 function ProductCard({
   card,
   className,
   checked,
   onToggle,
   onAdd,
+  onOpen,
 }: {
   card: RecCard;
   className: string;
   checked: boolean;
   onToggle: (id: string) => void;
-  onAdd: (from: HTMLElement) => void;
+  onAdd: (from: HTMLElement, card: RecCard) => void;
+  onOpen: () => void;
 }) {
   return (
     <div
       data-product-card
-      className={`overflow-hidden rounded-[16px] border border-[#e8eaee] bg-white ${className}`}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpen();
+      }}
+      className={`cursor-pointer overflow-hidden rounded-[16px] border border-[#e8eaee] bg-white ${className}`}
     >
       <div data-product-image className="relative aspect-square bg-[#f0f2f5]">
         {card.image && (
@@ -949,7 +1028,10 @@ function ProductCard({
           />
         )}
         <button
-          onClick={() => onToggle(card.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(card.id);
+          }}
           aria-label={checked ? "取消勾選" : "勾選"}
           aria-pressed={checked}
           className="absolute right-[11px] top-[9px] size-6"
@@ -980,7 +1062,10 @@ function ProductCard({
             NT$ {card.price.toLocaleString()}
           </p>
           <button
-            onClick={(e) => onAdd(e.currentTarget)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(e.currentTarget, card);
+            }}
             aria-label="加入購物車"
             className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#ff5050]"
           >

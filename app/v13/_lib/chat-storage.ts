@@ -36,6 +36,8 @@ export type ChatSnapshot = {
   stage: Stage;
   selected: string[];
   cartCount: number;
+  // 已經加進購物車的商品 id，商品細節頁的「已加入購物車」狀態看這個
+  addedIds: string[];
 };
 
 let snapshot: ChatSnapshot | null = null;
@@ -48,6 +50,7 @@ export const loadChat = (): ChatSnapshot =>
     stage: "idle",
     selected: [],
     cartCount: 0,
+    addedIds: [],
   };
 
 export const saveChat = (next: ChatSnapshot) => {
