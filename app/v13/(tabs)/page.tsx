@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StatusBar from "../_components/StatusBar";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import {
@@ -12,7 +12,11 @@ import {
   type RecCard,
   type Stage,
 } from "../_lib/chat-storage";
-import { AI_SELECT_HOLDING, REWARD_BALANCE, WINE_PICKS } from "../_lib/mock-data";
+import {
+  AI_SELECT_HOLDING,
+  REWARD_BALANCE,
+  WINE_PICKS,
+} from "../_lib/mock-data";
 
 // v13 首頁＝聊天分頁，照 Figma 948:44415（首頁）跟 981:24621（對話中）。
 // 點輸入框本身不會有任何變化，送出第一句話之後才原地展開對話：插圖淡出、
@@ -32,11 +36,31 @@ const FLY_TO_CART_MS = 550;
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
 const SUGGESTION_POOL = [
   { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
-  { key: "is-cash", prompt: "AIFIAN 的回饋是現金嗎", label: "AIFIAN 的回饋是現金嗎" },
-  { key: "restock-drink", prompt: "我想買可樂", label: "上次買的可樂喝完了嗎？要不要補貨" },
-  { key: "noodles", prompt: "推薦幾款好吃的乾拌麵給我", label: "推薦幾款好吃的乾拌麵給我" },
-  { key: "mid-autumn", prompt: "推薦適合中秋烤肉喝的酒", label: "中秋烤肉想喝點什麼嗎？" },
-  { key: "daily-reward", prompt: "我想看智能選品", label: "你的每日回饋突破 100 元！再買點智能選品？" },
+  {
+    key: "is-cash",
+    prompt: "AIFIAN 的回饋是現金嗎",
+    label: "AIFIAN 的回饋是現金嗎",
+  },
+  {
+    key: "restock-drink",
+    prompt: "我想買可樂",
+    label: "上次買的可樂喝完了嗎？要不要補貨",
+  },
+  {
+    key: "noodles",
+    prompt: "推薦幾款好吃的乾拌麵給我",
+    label: "推薦幾款好吃的乾拌麵給我",
+  },
+  {
+    key: "mid-autumn",
+    prompt: "推薦適合中秋烤肉喝的酒",
+    label: "中秋烤肉想喝點什麼嗎？",
+  },
+  {
+    key: "daily-reward",
+    prompt: "我想看智能選品",
+    label: "你的每日回饋突破 100 元！再買點智能選品？",
+  },
 ];
 
 const NOODLE_PICKS: RecCard[] = [
@@ -44,6 +68,34 @@ const NOODLE_PICKS: RecCard[] = [
   { id: "laotao", name: "老饕乾拌麵 麻醬蒜香", price: 99 },
   { id: "jinjiazhuang", name: "金家莊 蒜辣拌麵", price: 109 },
 ];
+
+// 上次對話的假資料：對話中往上滑會冒出「載入上次對話」，點了才接到目前對話上面。
+// id 用負數，跟目前對話 genId() 發的正數 id 不會撞
+const PREVIOUS_CHAT_DATE = "9 月 28 日";
+const PREVIOUS_CHAT: Message[] = [
+  { id: -1, role: "user", text: "這個月的回饋怎麼算？" },
+  {
+    id: -2,
+    role: "bot",
+    text: "你這個月的回饋主要來自智能選酒的每日回饋，每天自動累積，不用另外領。到目前為止已經累積 451 點，月底會一起入帳。",
+  },
+  { id: -3, role: "user", text: "幫我找一支送禮的酒，預算 1,000 以內" },
+  {
+    id: -4,
+    role: "bot",
+    text: "送禮的話這支很穩，包裝有質感，價格也剛好在預算內：",
+    cards: [
+      {
+        id: WINE_PICKS[0].id,
+        name: WINE_PICKS[0].name,
+        subtitle: WINE_PICKS[0].subtitle,
+        price: WINE_PICKS[0].price,
+        image: WINE_PICKS[0].image,
+      },
+    ],
+  },
+];
+const HISTORY_LOADING_MS = 700;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -68,6 +120,12 @@ export default function V13HomePage() {
   const [chipsOpen, setChipsOpen] = useState(!chat.open);
   const [suggestions, setSuggestions] = useState(SUGGESTION_POOL.slice(0, 3));
   const [itemPhase, setItemPhase] = useState<SuggestionPhase>("idle");
+  const [historyLoaded, setHistoryLoaded] = useState(chat.historyLoaded);
+  const [showHistoryBtn, setShowHistoryBtn] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const lastScrollTop = useRef(0);
+  const touchStartY = useRef<number | null>(null);
+  const distanceFromBottom = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,8 +136,56 @@ export default function V13HomePage() {
   const sentInitial = useRef(false);
 
   useEffect(() => {
-    saveChat({ open: chatOpen, messages, stage, selected, cartCount });
-  }, [chatOpen, messages, stage, selected, cartCount]);
+    saveChat({
+      open: chatOpen,
+      historyLoaded,
+      messages,
+      stage,
+      selected,
+      cartCount,
+    });
+  }, [chatOpen, historyLoaded, messages, stage, selected, cartCount]);
+
+  // 往上滑才冒出「載入上次對話」，往下滑就收起來。三種輸入都要接：
+  // 內容夠長時看 scroll 方向；內容還很短、根本捲不動時，手機看手指往下拖、
+  // 桌機看滾輪往上，不然對話才一兩句的時候永遠叫不出這顆按鈕
+  const revealHistoryBtn = (up: boolean) => {
+    if (historyLoaded || historyLoading || !chatOpen) return;
+    setShowHistoryBtn(up);
+  };
+
+  const handleChatScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const delta = el.scrollTop - lastScrollTop.current;
+    lastScrollTop.current = el.scrollTop;
+    if (Math.abs(delta) > 4) revealHistoryBtn(delta < 0);
+  };
+
+  const loadHistory = () => {
+    if (historyLoading) return;
+    setHistoryLoading(true);
+    const t = window.setTimeout(() => {
+      const el = scrollRef.current;
+      if (el) distanceFromBottom.current = el.scrollHeight - el.scrollTop;
+      setHistoryLoaded(true);
+      setHistoryLoading(false);
+      setShowHistoryBtn(false);
+    }, HISTORY_LOADING_MS);
+    timersRef.current.push(t);
+  };
+
+  // 上次對話是接在最上面，直接插進去的話，畫面上正在看的內容會被往下推走。
+  // 插入後先把捲動位置補回去（畫面停在原處），再往上滑一小段，
+  // 讓使用者看到上次對話的尾巴、知道內容已經載進來了
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!historyLoaded || !el || distanceFromBottom.current == null) return;
+    el.scrollTop = el.scrollHeight - distanceFromBottom.current;
+    distanceFromBottom.current = null;
+    lastScrollTop.current = el.scrollTop;
+    el.scrollBy({ top: -140, behavior: "smooth" });
+  }, [historyLoaded]);
 
   // 購物車數字一變就讓紅點「彈」出來：從 0 放大超過一點再縮回原尺寸
   useEffect(() => {
@@ -166,7 +272,6 @@ export default function V13HomePage() {
     setChipsOpen(false);
   };
 
-
   const closeChat = () => {
     inputRef.current?.blur();
     setChatOpen(false);
@@ -195,7 +300,13 @@ export default function V13HomePage() {
 
   const wineCard = (index: number): RecCard => {
     const p = WINE_PICKS[index % WINE_PICKS.length];
-    return { id: p.id, name: p.name, subtitle: p.subtitle, price: p.price, image: p.image };
+    return {
+      id: p.id,
+      name: p.name,
+      subtitle: p.subtitle,
+      price: p.price,
+      image: p.image,
+    };
   };
 
   const handleSend = async (raw: string) => {
@@ -215,10 +326,13 @@ export default function V13HomePage() {
     }
 
     if (text.includes("麵")) {
-      await pushBot({
-        text: "先推薦你一款我覺得最讚的：大師兄銷魂麻辣粗麵。它是排隊名店直接做成快煮麵的版本，麻辣醬料熬了十小時，香氣跟店裡吃到的很接近，麵體也夠粗夠有嚼勁。不管是自己想解饞，還是要送給喜歡吃辣的朋友，都不容易踩雷，算是討論度最高、回購率也最好的一款：",
-        cards: [NOODLE_PICKS[0]],
-      }, 900);
+      await pushBot(
+        {
+          text: "先推薦你一款我覺得最讚的：大師兄銷魂麻辣粗麵。它是排隊名店直接做成快煮麵的版本，麻辣醬料熬了十小時，香氣跟店裡吃到的很接近，麵體也夠粗夠有嚼勁。不管是自己想解饞，還是要送給喜歡吃辣的朋友，都不容易踩雷，算是討論度最高、回購率也最好的一款：",
+          cards: [NOODLE_PICKS[0]],
+        },
+        900,
+      );
       await pushBot({
         text: "如果想一次多備幾款，這幾款也很適合搭配著買：",
         cards: NOODLE_PICKS.slice(1),
@@ -227,7 +341,10 @@ export default function V13HomePage() {
       return;
     }
 
-    if (text.includes("送禮") || (text.includes("酒") && !text.includes("烤肉"))) {
+    if (
+      text.includes("送禮") ||
+      (text.includes("酒") && !text.includes("烤肉"))
+    ) {
       setStage("await_wine_budget");
       await pushBot({
         text: "送禮的話，大概想抓多少預算？",
@@ -252,7 +369,11 @@ export default function V13HomePage() {
       return;
     }
 
-    if (text.includes("領取") || text.includes("賺回饋") || text.includes("兌換")) {
+    if (
+      text.includes("領取") ||
+      text.includes("賺回饋") ||
+      text.includes("兌換")
+    ) {
       await pushBot({
         text: "透過 AIFIAN 買東西、每日簽到、推薦好友都會累積回饋，累積到的回饋可以在「兌換」分頁換商品或折抵金額。",
         quickReplies: ["去看兌換商品"],
@@ -307,7 +428,8 @@ export default function V13HomePage() {
 
   const rollSuggestions = () => {
     if (itemPhase !== "idle") return;
-    const exitTotalMs = ITEM_DURATION_MS + (suggestions.length - 1) * ITEM_STAGGER_MS;
+    const exitTotalMs =
+      ITEM_DURATION_MS + (suggestions.length - 1) * ITEM_STAGGER_MS;
 
     setChipsOpen(true);
     setItemPhase("exiting");
@@ -324,14 +446,19 @@ export default function V13HomePage() {
   };
 
   const toggleSelected = (id: string) =>
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    setSelected((s) =>
+      s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
+    );
 
   const lastMessage = messages[messages.length - 1];
   const lastQuickReplies = !typing ? lastMessage?.quickReplies : undefined;
   const fade = `opacity ${MODE_TRANSITION_MS}ms ease`;
 
   return (
-    <div ref={rootRef} className="relative flex h-full flex-col overflow-hidden bg-white">
+    <div
+      ref={rootRef}
+      className="relative flex h-full flex-col overflow-hidden bg-white"
+    >
       {/* 首頁插圖：寬度撐滿、高度照比例，圖本身底部就是白色，自然接到底下的白底 */}
       <img
         src="/figma/v13-home-hero.jpg"
@@ -344,7 +471,11 @@ export default function V13HomePage() {
         <StatusBar />
         <div className="flex h-11 items-center justify-between px-4">
           <button onClick={closeChat} aria-label="AIFIAN 首頁">
-            <img src="/figma/v13-logo.svg" alt="AIFIAN" className="h-7 w-auto" />
+            <img
+              src="/figma/v13-logo.svg"
+              alt="AIFIAN"
+              className="h-7 w-auto"
+            />
           </button>
           <button
             aria-label="購物車"
@@ -356,9 +487,17 @@ export default function V13HomePage() {
               transition: fade,
             }}
           >
-            <img ref={cartIconRef} src="/figma/v13-cart.svg" alt="" className="size-5" />
+            <img
+              ref={cartIconRef}
+              src="/figma/v13-cart.svg"
+              alt=""
+              className="size-5"
+            />
             {cartCount > 0 && (
-              <span ref={badgeRef} className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
+              <span
+                ref={badgeRef}
+                className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000"
+              >
                 {cartCount}
               </span>
             )}
@@ -367,41 +506,115 @@ export default function V13HomePage() {
       </div>
 
       <div
-        ref={scrollRef}
-        className="no-scrollbar relative flex-1 overflow-y-auto overscroll-contain px-4 py-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
+        className="relative min-h-0 flex-1"
         style={{
           opacity: chatOpen ? 1 : 0,
           pointerEvents: chatOpen ? "auto" : "none",
           transition: fade,
         }}
       >
-        <div className="flex flex-col gap-6">
-          {messages.map((m) => (
-            <ChatMessage
-              key={m.id}
-              message={m}
-              selected={selected}
-              onToggle={toggleSelected}
-              onAdd={flyToCart}
-              showDisclaimer={!typing && m === lastMessage && m.role === "bot"}
-            />
-          ))}
-          {typing && (
-            <div className="flex items-center gap-1 py-2">
-              <Dot delay="0ms" />
-              <Dot delay="150ms" />
-              <Dot delay="300ms" />
-            </div>
-          )}
-          {lastQuickReplies && (
-            <div className="-mt-3 flex flex-wrap gap-2">
-              {lastQuickReplies.map((q) => (
-                <button key={q} onClick={() => handleQuickReply(q)} className={CHIP_CLASS}>
-                  {q}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* 浮動的「載入上次對話」：放在捲動區外面，才不會被頂部的淡出遮罩吃掉 */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center"
+          style={{
+            opacity: showHistoryBtn || historyLoading ? 1 : 0,
+            transform:
+              showHistoryBtn || historyLoading
+                ? "translateY(0)"
+                : "translateY(-8px)",
+            transition: `opacity 200ms ease, transform 200ms ease`,
+          }}
+        >
+          <button
+            onClick={loadHistory}
+            tabIndex={showHistoryBtn ? 0 : -1}
+            className={`flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] text-gray-800 shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)] ${
+              showHistoryBtn || historyLoading ? "pointer-events-auto" : ""
+            }`}
+          >
+            {historyLoading ? (
+              <span className="size-3.5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+            ) : (
+              <svg viewBox="0 0 16 16" fill="none" className="size-3.5">
+                <path
+                  d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2M8 5.2V8l1.8 1.2"
+                  stroke="#1e2939"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+            {historyLoading ? "載入中…" : "載入上次對話"}
+          </button>
+        </div>
+
+        <div
+          ref={scrollRef}
+          onScroll={handleChatScroll}
+          onWheel={(e) => {
+            if (Math.abs(e.deltaY) > 2) revealHistoryBtn(e.deltaY < 0);
+          }}
+          onTouchStart={(e) => {
+            touchStartY.current = e.touches[0].clientY;
+          }}
+          onTouchMove={(e) => {
+            if (touchStartY.current == null) return;
+            const dy = e.touches[0].clientY - touchStartY.current;
+            if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
+          }}
+          className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 py-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
+        >
+          <div className="flex flex-col gap-6">
+            {historyLoaded && (
+              <>
+                <DateDivider label={PREVIOUS_CHAT_DATE} />
+                {PREVIOUS_CHAT.map((m) => (
+                  <ChatMessage
+                    key={m.id}
+                    message={m}
+                    selected={selected}
+                    onToggle={toggleSelected}
+                    onAdd={flyToCart}
+                    showDisclaimer={false}
+                  />
+                ))}
+                <DateDivider label="今天" />
+              </>
+            )}
+            {messages.map((m) => (
+              <ChatMessage
+                key={m.id}
+                message={m}
+                selected={selected}
+                onToggle={toggleSelected}
+                onAdd={flyToCart}
+                showDisclaimer={
+                  !typing && m === lastMessage && m.role === "bot"
+                }
+              />
+            ))}
+            {typing && (
+              <div className="flex items-center gap-1 py-2">
+                <Dot delay="0ms" />
+                <Dot delay="150ms" />
+                <Dot delay="300ms" />
+              </div>
+            )}
+            {lastQuickReplies && (
+              <div className="-mt-3 flex flex-wrap gap-2">
+                {lastQuickReplies.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleQuickReply(q)}
+                    className={CHIP_CLASS}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -415,7 +628,9 @@ export default function V13HomePage() {
               aria-expanded={chipsOpen}
               className="flex items-center gap-1"
             >
-              <span className="text-[16px] font-bold text-gray-800">你可能想知道</span>
+              <span className="text-[16px] font-bold text-gray-800">
+                你可能想知道
+              </span>
               <img
                 src="/figma/v13-nav-arrow-down.svg"
                 alt=""
@@ -435,8 +650,10 @@ export default function V13HomePage() {
           {chipsOpen && (
             <div className="flex flex-col items-start gap-2">
               {suggestions.map((s, i) => {
-                const visible = itemPhase === "idle" || itemPhase === "entering";
-                const animating = itemPhase === "exiting" || itemPhase === "entering";
+                const visible =
+                  itemPhase === "idle" || itemPhase === "entering";
+                const animating =
+                  itemPhase === "exiting" || itemPhase === "entering";
                 return (
                   <button
                     key={s.key}
@@ -498,6 +715,16 @@ export default function V13HomePage() {
 const CHIP_CLASS =
   "max-w-full rounded-[999px] border border-[#d1d6db] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461]";
 
+function DateDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="h-px flex-1 bg-gray-100" />
+      <span className="text-[12px] text-[#a1a5af]">{label}</span>
+      <span className="h-px flex-1 bg-gray-100" />
+    </div>
+  );
+}
+
 function Dot({ delay }: { delay: string }) {
   return (
     <span
@@ -532,7 +759,9 @@ function ChatMessage({
   return (
     <div className="flex flex-col gap-3">
       {message.text && (
-        <p className="text-[15px] leading-[25px] text-gray-800">{message.text}</p>
+        <p className="text-[15px] leading-[25px] text-gray-800">
+          {message.text}
+        </p>
       )}
       {cards.length === 1 && (
         <ProductCard
@@ -558,7 +787,9 @@ function ChatMessage({
         </div>
       )}
       {showDisclaimer && (
-        <p className="text-[12px] text-[#a1a5af]">伴伴是 AI，有時可能會出錯。</p>
+        <p className="text-[12px] text-[#a1a5af]">
+          伴伴是 AI，有時可能會出錯。
+        </p>
       )}
     </div>
   );
@@ -585,7 +816,11 @@ function ProductCard({
     >
       <div className="relative aspect-square bg-[#f0f2f5]">
         {card.image && (
-          <img src={card.image} alt={card.name} className="size-full object-cover" />
+          <img
+            src={card.image}
+            alt={card.name}
+            className="size-full object-cover"
+          />
         )}
         <button
           onClick={() => onToggle(card.id)}
@@ -615,14 +850,21 @@ function ProductCard({
           {card.name}
         </p>
         <div className="flex items-center justify-between">
-          <p className="text-[14px] font-bold text-gray-800">NT$ {card.price.toLocaleString()}</p>
+          <p className="text-[14px] font-bold text-gray-800">
+            NT$ {card.price.toLocaleString()}
+          </p>
           <button
             onClick={(e) => onAdd(e.currentTarget)}
             aria-label="加入購物車"
             className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#ff5050]"
           >
             <svg viewBox="0 0 16 16" className="size-4">
-              <path d="M8 3v10M3 8h10" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+              <path
+                d="M8 3v10M3 8h10"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>

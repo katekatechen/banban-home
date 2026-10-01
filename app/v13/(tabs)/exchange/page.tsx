@@ -33,7 +33,7 @@ export default function ExchangePage() {
       >
         <div className="pointer-events-auto">
           <StatusBar />
-          <div className="flex shrink-0 items-center justify-between px-5 pb-2 pt-1">
+          <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-1">
             <p className="text-[20px] font-bold text-gray-900">兌換</p>
             <div className="flex items-center gap-2">
               <button
@@ -60,17 +60,24 @@ export default function ExchangePage() {
         </div>
       </div>
 
+      {/* 左右邊界跟其他分頁統一 16px（照 Figma）：外層捲動區不留左右內距，
+          標題各自內縮 16px；橫向卡片列的 16px 內距放在捲動列自己身上，
+          卡片往右滑時才能一路滑到螢幕邊緣，不會在 16px 處被切掉 */}
       <div
-        className={`flex-1 overflow-y-auto overscroll-contain px-5 pb-[110px] ${HEADER_PADDING_CLASS}`}
+        className={`flex-1 overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-[110px] ${HEADER_PADDING_CLASS}`}
       >
         <div className="flex flex-col gap-6">
           <div>
-            <p className="text-[14px] font-bold text-gray-800">許願池</p>
-            <p className="mb-3 text-[12px] text-gray-400">用回饋換喜歡的東西</p>
+            <div className="px-4">
+              <p className="text-[14px] font-bold text-gray-800">許願池</p>
+              <p className="mb-3 text-[12px] text-gray-400">
+                用回饋換喜歡的東西
+              </p>
+            </div>
             {/* 卡寬用容器的百分比（86%），不是佔滿整排——這樣兩張卡片之間
                 永遠留得出下一張的邊緣，看得出「還可以往右滑」，
                 跟線上藏酒那排卡片同一套做法 */}
-            <div className="no-scrollbar flex gap-4 overflow-x-auto">
+            <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
               {WISHES.map((w) => (
                 <div
                   key={w.id}
@@ -97,11 +104,13 @@ export default function ExchangePage() {
           </div>
 
           <div>
-            <p className="text-[14px] font-bold text-gray-800">大家都在換</p>
-            <p className="mb-3 text-[12px] text-gray-400">用回饋折抵商品</p>
+            <div className="px-4">
+              <p className="text-[14px] font-bold text-gray-800">大家都在換</p>
+              <p className="mb-3 text-[12px] text-gray-400">用回饋折抵商品</p>
+            </div>
             {/* 卡寬用容器的百分比，不是寫死的 px，跟線上藏酒同一套做法：
                 商品數量變多時也能自然橫向捲動、露出下一張的邊緣 */}
-            <div className="no-scrollbar flex gap-4 overflow-x-auto">
+            <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
               {TRENDING_PRODUCTS.map((p) => (
                 <div key={p.id} className="w-[44%] shrink-0">
                   {"image" in p ? (
@@ -129,9 +138,11 @@ export default function ExchangePage() {
           </div>
 
           <div>
-            <p className="text-[14px] font-bold text-gray-800">猜你喜歡</p>
-            <p className="mb-3 text-[12px] text-gray-400">根據你的對話</p>
-            <div className="no-scrollbar flex gap-4 overflow-x-auto">
+            <div className="px-4">
+              <p className="text-[14px] font-bold text-gray-800">猜你喜歡</p>
+              <p className="mb-3 text-[12px] text-gray-400">根據你的對話</p>
+            </div>
+            <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
               {RECOMMENDED_PRODUCTS.map((p) => (
                 <div key={p.id} className="w-[44%] shrink-0">
                   {"image" in p ? (

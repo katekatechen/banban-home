@@ -31,6 +31,7 @@ export const GREETING_TEXT =
 // 回到聊天分頁還是同一段對話
 export type ChatSnapshot = {
   open: boolean;
+  historyLoaded: boolean;
   messages: Message[];
   stage: Stage;
   selected: string[];
@@ -42,6 +43,7 @@ let snapshot: ChatSnapshot | null = null;
 export const loadChat = (): ChatSnapshot =>
   snapshot ?? {
     open: false,
+    historyLoaded: false,
     messages: [{ id: genId(), role: "bot", text: GREETING_TEXT }],
     stage: "idle",
     selected: [],
