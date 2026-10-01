@@ -297,3 +297,14 @@ body {
 .ios-inset-dark.ios-round {
   border-radius: 9999px;
 }
+
+/* v13 AI 思考中：「讓我想一想」後面的點依序亮起、再一起淡掉 */
+@keyframes thinkingDot {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  40% {
+    opacity: 1;
+  }
+}

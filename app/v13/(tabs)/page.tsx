@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
@@ -10,16 +11,24 @@ import { setTopTint } from "../_lib/top-tint";
 import {
   genId,
   loadChat,
+  addToCart,
+  cartCountOf,
+  removeFromCart,
   saveChat,
+  takePendingPrompt,
+  type CartItem,
   type Message,
   type RecCard,
   type Stage,
 } from "../_lib/chat-storage";
 import {
   AI_SELECT_HOLDING,
+  RECOMMENDED_PRODUCTS,
   REWARD_BALANCE,
+  TRENDING_PRODUCTS,
   WINE_PICKS,
 } from "../_lib/mock-data";
+import { PRODUCT_DETAILS } from "../_lib/product-details";
 
 // v13 首頁＝聊天分頁，照 Figma 948:44415（首頁）跟 981:24621（對話中）。
 // 點輸入框本身不會有任何變化，送出第一句話之後才原地展開對話：插圖淡出、
@@ -59,6 +68,25 @@ const SUGGESTION_POOL = [
     prompt: "我想看智能選品",
     label: "你的每日回饋突破 100 元！再買點智能選品？",
   },
+];
+
+// 「繼續聊」可能從對話裡或兌換頁的任一張商品卡回來，這裡把所有商品攤平成同一份清單
+const askableCards = (): RecCard[] => [
+  ...NOODLE_PICKS,
+  ...WINE_PICKS.map((p) => ({
+    id: p.id,
+    name: p.name,
+    subtitle: p.subtitle,
+    price: p.price,
+    image: p.image,
+  })),
+  ...[...TRENDING_PRODUCTS, ...RECOMMENDED_PRODUCTS].map((p) => ({
+    id: p.id,
+    name: p.name,
+    subtitle: p.subtitle,
+    price: p.price,
+    image: "image" in p ? p.image : undefined,
+  })),
 ];
 
 const NOODLE_PICKS: RecCard[] = [
@@ -116,14 +144,17 @@ export default function V13HomePage() {
   const [messages, setMessages] = useState<Message[]>(chat.messages);
   const [stage, setStage] = useState<Stage>(chat.stage);
   const [selected, setSelected] = useState<string[]>(chat.selected);
-  const [cartCount, setCartCount] = useState(chat.cartCount);
-  const [addedIds, setAddedIds] = useState<string[]>(chat.addedIds);
+  const [cart, setCart] = useState<CartItem[]>(chat.cart);
+  const cartCount = cartCountOf(cart);
+  const addedIds = cart.map((it) => it.card.id);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [sheet, setSheet] = useState<{
     cards: RecCard[];
     index: number;
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
+  const [thinkingText, setThinkingText] = useState(false);
   const [input, setInput] = useState("");
   // 首頁預設展開建議，進到對話後收成一行，點標題可以再打開
   const [chipsOpen, setChipsOpen] = useState(!chat.open);
@@ -157,38 +188,37 @@ export default function V13HomePage() {
       messages,
       stage,
       selected,
-      cartCount,
-      addedIds,
+      cart,
     });
-  }, [chatOpen, historyLoaded, messages, stage, selected, cartCount, addedIds]);
+  }, [chatOpen, historyLoaded, messages, stage, selected, cart]);
 
-  // 卡片上的 + ：商品圖飛進購物車，同時記下這個商品已經在購物車裡
+  const showToast = (text: string) => {
+    setToast(text);
+    const t = window.setTimeout(() => setToast(null), 2200);
+    timersRef.current.push(t);
+  };
+
+  // 卡片上的 + ：商品圖飛進購物車，飛到了才真的放進購物車（數字才跳）
   const addFromCard = (from: HTMLElement, card: RecCard) => {
-    flyToCart(from);
-    setAddedIds((ids) => (ids.includes(card.id) ? ids : [...ids, card.id]));
+    flyToCart(from, () => setCart((c) => addToCart(c, card)));
   };
 
   // 細節頁的「加入購物車」是切換：沒加過就加、已經加過就拿掉
   const toggleCartFromSheet = (card: RecCard) => {
-    if (addedIds.includes(card.id)) {
-      setAddedIds((ids) => ids.filter((id) => id !== card.id));
-      setCartCount((c) => Math.max(0, c - 1));
-    } else {
-      setAddedIds((ids) => [...ids, card.id]);
-      setCartCount((c) => c + 1);
-    }
+    setCart((c) =>
+      c.some((it) => it.card.id === card.id)
+        ? removeFromCart(c, card.id)
+        : addToCart(c, card),
+    );
   };
 
-  // 這版沒有結帳頁，立即購買先放進購物車、關掉細節頁，再用提示說明
+  // 立即結帳：沒加過的先放進購物車，關掉細節頁直接打開結帳頁
   const buyFromSheet = (card: RecCard) => {
-    if (!addedIds.includes(card.id)) {
-      setAddedIds((ids) => [...ids, card.id]);
-      setCartCount((c) => c + 1);
-    }
+    setCart((c) =>
+      c.some((it) => it.card.id === card.id) ? c : addToCart(c, card),
+    );
     setSheet(null);
-    setToast("已放進購物車，結帳流程這版還沒做");
-    const t = window.setTimeout(() => setToast(null), 2200);
-    timersRef.current.push(t);
+    setCheckoutOpen(true);
   };
 
   // 往上滑才冒出「載入上次對話」，往下滑就收起來。三種輸入都要接：
@@ -296,19 +326,19 @@ export default function V13HomePage() {
   // 按 + 加入購物車：一顆紅點從按鈕沿著弧線飛進右上角的購物車，
   // 飛到之後購物車圖示縮放一下，數字才 +1 跳出來。
   // 用 Web Animations API 直接動 DOM，不走 React state，動畫期間不會重繪整頁
-  const flyToCart = (from: HTMLElement) => {
+  const flyToCart = (from: HTMLElement, onLand: () => void) => {
     const root = rootRef.current;
-    const cart = cartIconRef.current;
+    const cartIcon = cartIconRef.current;
     const image = from
       .closest("[data-product-card]")
       ?.querySelector<HTMLElement>("[data-product-image]");
-    if (!root || !cart || !image) {
-      setCartCount((c) => c + 1);
+    if (!root || !cartIcon || !image) {
+      onLand();
       return;
     }
     const rootRect = root.getBoundingClientRect();
     const a = image.getBoundingClientRect();
-    const b = cart.getBoundingClientRect();
+    const b = cartIcon.getBoundingClientRect();
     // 複製一份商品圖（拿掉右上角的勾選圈），疊在原圖的位置上，
     // 邊飛邊縮小，最後縮成跟購物車圖示差不多大、落在購物車正中間
     const w = a.width;
@@ -361,7 +391,7 @@ export default function V13HomePage() {
     );
     anim.onfinish = () => {
       ghost.remove();
-      cart.animate(
+      cartIcon.animate(
         [
           { transform: "scale(1)" },
           { transform: "scale(1.3)", offset: 0.4 },
@@ -370,7 +400,7 @@ export default function V13HomePage() {
         ],
         { duration: 360, easing: "ease-out" },
       );
-      window.setTimeout(() => setCartCount((c) => c + 1), 140);
+      window.setTimeout(onLand, 140);
     };
   };
 
@@ -411,14 +441,23 @@ export default function V13HomePage() {
     return () => window.removeEventListener(HOME_RESET_EVENT, onReset);
   });
 
-  const pushBot = (msg: Omit<Message, "id" | "role">, delay = 700) => {
+  // 每次使用者送出後的第一段回覆，先顯示「收到你的需求了，讓我想一想」
+  // 思考動畫、停久一點；同一輪接著補的第二、三段只顯示跳動的點，停短一點
+  const firstReplyPending = useRef(false);
+  const pushBot = (msg: Omit<Message, "id" | "role">, delay?: number) => {
+    const first = firstReplyPending.current;
+    firstReplyPending.current = false;
+    setThinkingText(first);
     setTyping(true);
     return new Promise<void>((resolve) => {
-      const t = window.setTimeout(() => {
-        setTyping(false);
-        setMessages((m) => [...m, { id: genId(), role: "bot", ...msg }]);
-        resolve();
-      }, delay);
+      const t = window.setTimeout(
+        () => {
+          setTyping(false);
+          setMessages((m) => [...m, { id: genId(), role: "bot", ...msg }]);
+          resolve();
+        },
+        delay ?? (first ? 1800 : 700),
+      );
       timersRef.current.push(t);
     });
   };
@@ -440,6 +479,23 @@ export default function V13HomePage() {
     openChat();
     setMessages((m) => [...m, { id: genId(), role: "user", text }]);
     setInput("");
+    firstReplyPending.current = true;
+
+    // 從商品細節頁按「繼續聊」帶進來的：訊息裡有「商品名稱」，
+    // 用細節頁的資料回一段重點，再附上同一張商品卡
+    const asked = askableCards().find((c) => text.includes(`「${c.name}」`));
+    if (asked) {
+      const detail = PRODUCT_DETAILS[asked.id];
+      const lead = detail ? `${detail.overview.split("。")[0]}。` : "";
+      const points = detail
+        ? `大家最常提到的是${detail.highlights.map((h) => h.title).join("、")}。`
+        : "";
+      await pushBot({
+        text: `${lead}${points}想問口味、份量、怎麼挑，或跟其他款比較，都可以直接問我：`,
+        cards: [asked],
+      });
+      return;
+    }
 
     if (stage === "await_wine_budget") {
       setStage("done");
@@ -451,13 +507,10 @@ export default function V13HomePage() {
     }
 
     if (text.includes("麵")) {
-      await pushBot(
-        {
-          text: "先推薦你一款我覺得最讚的：大師兄銷魂麻辣粗麵。它是排隊名店直接做成快煮麵的版本，麻辣醬料熬了十小時，香氣跟店裡吃到的很接近，麵體也夠粗夠有嚼勁。不管是自己想解饞，還是要送給喜歡吃辣的朋友，都不容易踩雷，算是討論度最高、回購率也最好的一款：",
-          cards: [NOODLE_PICKS[0]],
-        },
-        900,
-      );
+      await pushBot({
+        text: "先推薦你一款我覺得最讚的：大師兄銷魂麻辣粗麵。它是排隊名店直接做成快煮麵的版本，麻辣醬料熬了十小時，香氣跟店裡吃到的很接近，麵體也夠粗夠有嚼勁。不管是自己想解饞，還是要送給喜歡吃辣的朋友，都不容易踩雷，算是討論度最高、回購率也最好的一款：",
+        cards: [NOODLE_PICKS[0]],
+      });
       await pushBot({
         text: "如果想一次多備幾款，這幾款也很適合搭配著買：",
         cards: NOODLE_PICKS.slice(1),
@@ -543,10 +596,14 @@ export default function V13HomePage() {
   // 用 window.location.search，不用 useSearchParams()，避免整頁進 Suspense
   useEffect(() => {
     if (sentInitial.current) return;
-    const prompt = new URLSearchParams(window.location.search).get("prompt");
+    const prompt =
+      takePendingPrompt() ??
+      new URLSearchParams(window.location.search).get("prompt");
     if (!prompt) return;
     sentInitial.current = true;
-    window.history.replaceState(null, "", window.location.pathname);
+    if (window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     handleSend(prompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -605,6 +662,7 @@ export default function V13HomePage() {
           <button
             aria-label="購物車"
             tabIndex={chatOpen ? 0 : -1}
+            onClick={() => setCheckoutOpen(true)}
             className="relative flex h-11 items-center rounded-[22px] bg-white px-4 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
             style={{
               opacity: chatOpen ? 1 : 0,
@@ -766,13 +824,16 @@ export default function V13HomePage() {
                 }
               />
             ))}
-            {typing && (
-              <div className="flex items-center gap-1 py-2">
-                <Dot delay="0ms" />
-                <Dot delay="150ms" />
-                <Dot delay="300ms" />
-              </div>
-            )}
+            {typing &&
+              (thinkingText ? (
+                <ThinkingIndicator />
+              ) : (
+                <div className="flex items-center gap-1 py-2">
+                  <Dot delay="0ms" />
+                  <Dot delay="150ms" />
+                  <Dot delay="300ms" />
+                </div>
+              ))}
             {lastQuickReplies && (
               <div className="-mt-3 flex flex-wrap gap-2">
                 {lastQuickReplies.map((q) => (
@@ -915,6 +976,19 @@ export default function V13HomePage() {
         </form>
       </div>
 
+      {checkoutOpen && (
+        <Checkout
+          cart={cart}
+          onCartChange={setCart}
+          onClose={() => setCheckoutOpen(false)}
+          onPaid={(paidIds) => {
+            setCart((c) => c.filter((it) => !paidIds.includes(it.card.id)));
+            setCheckoutOpen(false);
+            showToast("前往付款・訂單已成立");
+          }}
+        />
+      )}
+
       {sheet && (
         <ProductSheet
           cards={sheet.cards}
@@ -922,6 +996,10 @@ export default function V13HomePage() {
           addedIds={addedIds}
           onToggleCart={toggleCartFromSheet}
           onBuy={buyFromSheet}
+          onAsk={(card) => {
+            setSheet(null);
+            handleSend(`我想多了解「${card.name}」`);
+          }}
           onClose={() => setSheet(null)}
         />
       )}
@@ -949,6 +1027,42 @@ function DateDivider({ label }: { label: string }) {
       <span className="h-px flex-1 bg-gray-100" />
       <span className="text-[12px] text-[#a1a5af]">{label}</span>
       <span className="h-px flex-1 bg-gray-100" />
+    </div>
+  );
+}
+
+// AI 思考中：文字上有一道亮光從左掃到右（漸層字＋背景位移），
+// 後面四個點依序亮起，看起來像「正在想」而不是卡住
+function ThinkingIndicator() {
+  return (
+    <div
+      className="flex items-center py-1 text-[15px] leading-[25px]"
+      style={{ animation: "fadeIn 240ms ease" }}
+    >
+      <span
+        className="bg-clip-text text-transparent"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, #a1a5ac 0%, #a1a5ac 35%, #1e2939 50%, #a1a5ac 65%, #a1a5ac 100%)",
+          backgroundSize: "300% 100%",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          animation: "shimmerSweep 1.8s linear infinite",
+        }}
+      >
+        收到你的需求了，讓我想一想
+      </span>
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className="text-[#a1a5ac]"
+          style={{
+            animation: `thinkingDot 1.2s ease-in-out ${i * 0.18}s infinite`,
+          }}
+        >
+          ．
+        </span>
+      ))}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusBar from "../_components/StatusBar";
+import { setPendingPrompt } from "../_lib/chat-storage";
 import { usePageSlide } from "../_lib/page-transition";
 import { WINE_SHOP_PRODUCTS, type WineType } from "../_lib/mock-data";
 
@@ -45,7 +46,9 @@ export default function WineSelectPage() {
         </button>
         <div className="flex items-center gap-1.5 rounded-[22px] border border-gray-200 bg-white px-3 py-2 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.04)]">
           <img src="/figma/icon-cart.svg" alt="" className="size-5" />
-          <span className="text-[13px] font-semibold text-gray-800">$1,999</span>
+          <span className="text-[13px] font-semibold text-gray-800">
+            $1,999
+          </span>
         </div>
       </div>
 
@@ -56,7 +59,9 @@ export default function WineSelectPage() {
               key={f}
               onClick={() => setSortFilter(f)}
               className={`shrink-0 rounded-lg px-2 py-2 text-[14px] font-semibold ${
-                sortFilter === f ? "bg-gray-800 text-white" : "bg-[#f3f4f6] text-gray-800"
+                sortFilter === f
+                  ? "bg-gray-800 text-white"
+                  : "bg-[#f3f4f6] text-gray-800"
               }`}
             >
               {f}
@@ -65,7 +70,11 @@ export default function WineSelectPage() {
         </div>
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 flex w-16 items-center justify-end bg-gradient-to-r from-transparent via-white/80 to-white pr-4">
           <button className="pointer-events-auto flex size-6 items-center justify-center">
-            <img src="/figma/icon-filter-alt.svg" alt="篩選" className="size-6" />
+            <img
+              src="/figma/icon-filter-alt.svg"
+              alt="篩選"
+              className="size-6"
+            />
           </button>
         </div>
       </div>
@@ -82,7 +91,9 @@ export default function WineSelectPage() {
             </span>
             <span
               className={`text-[12px] tracking-[0.12px] ${
-                category === c.key ? "font-semibold text-[#1b1f26]" : "text-[#6b7483]"
+                category === c.key
+                  ? "font-semibold text-[#1b1f26]"
+                  : "text-[#6b7483]"
               }`}
             >
               {c.label}
@@ -94,7 +105,10 @@ export default function WineSelectPage() {
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-24">
         <div className="grid grid-cols-2 gap-4">
           {products.map((p) => (
-            <div key={p.id} className="flex flex-col overflow-hidden rounded-lg">
+            <div
+              key={p.id}
+              className="flex flex-col overflow-hidden rounded-lg"
+            >
               <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f6f7f8]">
                 <img src={p.image} alt="" className="size-full object-cover" />
                 {p.tag && (
@@ -125,9 +139,10 @@ export default function WineSelectPage() {
       </div>
 
       <button
-        onClick={() =>
-          router.push(`/v13?prompt=${encodeURIComponent("我想買酒送到家")}`)
-        }
+        onClick={() => {
+          setPendingPrompt("我想買酒送到家");
+          router.push("/v13");
+        }}
         className="absolute bottom-[24px] left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-[26px] bg-gray-800 px-6 py-4 shadow-[0px_4px_16px_0px_rgba(30,41,57,0.25)]"
       >
         <img src="/figma/icon-chat-bubble.svg" alt="" className="size-4" />

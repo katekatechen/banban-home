@@ -112,4 +112,123 @@ export const PRODUCT_DETAILS: Record<string, ProductDetail> = {
     reviewText: null,
     reviewTags: [],
   },
+
+  // 兌換頁「大家都在換」「猜你喜歡」的商品
+  "power-bank-20w": {
+    fullName: "20W PD 快充行動電源 10000mAh",
+    overview:
+      "10000mAh 容量大概可以幫手機充飽兩次，支援 20W PD 快充，30 分鐘就能把手機充到五成左右。機身跟一般手機差不多大，放包包或口袋都不佔空間。\n\n出門通勤、旅行都很實用，是用回饋兌換最多人選的 3C 配件之一。",
+    specs: [
+      { label: "容量", value: "10000mAh" },
+      { label: "輸出功率", value: "最高 20W" },
+      { label: "接口", value: "USB-C／USB-A" },
+      { label: "重量", value: "約 210g" },
+    ],
+    highlights: [
+      { title: "手機充兩次", sub: "容量" },
+      { title: "30 分鐘充五成", sub: "快充" },
+      { title: "通勤好帶", sub: "尺寸" },
+    ],
+    highlightSummary: "10000mAh・20W",
+    reviewText:
+      "網友多半提到充電速度穩定、外殼摸起來不會太燙，大小剛好可以跟手機疊在一起拿。也有人提醒要搭配支援 PD 的線材，才跑得到 20W。",
+    reviewTags: ["Dcard", "PTT"],
+  },
+  "wailan-power-bank": {
+    fullName: "威嵐隨行行動電源 5000mAh",
+    overview:
+      "5000mAh 的輕巧款，重量不到 120g，適合只需要臨時補一點電的時候。內建 USB-C 線，不用另外帶充電線。",
+    specs: [
+      { label: "容量", value: "5000mAh" },
+      { label: "輸出功率", value: "最高 15W" },
+      { label: "接口", value: "內建 USB-C 線" },
+      { label: "重量", value: "約 115g" },
+    ],
+    highlights: [
+      { title: "不到 120g", sub: "重量" },
+      { title: "內建充電線", sub: "便利性" },
+      { title: "臨時補電", sub: "適合情境" },
+    ],
+    highlightSummary: "5000mAh・內建線",
+    reviewText: null,
+    reviewTags: [],
+  },
+  "wailan-speaker": {
+    fullName: "威嵐藍牙喇叭 防水攜帶款",
+    overview:
+      "手掌大小的藍牙喇叭，IPX7 防水，露營、浴室或戶外烤肉都能用。低音比同尺寸的喇叭飽滿，一次充飽可以連續播放約 12 小時。",
+    specs: [
+      { label: "防水等級", value: "IPX7" },
+      { label: "續航", value: "約 12 小時" },
+      { label: "藍牙", value: "5.3" },
+      { label: "重量", value: "約 350g" },
+    ],
+    highlights: [
+      { title: "IPX7 防水", sub: "耐用" },
+      { title: "播放 12 小時", sub: "續航" },
+      { title: "烤肉露營好用", sub: "適合情境" },
+    ],
+    highlightSummary: "IPX7・12 小時",
+    reviewText: null,
+    reviewTags: [],
+  },
+  "wailan-earbuds": {
+    fullName: "威嵐旗艦款主動降噪藍牙耳機",
+    overview:
+      "主動降噪可以把捷運、飛機上的低頻噪音壓下來不少，通話時有環境音模式，不用拿下耳機也聽得到旁邊的人說話。單次續航約 8 小時，搭配充電盒可以撐一整週通勤。",
+    specs: [
+      { label: "降噪", value: "主動降噪 ANC" },
+      { label: "續航", value: "耳機 8 小時／含充電盒 32 小時" },
+      { label: "防水等級", value: "IPX4" },
+      { label: "充電", value: "USB-C／無線充電" },
+    ],
+    highlights: [
+      { title: "通勤降噪", sub: "降噪" },
+      { title: "一週充一次", sub: "續航" },
+      { title: "支援無線充", sub: "充電" },
+    ],
+    highlightSummary: "ANC・32 小時",
+    reviewText:
+      "不少人提到降噪效果在這個價位很有感，搭捷運時人聲跟車廂噪音都小很多。配戴舒適度評價不錯，長時間戴耳朵不太會痛；也有人覺得低音稍微偏重，可以用 App 調等化器。",
+    reviewTags: ["Dcard", "Mobile01"],
+  },
+  "taiwan-tobacco-spicy-noodles": {
+    fullName: "台酒麻辣乾拌麵 琴酒入麵 椒麻醇香 牛肉風味 4 入裝",
+    overview:
+      "這款是門前燴麵和台酒聯名推出的話題乾拌麵，最大特色是麵體加入了琴酒調味，煮熟後酒香會轉化成淡淡的植物系香氣，搭配椒麻醇香的牛肉風味醬料，吃起來麻、辣、香氣層次都比一般乾拌麵更豐富。\n\n包裝走沉穩的酒瓶質感設計，很適合喜歡喝酒、也喜歡重口味的人，當作辦公室團購或送禮的話題小物都很合適，聊開話匣子很有梗。",
+    specs: [
+      { label: "品牌", value: "門前燴麵 x 台酒" },
+      { label: "風味", value: "椒麻牛肉風味" },
+      { label: "特色", value: "琴酒入麵" },
+      { label: "內容量", value: "4 包，淨重 130g／包" },
+      { label: "辣度", value: "麻辣" },
+    ],
+    highlights: [
+      { title: "琴酒入麵", sub: "特色" },
+      { title: "麻辣夠味", sub: "風味" },
+      { title: "送禮吸睛", sub: "話題性" },
+    ],
+    highlightSummary: "4入・琴酒入麵",
+    reviewText: null,
+    reviewTags: [],
+  },
+  "wailan-wireless-charger": {
+    fullName: "威嵐 15W 無線充電盤",
+    overview:
+      "放上去就能充，支援 15W 無線快充，手機殼不超過 5mm 不用拆。底部有止滑墊，放床頭或辦公桌都很穩。",
+    specs: [
+      { label: "輸出功率", value: "最高 15W" },
+      { label: "支援", value: "Qi 無線充電手機" },
+      { label: "接口", value: "USB-C 輸入" },
+      { label: "尺寸", value: "直徑約 10cm" },
+    ],
+    highlights: [
+      { title: "放上去就充", sub: "便利性" },
+      { title: "不用拆殼", sub: "相容性" },
+      { title: "床頭桌面都穩", sub: "設計" },
+    ],
+    highlightSummary: "15W・Qi",
+    reviewText: null,
+    reviewTags: [],
+  },
 };

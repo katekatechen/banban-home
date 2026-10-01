@@ -1,7 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import ProductSheet from "../../_components/ProductSheet";
 import StatusBar from "../../_components/StatusBar";
+import Checkout from "../../_components/Checkout";
+import {
+  addToCart,
+  loadCart,
+  removeFromCart,
+  saveCart,
+  setPendingPrompt,
+  type CartItem,
+  type RecCard,
+} from "../../_lib/chat-storage";
 import {
   RECOMMENDED_PRODUCTS,
   REWARD_BALANCE,
@@ -23,8 +35,49 @@ const HEADER_PADDING_CLASS = "pt-[72px] sm:pt-[112px]";
 // 兌換分頁是這版新增的：許願池搬到這裡（原本在回饋頁的許願池子分頁），
 // 加上「熱門商品」——用回饋折抵一般商品（不只是酒），跟回饋分頁區分開來：
 // 回饋分頁講「你賺了多少」，兌換分頁講「你可以拿去換什麼」
+// 兌換頁的商品攤成細節頁要的 RecCard 格式；沒有實拍圖的就讓細節頁顯示灰底
+const toCards = (list: typeof TRENDING_PRODUCTS): RecCard[] =>
+  list.map((p) => ({
+    id: p.id,
+    name: p.name,
+    subtitle: p.subtitle,
+    price: p.price,
+    image: p.image,
+  }));
+const TRENDING_CARDS = toCards(TRENDING_PRODUCTS);
+const RECOMMENDED_CARDS = toCards(RECOMMENDED_PRODUCTS);
+
 export default function ExchangePage() {
   const router = useRouter();
+  // 「大家都在換」「猜你喜歡」點了打開跟對話裡同一個商品細節頁，
+  // 左右滑可以切換同一排的其他商品；購物車狀態跟聊天分頁共用同一份
+  const [sheet, setSheet] = useState<{
+    cards: RecCard[];
+    index: number;
+  } | null>(null);
+  // 購物車跟聊天分頁共用模組層級的同一份，這裡改了就寫回去
+  const [cart, setCartState] = useState<CartItem[]>(loadCart);
+  const setCart = (next: CartItem[]) => {
+    setCartState(next);
+    saveCart(next);
+  };
+  const addedIds = cart.map((it) => it.card.id);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+
+  const showToast = (text: string) => {
+    setToast(text);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2200);
+  };
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-white">
@@ -111,8 +164,12 @@ export default function ExchangePage() {
             {/* 卡寬用容器的百分比，不是寫死的 px，跟線上藏酒同一套做法：
                 商品數量變多時也能自然橫向捲動、露出下一張的邊緣 */}
             <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
-              {TRENDING_PRODUCTS.map((p) => (
-                <div key={p.id} className="w-[44%] shrink-0">
+              {TRENDING_PRODUCTS.map((p, i) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSheet({ cards: TRENDING_CARDS, index: i })}
+                  className="w-[44%] shrink-0 text-left"
+                >
                   {"image" in p ? (
                     <img
                       src={p.image}
@@ -132,7 +189,7 @@ export default function ExchangePage() {
                   <p className="text-[13px] text-gray-800">
                     ${p.price.toLocaleString()}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -143,8 +200,14 @@ export default function ExchangePage() {
               <p className="mb-3 text-[12px] text-gray-400">根據你的對話</p>
             </div>
             <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
-              {RECOMMENDED_PRODUCTS.map((p) => (
-                <div key={p.id} className="w-[44%] shrink-0">
+              {RECOMMENDED_PRODUCTS.map((p, i) => (
+                <button
+                  key={p.id}
+                  onClick={() =>
+                    setSheet({ cards: RECOMMENDED_CARDS, index: i })
+                  }
+                  className="w-[44%] shrink-0 text-left"
+                >
                   {"image" in p ? (
                     <img
                       src={p.image}
@@ -164,12 +227,61 @@ export default function ExchangePage() {
                   <p className="text-[13px] text-gray-800">
                     ${p.price.toLocaleString()}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
         </div>
       </div>
+      {sheet && (
+        <ProductSheet
+          cards={sheet.cards}
+          startIndex={sheet.index}
+          addedIds={addedIds}
+          onToggleCart={(card) =>
+            setCart(
+              addedIds.includes(card.id)
+                ? removeFromCart(cart, card.id)
+                : addToCart(cart, card),
+            )
+          }
+          onBuy={(card) => {
+            if (!addedIds.includes(card.id)) setCart(addToCart(cart, card));
+            setSheet(null);
+            setCheckoutOpen(true);
+          }}
+          onAsk={(card) => {
+            setSheet(null);
+            setPendingPrompt(`我想多了解「${card.name}」`);
+            router.push("/v13");
+          }}
+          onClose={() => setSheet(null)}
+        />
+      )}
+
+      {checkoutOpen && (
+        <Checkout
+          cart={cart}
+          onCartChange={setCart}
+          onClose={() => setCheckoutOpen(false)}
+          onPaid={(paidIds) => {
+            setCart(cart.filter((it) => !paidIds.includes(it.card.id)));
+            setCheckoutOpen(false);
+            showToast("前往付款・訂單已成立");
+          }}
+        />
+      )}
+
+      {toast && (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center px-4">
+          <p
+            className="rounded-full bg-gray-800/90 px-4 py-2 text-[13px] text-white shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
+            style={{ animation: "fadeIn 200ms ease" }}
+          >
+            {toast}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

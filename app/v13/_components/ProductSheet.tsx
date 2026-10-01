@@ -21,6 +21,7 @@ export default function ProductSheet({
   addedIds,
   onToggleCart,
   onBuy,
+  onAsk,
   onClose,
 }: {
   cards: RecCard[];
@@ -28,6 +29,8 @@ export default function ProductSheet({
   addedIds: string[];
   onToggleCart: (card: RecCard) => void;
   onBuy: (card: RecCard) => void;
+  // 「繼續聊」：關掉細節頁，帶著商品名稱回到對話
+  onAsk: (card: RecCard) => void;
   onClose: () => void;
 }) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
@@ -251,54 +254,61 @@ export default function ProductSheet({
           </div>
         </div>
 
-        {/* 底部固定的操作列：圖片名稱價格都先顯示了，購買按鈕不用等 */}
-        <div className="flex shrink-0 gap-3 border-t border-[#eef0f1] bg-white px-5 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3.5">
+        {/* 底部固定的操作列（照參考圖）：左邊文字按鈕「繼續聊」帶著這個商品回對話，
+            右邊兩顆膠囊按鈕是加入購物車跟立即結帳 */}
+        <div className="flex shrink-0 items-center gap-2.5 border-t border-[#eef0f1] bg-white px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
+          <button
+            onClick={() => onAsk(card)}
+            className="flex shrink-0 items-center gap-1 px-1.5 text-[15px] text-[#4a5565]"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M10 4.5c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Z" />
+              <path d="M18 3v4M16 5h4" />
+              <path d="M18.5 16.5v3M17 18h3" />
+            </svg>
+            繼續聊
+          </button>
           {added ? (
             <button
               onClick={() => onToggleCart(card)}
-              className="flex flex-1 items-center justify-center gap-[7px] rounded-[12px] border border-[#1f8a5b] bg-[rgba(31,138,91,0.08)] p-[13px] text-[14.5px] font-semibold text-[#1f8a5b]"
+              className="flex h-11 flex-1 items-center justify-center gap-1 rounded-full border-[1.5px] border-[#1f8a5b] bg-[rgba(31,138,91,0.08)] text-[15px] font-semibold text-[#1f8a5b]"
             >
               <svg
-                width="17"
-                height="17"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.4"
+                strokeWidth="2.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <path d="M20 6 9 17l-5-5" />
               </svg>
-              已加入購物車
+              已加入
             </button>
           ) : (
             <button
               onClick={() => onToggleCart(card)}
-              className="flex flex-1 items-center justify-center gap-[7px] rounded-[12px] border border-[#dfe2e6] p-[13px] text-[14.5px] font-semibold text-gray-800"
+              className="flex h-11 flex-1 items-center justify-center rounded-full border-[1.5px] border-gray-800 text-[15px] font-semibold text-gray-800"
             >
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
               加入購物車
             </button>
           )}
           <button
             onClick={() => onBuy(card)}
-            className="flex flex-1 items-center justify-center rounded-[12px] bg-[#ff5050] p-[13px] text-[14.5px] font-semibold text-white shadow-[0_2px_8px_rgba(255,80,80,0.32)]"
+            className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#ef4d4d] text-[15px] font-semibold text-white shadow-[0_4px_12px_rgba(239,77,77,0.35)]"
           >
-            立即購買
+            立即結帳
           </button>
         </div>
       </div>
