@@ -1,8 +1,7 @@
 // 手機瀏覽器頂部狀態列的底色。一般的 Safari／Chrome 分頁裡，網頁畫不到狀態列
 // 那一條，瀏覽器會拿 theme-color（舊版 iOS）或 html／body 的背景色
-// （iOS 26 起改看這個）去塗。沒設的話就是預設白色，首頁插圖上方會多出一條白邊。
+// （iOS 26 起改看這個）去塗。v13 一律塗白色（傳 null）。
 // 只在手機寬度（< sm）套用：桌機預覽外面有手機外框跟灰底，不能被改掉
-export const HERO_TOP_TINT = "#b4c6d0";
 const DEFAULT_TINT = "#ffffff";
 
 export function setTopTint(color: string | null) {

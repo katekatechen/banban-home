@@ -6,7 +6,7 @@ import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
-import { HERO_TOP_TINT, setTopTint } from "../_lib/top-tint";
+import { setTopTint } from "../_lib/top-tint";
 import {
   genId,
   loadChat,
@@ -385,12 +385,10 @@ export default function V13HomePage() {
     setChipsOpen(true);
   };
 
-  // 手機瀏覽器頂部狀態列：插圖首頁時塗成插圖頂端的顏色，接得上插圖；
-  // 進到對話（白底）或離開聊天分頁時改回白色
+  // 手機瀏覽器頂部狀態列一律塗白色（不接插圖顏色），插圖從狀態列下方開始
   useEffect(() => {
-    setTopTint(chatOpen ? null : HERO_TOP_TINT);
-  }, [chatOpen]);
-  useEffect(() => () => setTopTint(null), []);
+    setTopTint(null);
+  }, []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
   // （對話內容留著，下次點輸入框會接著聊）
