@@ -563,7 +563,7 @@ export default function V13HomePage() {
             const dy = e.touches[0].clientY - touchStartY.current;
             if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
           }}
-          className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 py-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
+          className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 pb-10 pt-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
         >
           <div className="flex flex-col gap-6">
             {historyLoaded && (
