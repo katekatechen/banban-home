@@ -268,6 +268,23 @@ export default function V13HomePage() {
     return () => window.clearTimeout(t);
   }, [chipsOpen, chatOpen]);
 
+  // 「你可能想知道」打開時，往上滑（回頭看對話）超過一小段就自動收起來，
+  // 把空間還給對話。累積往上滑的距離，往下滑就歸零，避免手指輕微抖動就收掉
+  const CHIPS_CLOSE_SCROLL_UP_PX = 40;
+  const scrollUpAccum = useRef(0);
+  const trackScrollUp = (up: number) => {
+    if (!chatOpen || !chipsOpen) return;
+    if (up <= 0) {
+      scrollUpAccum.current = 0;
+      return;
+    }
+    scrollUpAccum.current += up;
+    if (scrollUpAccum.current > CHIPS_CLOSE_SCROLL_UP_PX) {
+      scrollUpAccum.current = 0;
+      setChipsOpen(false);
+    }
+  };
+
   const handleChatScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -281,6 +298,7 @@ export default function V13HomePage() {
     const delta = el.scrollTop - lastScrollTop.current;
     lastScrollTop.current = el.scrollTop;
     if (Math.abs(delta) > 4) revealHistoryBtn(delta < 0);
+    trackScrollUp(-delta);
   };
 
   const loadHistory = () => {
@@ -737,6 +755,10 @@ export default function V13HomePage() {
           onScroll={handleChatScroll}
           onWheel={(e) => {
             if (Math.abs(e.deltaY) > 2) revealHistoryBtn(e.deltaY < 0);
+            // 內容短到捲不動時不會有 scroll 事件，滾輪往上也要算
+            const el0 = scrollRef.current;
+            if (el0 && el0.scrollHeight <= el0.clientHeight + 2)
+              trackScrollUp(-e.deltaY);
             // 滾輪（尤其觸控板）捲到底之後還會有一段慣性，那段不能算「多推」：
             // 要在底部停穩 300ms 之後的滾動才累積；內容短到捲不動時直接算停穩
             const el = scrollRef.current;
@@ -770,6 +792,14 @@ export default function V13HomePage() {
             const y = e.touches[0].clientY;
             const dy = y - touchStartY.current;
             if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
+            // 同上：捲不動時看手指往下拖（＝往上滑）的距離
+            const el1 = scrollRef.current;
+            if (
+              el1 &&
+              el1.scrollHeight <= el1.clientHeight + 2 &&
+              dy > CHIPS_CLOSE_SCROLL_UP_PX
+            )
+              setChipsOpen(false);
             if (chipsOpen) return;
             if (!isAtBottom()) {
               if (bottomPullStartY.current != null) releasePull();
