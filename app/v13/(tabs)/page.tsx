@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StatusBar from "../_components/StatusBar";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
+import { EASING } from "../_lib/page-transition";
 import {
   genId,
   loadChat,
@@ -31,7 +32,7 @@ type SuggestionPhase = "idle" | "exiting" | "entering-start" | "entering";
 const ITEM_STAGGER_MS = 60;
 const ITEM_DURATION_MS = 200;
 const MODE_TRANSITION_MS = 300;
-const FLY_TO_CART_MS = 550;
+const FLY_TO_CART_MS = 650;
 
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
 const SUGGESTION_POOL = [
@@ -125,6 +126,9 @@ export default function V13HomePage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const lastScrollTop = useRef(0);
   const touchStartY = useRef<number | null>(null);
+  const bottomPullStartY = useRef<number | null>(null);
+  const bottomWheelPull = useRef(0);
+  const atBottomSince = useRef<number | null>(null);
   const distanceFromBottom = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -154,9 +158,45 @@ export default function V13HomePage() {
     setShowHistoryBtn(up);
   };
 
+  // 對話捲到底之後還繼續往下滑，滑超過一段距離才打開「你可能想知道」。
+  // 「繼續往下滑」在手機是手指往上推、桌機是滾輪往下；只看已經到底之後
+  // 多推的那段，捲動途中經過底部不會誤觸
+  const BOTTOM_PULL_TOUCH_PX = 70;
+  const BOTTOM_PULL_WHEEL_PX = 160;
+  const isAtBottom = () => {
+    const el = scrollRef.current;
+    return !!el && el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+  };
+  const openChipsFromPull = () => {
+    if (chipsOpen) return;
+    setChipsOpen(true);
+    bottomPullStartY.current = null;
+    bottomWheelPull.current = 0;
+  };
+
+  // 「你可能想知道」展開後，對話區會被往上擠矮一截，最後一則訊息會被
+  // 底下長出來的標籤蓋住，順手捲回最底
+  useEffect(() => {
+    if (!chatOpen || !chipsOpen) return;
+    const t = window.setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }, MODE_TRANSITION_MS);
+    return () => window.clearTimeout(t);
+  }, [chipsOpen, chatOpen]);
+
   const handleChatScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+    if (isAtBottom()) {
+      if (atBottomSince.current == null)
+        atBottomSince.current = performance.now();
+    } else {
+      atBottomSince.current = null;
+      bottomWheelPull.current = 0;
+    }
     const delta = el.scrollTop - lastScrollTop.current;
     lastScrollTop.current = el.scrollTop;
     if (Math.abs(delta) > 4) revealHistoryBtn(delta < 0);
@@ -208,39 +248,68 @@ export default function V13HomePage() {
   const flyToCart = (from: HTMLElement) => {
     const root = rootRef.current;
     const cart = cartIconRef.current;
-    if (!root || !cart) {
+    const image = from
+      .closest("[data-product-card]")
+      ?.querySelector<HTMLElement>("[data-product-image]");
+    if (!root || !cart || !image) {
       setCartCount((c) => c + 1);
       return;
     }
     const rootRect = root.getBoundingClientRect();
-    const a = from.getBoundingClientRect();
+    const a = image.getBoundingClientRect();
     const b = cart.getBoundingClientRect();
-    const size = 14;
-    const x0 = a.left + a.width / 2 - rootRect.left - size / 2;
-    const y0 = a.top + a.height / 2 - rootRect.top - size / 2;
-    const x1 = b.left + b.width / 2 - rootRect.left - size / 2;
-    const y1 = b.top + b.height / 2 - rootRect.top - size / 2;
+    // 複製一份商品圖（拿掉右上角的勾選圈），疊在原圖的位置上，
+    // 邊飛邊縮小，最後縮成跟購物車圖示差不多大、落在購物車正中間
+    const w = a.width;
+    const endScale = 22 / w;
+    const x0 = a.left - rootRect.left;
+    const y0 = a.top - rootRect.top;
+    const x1 = b.left + b.width / 2 - rootRect.left - (w * endScale) / 2;
+    const y1 = b.top + b.height / 2 - rootRect.top - (w * endScale) / 2;
     // 中途點：垂直方向先走掉七成、水平只走三成，路徑往左上鼓成一道弧，
-    // 不會像拋物線那樣衝出畫面上緣（購物車本來就貼著頂部）
+    // 不會衝出畫面上緣（購物車本來就貼著頂部）
     const midX = x0 + (x1 - x0) * 0.3;
     const midY = y0 + (y1 - y0) * 0.7;
+    const midScale = 0.45;
 
-    const dot = document.createElement("div");
-    dot.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;border-radius:999px;background:#ff5050;z-index:30;pointer-events:none;box-shadow:0 2px 6px rgba(255,80,80,0.4)`;
-    root.appendChild(dot);
-    const anim = dot.animate(
+    const ghost = image.cloneNode(true) as HTMLElement;
+    ghost.querySelector("button")?.remove();
+    ghost.removeAttribute("data-product-image");
+    Object.assign(ghost.style, {
+      position: "absolute",
+      left: "0",
+      top: "0",
+      width: `${w}px`,
+      height: `${a.height}px`,
+      margin: "0",
+      zIndex: "30",
+      pointerEvents: "none",
+      borderRadius: "16px",
+      overflow: "hidden",
+      transformOrigin: "0 0",
+      boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
+    });
+    root.appendChild(ghost);
+    const anim = ghost.animate(
       [
-        { transform: `translate(${x0}px, ${y0}px) scale(1)` },
         {
-          transform: `translate(${midX}px, ${midY}px) scale(0.9)`,
+          transform: `translate(${x0}px, ${y0}px) scale(1)`,
+          borderRadius: "16px",
+        },
+        {
+          transform: `translate(${midX}px, ${midY}px) scale(${midScale})`,
           offset: 0.45,
         },
-        { transform: `translate(${x1}px, ${y1}px) scale(0.4)`, opacity: 0.6 },
+        {
+          transform: `translate(${x1}px, ${y1}px) scale(${endScale})`,
+          opacity: 0.7,
+          borderRadius: `${w / 2}px`,
+        },
       ],
       { duration: FLY_TO_CART_MS, easing: "cubic-bezier(0.45, 0, 0.55, 1)" },
     );
     anim.onfinish = () => {
-      dot.remove();
+      ghost.remove();
       cart.animate(
         [
           { transform: "scale(1)" },
@@ -554,14 +623,41 @@ export default function V13HomePage() {
           onScroll={handleChatScroll}
           onWheel={(e) => {
             if (Math.abs(e.deltaY) > 2) revealHistoryBtn(e.deltaY < 0);
+            // 滾輪（尤其觸控板）捲到底之後還會有一段慣性，那段不能算「多推」：
+            // 要在底部停穩 300ms 之後的滾動才累積；內容短到捲不動時直接算停穩
+            const el = scrollRef.current;
+            const scrollable = !!el && el.scrollHeight > el.clientHeight + 2;
+            const settled =
+              !scrollable ||
+              (atBottomSince.current != null &&
+                performance.now() - atBottomSince.current > 300);
+            if (e.deltaY > 0 && isAtBottom() && settled) {
+              bottomWheelPull.current += e.deltaY;
+              if (bottomWheelPull.current > BOTTOM_PULL_WHEEL_PX)
+                openChipsFromPull();
+            } else if (e.deltaY < 0) {
+              bottomWheelPull.current = 0;
+            }
           }}
           onTouchStart={(e) => {
             touchStartY.current = e.touches[0].clientY;
+            bottomPullStartY.current = null;
           }}
           onTouchMove={(e) => {
             if (touchStartY.current == null) return;
-            const dy = e.touches[0].clientY - touchStartY.current;
+            const y = e.touches[0].clientY;
+            const dy = y - touchStartY.current;
             if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
+            if (!isAtBottom()) {
+              bottomPullStartY.current = null;
+              return;
+            }
+            if (bottomPullStartY.current == null) bottomPullStartY.current = y;
+            if (bottomPullStartY.current - y > BOTTOM_PULL_TOUCH_PX)
+              openChipsFromPull();
+          }}
+          onTouchEnd={() => {
+            bottomPullStartY.current = null;
           }}
           className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 pb-10 pt-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
         >
@@ -621,7 +717,7 @@ export default function V13HomePage() {
       {/* 底部留白要讓過 tabbar：55px 膠囊＋底部安全區（真手機 env()+12px、
           桌機預覽 34px），再加 Figma 上 8px 的間距 */}
       <div className="relative flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+75px)] sm:pb-[97px]">
-        <div className="flex flex-col gap-4 py-2">
+        <div className="flex flex-col py-2">
           <div className="flex h-5 items-center justify-between">
             <button
               onClick={() => setChipsOpen((v) => !v)}
@@ -641,41 +737,70 @@ export default function V13HomePage() {
                 }}
               />
             </button>
-            {chipsOpen && (
-              <button onClick={rollSuggestions} aria-label="換一批">
-                <img src="/figma/v13-refresh.svg" alt="" className="size-4" />
-              </button>
-            )}
+            <button
+              onClick={rollSuggestions}
+              aria-label="換一批"
+              tabIndex={chipsOpen ? 0 : -1}
+              style={{
+                opacity: chipsOpen ? 1 : 0,
+                pointerEvents: chipsOpen ? "auto" : "none",
+                transition: `opacity ${MODE_TRANSITION_MS}ms ease`,
+              }}
+            >
+              <img src="/figma/v13-refresh.svg" alt="" className="size-4" />
+            </button>
           </div>
-          {chipsOpen && (
-            <div className="flex flex-col items-start gap-2">
-              {suggestions.map((s, i) => {
-                const visible =
-                  itemPhase === "idle" || itemPhase === "entering";
-                const animating =
-                  itemPhase === "exiting" || itemPhase === "entering";
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => {
-                      setChipsOpen(false);
-                      handleSend(s.prompt);
-                    }}
-                    style={{
-                      opacity: visible ? 1 : 0,
-                      transform: visible ? "translateY(0)" : "translateY(6px)",
-                      transition: animating
-                        ? `opacity ${ITEM_DURATION_MS}ms ease ${i * ITEM_STAGGER_MS}ms, transform ${ITEM_DURATION_MS}ms ease ${i * ITEM_STAGGER_MS}ms`
-                        : "none",
-                    }}
-                    className={CHIP_CLASS}
-                  >
-                    {s.label}
-                  </button>
-                );
-              })}
+          {/* 收合／展開用 grid-template-rows 在 0fr 跟 1fr 之間過渡：高度不用
+              寫死，標籤換一批之後內容高度變了也一樣能順順地收起來、打開。
+              同時淡入淡出、稍微往下位移，收起來時像是縮回標題底下 */}
+          <div
+            className="grid"
+            style={{
+              gridTemplateRows: chipsOpen ? "1fr" : "0fr",
+              opacity: chipsOpen ? 1 : 0,
+              transition: `grid-template-rows ${MODE_TRANSITION_MS}ms ${EASING}, opacity ${MODE_TRANSITION_MS}ms ease`,
+            }}
+            aria-hidden={!chipsOpen}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div
+                className="flex flex-col items-start gap-2 pt-4"
+                style={{
+                  transform: chipsOpen ? "translateY(0)" : "translateY(8px)",
+                  transition: `transform ${MODE_TRANSITION_MS}ms ${EASING}`,
+                }}
+              >
+                {suggestions.map((s, i) => {
+                  const visible =
+                    itemPhase === "idle" || itemPhase === "entering";
+                  const animating =
+                    itemPhase === "exiting" || itemPhase === "entering";
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => {
+                        setChipsOpen(false);
+                        handleSend(s.prompt);
+                      }}
+                      style={{
+                        opacity: visible ? 1 : 0,
+                        transform: visible
+                          ? "translateY(0)"
+                          : "translateY(6px)",
+                        transition: animating
+                          ? `opacity ${ITEM_DURATION_MS}ms ease ${i * ITEM_STAGGER_MS}ms, transform ${ITEM_DURATION_MS}ms ease ${i * ITEM_STAGGER_MS}ms`
+                          : "none",
+                      }}
+                      tabIndex={chipsOpen ? 0 : -1}
+                      className={CHIP_CLASS}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         <form
@@ -812,9 +937,10 @@ function ProductCard({
 }) {
   return (
     <div
+      data-product-card
       className={`overflow-hidden rounded-[16px] border border-[#e8eaee] bg-white ${className}`}
     >
-      <div className="relative aspect-square bg-[#f0f2f5]">
+      <div data-product-image className="relative aspect-square bg-[#f0f2f5]">
         {card.image && (
           <img
             src={card.image}
