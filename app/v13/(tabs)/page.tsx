@@ -659,12 +659,18 @@ export default function V13HomePage() {
       ref={rootRef}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      {/* 首頁插圖：寬度撐滿、高度照比例，圖本身底部就是白色，自然接到底下的白底 */}
+      {/* 首頁插圖：寬度撐滿、高度照比例。圖檔本身在約 86% 高的地方有一道
+          底色的橫向切邊，用遮罩從 76% 開始淡出（避開右下的月亮）、到 85% 完全透明，接到底下的白底 */}
       <img
-        src="/figma/v13-home-hero.jpg"
+        src="/figma/v13-home-hero-2.jpg"
         alt=""
         className="pointer-events-none absolute inset-x-0 top-0 w-full select-none"
-        style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
+        style={{
+          opacity: chatOpen ? 0 : 1,
+          transition: fade,
+          maskImage: "linear-gradient(to bottom, black 76%, transparent 85%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 76%, transparent 85%)",
+        }}
       />
 
       <div className="relative flex shrink-0 flex-col">
