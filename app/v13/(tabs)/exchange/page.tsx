@@ -55,13 +55,6 @@ export default function ExchangePage() {
                   {REWARD_BALANCE.toLocaleString()}
                 </span>
               </button>
-              <button
-                onClick={() => router.push("/v13/account")}
-                aria-label="帳號"
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
-              >
-                <img src="/figma/v12-profile.svg" alt="" className="size-5" />
-              </button>
             </div>
           </div>
         </div>

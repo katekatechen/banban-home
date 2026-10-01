@@ -32,7 +32,7 @@ const TABS = [
     href: "/v13/account",
     label: "帳號",
     icon: "/figma/v13-tab-account.svg",
-    activeIcon: "/figma/v13-tab-account.svg",
+    activeIcon: "/figma/v13-tab-account-active.svg",
   },
 ] as const;
 

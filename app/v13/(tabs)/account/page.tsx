@@ -7,6 +7,7 @@ import {
   ACCOUNT_ROWS,
   ACCOUNT_ROWS_SECONDARY,
   getInitials,
+  UNREAD_NOTIFICATIONS,
 } from "../../_lib/mock-data";
 
 function Row({
@@ -47,11 +48,26 @@ function Row({
 // v13 帳號變成 tabbar 的第四個分頁（根路由），不是從頭像推頁進來的，
 // 所以沒有返回鍵、也不套 usePageSlide 的推頁滑動，改成置左標題
 export default function AccountPage() {
+  const router = useRouter();
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
       <StatusBar />
-      <div className="flex shrink-0 items-center px-5 pb-2 pt-1">
-        <p className="text-[20px] font-bold text-gray-900">帳號</p>
+      {/* 通知入口照 Figma 948:46205 放在「帳號」標題右邊（首頁的鈴鐺拿掉了） */}
+      <div className="flex h-11 shrink-0 items-center justify-between px-4">
+        <p className="text-[24px] font-medium leading-8 text-gray-800">帳號</p>
+        <button
+          onClick={() => router.push("/v13/notifications")}
+          aria-label="通知"
+          className="relative flex size-11 items-center justify-center rounded-[22px] bg-white shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
+        >
+          <img src="/figma/bell.svg" alt="" className="size-5" />
+          {UNREAD_NOTIFICATIONS > 0 && (
+            <span className="absolute left-[20.5px] top-1.5 rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
+              {UNREAD_NOTIFICATIONS}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* 底部留白要讓過 tabbar（55px 膠囊＋底部安全區） */}

@@ -333,3 +333,6 @@ export const NOTIFICATIONS: Notification[] = [
     unread: false,
   },
 ];
+
+// 帳號頁鈴鐺上的紅點數字，跟通知頁實際的未讀則數一致
+export const UNREAD_NOTIFICATIONS = NOTIFICATIONS.filter((n) => n.unread).length;

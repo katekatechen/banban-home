@@ -15,8 +15,9 @@ import {
 import { AI_SELECT_HOLDING, REWARD_BALANCE, WINE_PICKS } from "../_lib/mock-data";
 
 // v13 首頁＝聊天分頁，照 Figma 948:44415（首頁）跟 981:24621（對話中）。
-// 點輸入框不換頁：插圖淡出、上方冒出購物車、中間換成對話內容，
-// 「你可能想知道」收成一行，輸入框跟 tabbar 留在原位。
+// 點輸入框本身不會有任何變化，送出第一句話之後才原地展開對話：插圖淡出、
+// 上方冒出購物車、中間換成對話內容，「你可能想知道」收成一行，
+// 輸入框跟 tabbar 留在原位，不換頁。
 // 對話邏輯沿用 v12 對話頁那套關鍵字判斷，只是搬進首頁裡原地展開
 
 // 換一批：標籤不是瞬間換掉，是舊的依序消失、新的再依序出現。三個狀態
@@ -26,6 +27,7 @@ type SuggestionPhase = "idle" | "exiting" | "entering-start" | "entering";
 const ITEM_STAGGER_MS = 60;
 const ITEM_DURATION_MS = 200;
 const MODE_TRANSITION_MS = 300;
+const FLY_TO_CART_MS = 550;
 
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
 const SUGGESTION_POOL = [
@@ -69,16 +71,82 @@ export default function V13HomePage() {
   const timersRef = useRef<number[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const hasUserMessageRef = useRef(messages.some((m) => m.role === "user"));
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cartIconRef = useRef<HTMLImageElement>(null);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const prevCartCount = useRef(cartCount);
   const sentInitial = useRef(false);
 
   useEffect(() => {
     saveChat({ open: chatOpen, messages, stage, selected, cartCount });
   }, [chatOpen, messages, stage, selected, cartCount]);
 
+  // 購物車數字一變就讓紅點「彈」出來：從 0 放大超過一點再縮回原尺寸
   useEffect(() => {
-    hasUserMessageRef.current = messages.some((m) => m.role === "user");
-  }, [messages]);
+    if (cartCount > prevCartCount.current) {
+      badgeRef.current?.animate(
+        [
+          { transform: "scale(0)" },
+          { transform: "scale(1.35)", offset: 0.6 },
+          { transform: "scale(1)" },
+        ],
+        { duration: 320, easing: "ease-out" },
+      );
+    }
+    prevCartCount.current = cartCount;
+  }, [cartCount]);
+
+  // 按 + 加入購物車：一顆紅點從按鈕沿著弧線飛進右上角的購物車，
+  // 飛到之後購物車圖示縮放一下，數字才 +1 跳出來。
+  // 用 Web Animations API 直接動 DOM，不走 React state，動畫期間不會重繪整頁
+  const flyToCart = (from: HTMLElement) => {
+    const root = rootRef.current;
+    const cart = cartIconRef.current;
+    if (!root || !cart) {
+      setCartCount((c) => c + 1);
+      return;
+    }
+    const rootRect = root.getBoundingClientRect();
+    const a = from.getBoundingClientRect();
+    const b = cart.getBoundingClientRect();
+    const size = 14;
+    const x0 = a.left + a.width / 2 - rootRect.left - size / 2;
+    const y0 = a.top + a.height / 2 - rootRect.top - size / 2;
+    const x1 = b.left + b.width / 2 - rootRect.left - size / 2;
+    const y1 = b.top + b.height / 2 - rootRect.top - size / 2;
+    // 中途點：垂直方向先走掉七成、水平只走三成，路徑往左上鼓成一道弧，
+    // 不會像拋物線那樣衝出畫面上緣（購物車本來就貼著頂部）
+    const midX = x0 + (x1 - x0) * 0.3;
+    const midY = y0 + (y1 - y0) * 0.7;
+
+    const dot = document.createElement("div");
+    dot.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;border-radius:999px;background:#ff5050;z-index:30;pointer-events:none;box-shadow:0 2px 6px rgba(255,80,80,0.4)`;
+    root.appendChild(dot);
+    const anim = dot.animate(
+      [
+        { transform: `translate(${x0}px, ${y0}px) scale(1)` },
+        {
+          transform: `translate(${midX}px, ${midY}px) scale(0.9)`,
+          offset: 0.45,
+        },
+        { transform: `translate(${x1}px, ${y1}px) scale(0.4)`, opacity: 0.6 },
+      ],
+      { duration: FLY_TO_CART_MS, easing: "cubic-bezier(0.45, 0, 0.55, 1)" },
+    );
+    anim.onfinish = () => {
+      dot.remove();
+      cart.animate(
+        [
+          { transform: "scale(1)" },
+          { transform: "scale(1.3)", offset: 0.4 },
+          { transform: "scale(0.92)", offset: 0.75 },
+          { transform: "scale(1)" },
+        ],
+        { duration: 360, easing: "ease-out" },
+      );
+      window.setTimeout(() => setCartCount((c) => c + 1), 140);
+    };
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -97,6 +165,7 @@ export default function V13HomePage() {
     setChatOpen(true);
     setChipsOpen(false);
   };
+
 
   const closeChat = () => {
     inputRef.current?.blur();
@@ -236,15 +305,6 @@ export default function V13HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 只點了輸入框、什麼都沒說就離開：退回插圖首頁。稍微延後再判斷，
-  // 點建議標籤時 blur 會比 click 先發生，要等 click 送出訊息之後再看
-  const handleBlur = () => {
-    const t = window.setTimeout(() => {
-      if (!hasUserMessageRef.current && !inputRef.current?.value) closeChat();
-    }, 200);
-    timersRef.current.push(t);
-  };
-
   const rollSuggestions = () => {
     if (itemPhase !== "idle") return;
     const exitTotalMs = ITEM_DURATION_MS + (suggestions.length - 1) * ITEM_STAGGER_MS;
@@ -271,7 +331,7 @@ export default function V13HomePage() {
   const fade = `opacity ${MODE_TRANSITION_MS}ms ease`;
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white">
+    <div ref={rootRef} className="relative flex h-full flex-col overflow-hidden bg-white">
       {/* 首頁插圖：寬度撐滿、高度照比例，圖本身底部就是白色，自然接到底下的白底 */}
       <img
         src="/figma/v13-home-hero.jpg"
@@ -296,9 +356,9 @@ export default function V13HomePage() {
               transition: fade,
             }}
           >
-            <img src="/figma/v13-cart.svg" alt="" className="size-5" />
+            <img ref={cartIconRef} src="/figma/v13-cart.svg" alt="" className="size-5" />
             {cartCount > 0 && (
-              <span className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
+              <span ref={badgeRef} className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
                 {cartCount}
               </span>
             )}
@@ -322,7 +382,7 @@ export default function V13HomePage() {
               message={m}
               selected={selected}
               onToggle={toggleSelected}
-              onAdd={() => setCartCount((c) => c + 1)}
+              onAdd={flyToCart}
               showDisclaimer={!typing && m === lastMessage && m.role === "bot"}
             />
           ))}
@@ -413,8 +473,6 @@ export default function V13HomePage() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onFocus={openChat}
-            onBlur={handleBlur}
             placeholder="什麼都可以聊..."
             className="min-w-0 flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder:text-[#a1a6ab]"
           />
@@ -459,7 +517,7 @@ function ChatMessage({
   message: Message;
   selected: string[];
   onToggle: (id: string) => void;
-  onAdd: () => void;
+  onAdd: (from: HTMLElement) => void;
   showDisclaimer: boolean;
 }) {
   if (message.role === "user") {
@@ -519,7 +577,7 @@ function ProductCard({
   className: string;
   checked: boolean;
   onToggle: (id: string) => void;
-  onAdd: () => void;
+  onAdd: (from: HTMLElement) => void;
 }) {
   return (
     <div
@@ -559,7 +617,7 @@ function ProductCard({
         <div className="flex items-center justify-between">
           <p className="text-[14px] font-bold text-gray-800">NT$ {card.price.toLocaleString()}</p>
           <button
-            onClick={onAdd}
+            onClick={(e) => onAdd(e.currentTarget)}
             aria-label="加入購物車"
             className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#ff5050]"
           >
