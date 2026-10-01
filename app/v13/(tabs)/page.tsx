@@ -148,6 +148,9 @@ export default function V13HomePage() {
   const cartCount = cartCountOf(cart);
   const addedIds = cart.map((it) => it.card.id);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // 購物車是空的就不顯示右上角的購物車按鈕；第一件商品飛過去的途中先讓它
+  // 淡入，商品才有地方落下（按鈕一直佔著位置、只是透明，飛行終點量得到）
+  const [cartPeek, setCartPeek] = useState(false);
   const [sheet, setSheet] = useState<{
     cards: RecCard[];
     index: number;
@@ -354,6 +357,7 @@ export default function V13HomePage() {
       onLand();
       return;
     }
+    setCartPeek(true);
     const rootRect = root.getBoundingClientRect();
     const a = image.getBoundingClientRect();
     const b = cartIcon.getBoundingClientRect();
@@ -418,7 +422,10 @@ export default function V13HomePage() {
         ],
         { duration: 360, easing: "ease-out" },
       );
-      window.setTimeout(onLand, 140);
+      window.setTimeout(() => {
+        onLand();
+        setCartPeek(false);
+      }, 140);
     };
   };
 
@@ -653,6 +660,7 @@ export default function V13HomePage() {
   const lastMessage = messages[messages.length - 1];
   const lastQuickReplies = !typing ? lastMessage?.quickReplies : undefined;
   const fade = `opacity ${MODE_TRANSITION_MS}ms ease`;
+  const showCart = chatOpen && (cartCount > 0 || cartPeek);
 
   return (
     <div
@@ -669,7 +677,8 @@ export default function V13HomePage() {
           opacity: chatOpen ? 0 : 1,
           transition: fade,
           maskImage: "linear-gradient(to bottom, black 76%, transparent 85%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 76%, transparent 85%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, black 76%, transparent 85%)",
         }}
       />
 
@@ -685,13 +694,14 @@ export default function V13HomePage() {
           </button>
           <button
             aria-label="購物車"
-            tabIndex={chatOpen ? 0 : -1}
+            tabIndex={showCart ? 0 : -1}
             onClick={() => setCheckoutOpen(true)}
             className="relative flex h-11 items-center rounded-[22px] bg-white px-4 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
             style={{
-              opacity: chatOpen ? 1 : 0,
-              pointerEvents: chatOpen ? "auto" : "none",
-              transition: fade,
+              opacity: showCart ? 1 : 0,
+              transform: showCart ? "scale(1)" : "scale(0.85)",
+              pointerEvents: showCart ? "auto" : "none",
+              transition: `${fade}, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
             }}
           >
             <img
