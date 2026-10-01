@@ -136,6 +136,9 @@ export default function V13HomePage() {
   const touchStartY = useRef<number | null>(null);
   const bottomPullStartY = useRef<number | null>(null);
   const bottomWheelPull = useRef(0);
+  const wheelIdleTimer = useRef<number | null>(null);
+  // 0 到 1：已經多拉了臨界點的幾成，驅動拉動中的回饋動畫
+  const [pull, setPull] = useState(0);
   const atBottomSince = useRef<number | null>(null);
   const distanceFromBottom = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
@@ -196,20 +199,30 @@ export default function V13HomePage() {
     setShowHistoryBtn(up);
   };
 
-  // 對話捲到底之後還繼續往下滑，滑超過一段距離才打開「你可能想知道」。
+  // 對話捲到底之後還繼續往下滑，要拉過臨界點才打開「你可能想知道」。
   // 「繼續往下滑」在手機是手指往上推、桌機是滾輪往下；只看已經到底之後
-  // 多推的那段，捲動途中經過底部不會誤觸
-  const BOTTOM_PULL_TOUCH_PX = 70;
-  const BOTTOM_PULL_WHEEL_PX = 160;
+  // 多推的那段，捲動途中經過底部不會誤觸。
+  // 拉的過程有回饋：對話內容跟著往上帶一點（越拉越緊）、標題旁的箭頭
+  // 從「>」慢慢轉向「v」，轉滿就是到了臨界點。
+  // 手機要放開手指時已經過臨界點才打開，沒過就彈回去；桌機滾輪一過臨界點就打開，
+  // 停下來沒過的話 250ms 後彈回去
+  const BOTTOM_PULL_TOUCH_PX = 140;
+  const BOTTOM_PULL_WHEEL_PX = 420;
+  const PULL_LIFT_PX = 28;
   const isAtBottom = () => {
     const el = scrollRef.current;
     return !!el && el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
   };
   const openChipsFromPull = () => {
-    if (chipsOpen) return;
-    setChipsOpen(true);
     bottomPullStartY.current = null;
     bottomWheelPull.current = 0;
+    setPull(0);
+    if (!chipsOpen) setChipsOpen(true);
+  };
+  const releasePull = () => {
+    bottomPullStartY.current = null;
+    bottomWheelPull.current = 0;
+    setPull(0);
   };
 
   // 「你可能想知道」展開後，對話區會被往上擠矮一截，最後一則訊息會被
@@ -674,12 +687,20 @@ export default function V13HomePage() {
               !scrollable ||
               (atBottomSince.current != null &&
                 performance.now() - atBottomSince.current > 300);
+            if (chipsOpen) return;
             if (e.deltaY > 0 && isAtBottom() && settled) {
               bottomWheelPull.current += e.deltaY;
-              if (bottomWheelPull.current > BOTTOM_PULL_WHEEL_PX)
+              const progress = bottomWheelPull.current / BOTTOM_PULL_WHEEL_PX;
+              if (progress >= 1) {
                 openChipsFromPull();
+                return;
+              }
+              setPull(progress);
+              if (wheelIdleTimer.current)
+                window.clearTimeout(wheelIdleTimer.current);
+              wheelIdleTimer.current = window.setTimeout(releasePull, 250);
             } else if (e.deltaY < 0) {
-              bottomWheelPull.current = 0;
+              releasePull();
             }
           }}
           onTouchStart={(e) => {
@@ -691,20 +712,30 @@ export default function V13HomePage() {
             const y = e.touches[0].clientY;
             const dy = y - touchStartY.current;
             if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
+            if (chipsOpen) return;
             if (!isAtBottom()) {
-              bottomPullStartY.current = null;
+              if (bottomPullStartY.current != null) releasePull();
               return;
             }
             if (bottomPullStartY.current == null) bottomPullStartY.current = y;
-            if (bottomPullStartY.current - y > BOTTOM_PULL_TOUCH_PX)
-              openChipsFromPull();
+            const d = bottomPullStartY.current - y;
+            setPull(Math.max(0, Math.min(d / BOTTOM_PULL_TOUCH_PX, 1)));
           }}
           onTouchEnd={() => {
-            bottomPullStartY.current = null;
+            if (pull >= 1) openChipsFromPull();
+            else releasePull();
           }}
+          onTouchCancel={releasePull}
           className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 pb-10 pt-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
         >
-          <div className="flex flex-col gap-6">
+          <div
+            className="flex flex-col gap-6"
+            style={{
+              // 越拉越緊：位移用 ease-out 曲線，不是跟手指 1:1
+              transform: `translateY(${-PULL_LIFT_PX * (1 - Math.pow(1 - pull, 2))}px)`,
+              transition: pull === 0 ? `transform 250ms ${EASING}` : "none",
+            }}
+          >
             {historyLoaded && (
               <>
                 <DateDivider label={PREVIOUS_CHAT_DATE} />
@@ -777,8 +808,13 @@ export default function V13HomePage() {
                 alt=""
                 className="size-4"
                 style={{
-                  transform: chipsOpen ? "rotate(0deg)" : "rotate(-90deg)",
-                  transition: `transform ${MODE_TRANSITION_MS}ms ease`,
+                  transform: chipsOpen
+                    ? "rotate(0deg)"
+                    : `rotate(${-90 + 90 * pull}deg)`,
+                  transition:
+                    pull > 0 && !chipsOpen
+                      ? "none"
+                      : `transform ${MODE_TRANSITION_MS}ms ease`,
                 }}
               />
             </button>
