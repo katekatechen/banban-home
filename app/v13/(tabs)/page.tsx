@@ -46,8 +46,8 @@ const MODE_TRANSITION_MS = 300;
 const FLY_TO_CART_MS = 650;
 
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
-// 首頁插圖最上緣的藍色（取自圖檔頂端像素）
-const HERO_TOP_TINT = "#4996b7";
+// 首頁天空底圖最上緣的藍色（取自圖檔頂端像素）
+const HERO_TOP_TINT = "#77c2d9";
 
 const SUGGESTION_POOL = [
   { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
@@ -672,14 +672,26 @@ export default function V13HomePage() {
       ref={rootRef}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      {/* 首頁插圖（Figma 948:44415）：寬度撐滿，照 Figma 往上偏 19px、
-          375:620 的框用 cover 貼底裁切。圖的下緣本來就是白色雲層，直接接到底下的白底 */}
-      <img
-        src="/figma/v13-home-hero-3.jpg"
-        alt=""
-        className="pointer-events-none absolute inset-x-0 top-[-19px] aspect-[375/620] w-full select-none object-cover object-bottom"
+      {/* 首頁插圖（Figma 948:44415）：天空＋雲層底圖跟紙飛機拆成兩張。
+          外框照 Figma 是 375×620、往上偏 19px，底圖在框裡拉成 119.71% 高、
+          往上偏 19.71%（Figma 上就是這樣縱向拉長的）。位置都用百分比換算，
+          手機寬度不同時兩張圖一起等比縮放，飛機不會跑位 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[-19px] aspect-[375/620] select-none overflow-hidden"
         style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
-      />
+      >
+        <img
+          src="/figma/v13-home-sky.jpg"
+          alt=""
+          className="absolute left-0 top-[-19.71%] h-[119.71%] w-full max-w-none"
+        />
+        <img
+          src="/figma/v13-home-plane.png"
+          alt=""
+          className="absolute left-[44.99%] top-[50.21%] w-[28.91%]"
+        />
+      </div>
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar />
