@@ -6,8 +6,9 @@ export const REWARD_BALANCE = 14320;
 // 只有回饋紀錄頁的大數字才會顯示到小數，跟 Figma 一致——其餘地方
 // 一律只顯示整數 REWARD_BALANCE，這個小數尾數純粹是視覺上的裝飾
 export const REWARD_BALANCE_DECIMAL = "15";
-export const TODAY_REWARD_AMOUNT = 451.1;
-export const TODAY_REWARD_RATE_PCT = 9.03;
+// v13 回饋頁上方改照 Figma 的數字：今天拿到 26.12、今日回饋率 8.64%
+export const TODAY_REWARD_AMOUNT = 26.12;
+export const TODAY_REWARD_RATE_PCT = 8.64;
 export const TOTAL_ACCUMULATED_REWARD = 45678;
 
 export type RewardTxn = {

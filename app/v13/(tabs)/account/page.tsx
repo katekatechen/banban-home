@@ -1,15 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import BackHeader from "../_components/BackHeader";
-import StatusBar from "../_components/StatusBar";
+import StatusBar from "../../_components/StatusBar";
 import {
   ACCOUNT_PROFILE,
   ACCOUNT_ROWS,
   ACCOUNT_ROWS_SECONDARY,
   getInitials,
-} from "../_lib/mock-data";
-import { usePageSlide } from "../_lib/page-transition";
+} from "../../_lib/mock-data";
 
 function Row({
   icon,
@@ -46,19 +44,18 @@ function Row({
   );
 }
 
+// v13 帳號變成 tabbar 的第四個分頁（根路由），不是從頭像推頁進來的，
+// 所以沒有返回鍵、也不套 usePageSlide 的推頁滑動，改成置左標題
 export default function AccountPage() {
-  const router = useRouter();
-  const { style, exit } = usePageSlide();
-
   return (
-    <div
-      className="flex h-full flex-col overflow-hidden bg-white"
-      style={style}
-    >
+    <div className="flex h-full flex-col overflow-hidden bg-white">
       <StatusBar />
-      <BackHeader title="帳號" onBack={() => exit(() => router.back())} />
+      <div className="flex shrink-0 items-center px-5 pb-2 pt-1">
+        <p className="text-[20px] font-bold text-gray-900">帳號</p>
+      </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
+      {/* 底部留白要讓過 tabbar（55px 膠囊＋底部安全區） */}
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-[110px]">
         <div className="flex items-center gap-3 px-5 py-4">
           <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-800 text-[17px] font-semibold text-white">
             {getInitials(ACCOUNT_PROFILE.handle)}

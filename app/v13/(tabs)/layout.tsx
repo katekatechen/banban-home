@@ -1,7 +1,7 @@
 import TabBar from "../_components/TabBar";
 import TabTransition from "../_components/TabTransition";
 
-// 三個分頁（首頁／回饋／兌換）共用這層：TabBar 常駐在最上層、疊在
+// 四個分頁（聊天／回饋／兌換／帳號）共用這層：TabBar 常駐在最上層、疊在
 // 每個分頁自己的內容上面，切分頁時只是換路由本身，TabBar 不會跟著
 // 重新掛載，也不會被 usePageSlide 的推頁滑動效果影響到。
 // {children} 包一層 TabTransition，讓分頁之間的切換有左右滑動的轉場——

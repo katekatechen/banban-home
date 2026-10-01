@@ -126,7 +126,7 @@ export default function WineSelectPage() {
 
       <button
         onClick={() =>
-          router.push(`/v13/chat?prompt=${encodeURIComponent("我想買酒送到家")}`)
+          router.push(`/v13?prompt=${encodeURIComponent("我想買酒送到家")}`)
         }
         className="absolute bottom-[24px] left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-[26px] bg-gray-800 px-6 py-4 shadow-[0px_4px_16px_0px_rgba(30,41,57,0.25)]"
       >

@@ -4,10 +4,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { EASING, PAGE_TRANSITION_MS } from "../_lib/page-transition";
 
-// tabbar 三個分頁的順序，決定滑動方向：往右邊的分頁切過去，新內容從右邊
+// tabbar 四個分頁的順序，決定滑動方向：往右邊的分頁切過去，新內容從右邊
 // 滑進來、舊內容往左邊滑出去；往左邊切則相反——跟 tabbar 上圖示的實際
 // 左右順序一致，滑動方向才會跟使用者「往右/左點了一個分頁」的直覺一致
-const TAB_ORDER = ["/v13", "/v13/rewards", "/v13/exchange"];
+const TAB_ORDER = ["/v13", "/v13/rewards", "/v13/exchange", "/v13/account"];
 
 type Slot = {
   key: number;
@@ -15,7 +15,7 @@ type Slot = {
   node: React.ReactNode;
 };
 
-// 三個分頁是三個獨立路由，換路由時 Next 會直接卸載舊分頁、掛載新分頁，
+// 四個分頁是四個獨立路由，換路由時 Next 會直接卸載舊分頁、掛載新分頁，
 // 沒有天然的「退場」時機可以做動畫。這裡自己疊兩張卡片：退場那張先留著、
 // 進場那張先定位在畫面外，下一輪 rAF 才同時把兩張卡片的 transform 切過去，
 // 靠 CSS transition 補出動畫，跟 usePageSlide 掛載頁面用的是同一套雙層
