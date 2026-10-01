@@ -46,6 +46,9 @@ const MODE_TRANSITION_MS = 300;
 const FLY_TO_CART_MS = 650;
 
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
+// 首頁插圖最上緣的藍色（取自圖檔頂端像素）
+const HERO_TOP_TINT = "#4996b7";
+
 const SUGGESTION_POOL = [
   { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
   {
@@ -453,10 +456,12 @@ export default function V13HomePage() {
     setChipsOpen(true);
   };
 
-  // 手機瀏覽器頂部狀態列一律塗白色（不接插圖顏色），插圖從狀態列下方開始
+  // 手機瀏覽器頂部狀態列：首頁塗插圖頂端的藍色，跟藍天接起來；
+  // 對話展開後插圖淡掉，改回白色。離開聊天分頁時也還原成白色
   useEffect(() => {
-    setTopTint(null);
-  }, []);
+    setTopTint(chatOpen ? null : HERO_TOP_TINT);
+  }, [chatOpen]);
+  useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
   // （對話內容留著，下次點輸入框會接著聊）
@@ -667,19 +672,13 @@ export default function V13HomePage() {
       ref={rootRef}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      {/* 首頁插圖：寬度撐滿、高度照比例。圖檔本身在約 86% 高的地方有一道
-          底色的橫向切邊，用遮罩從 76% 開始淡出（避開右下的月亮）、到 85% 完全透明，接到底下的白底 */}
+      {/* 首頁插圖（Figma 948:44415）：寬度撐滿，照 Figma 往上偏 19px、
+          375:620 的框用 cover 貼底裁切。圖的下緣本來就是白色雲層，直接接到底下的白底 */}
       <img
-        src="/figma/v13-home-hero-2.jpg"
+        src="/figma/v13-home-hero-3.jpg"
         alt=""
-        className="pointer-events-none absolute inset-x-0 top-0 w-full select-none"
-        style={{
-          opacity: chatOpen ? 0 : 1,
-          transition: fade,
-          maskImage: "linear-gradient(to bottom, black 76%, transparent 85%)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, black 76%, transparent 85%)",
-        }}
+        className="pointer-events-none absolute inset-x-0 top-[-19px] aspect-[375/620] w-full select-none object-cover object-bottom"
+        style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
       />
 
       <div className="relative flex shrink-0 flex-col">
@@ -719,6 +718,19 @@ export default function V13HomePage() {
               </span>
             )}
           </button>
+        </div>
+        {/* 開場招呼語：疊在插圖的藍天上，只在首頁出現，對話展開時跟插圖一起淡出 */}
+        <div
+          aria-hidden={chatOpen}
+          className="pointer-events-none absolute inset-x-0 top-full z-10 flex flex-col gap-1 p-4 text-white"
+          style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
+        >
+          <p className="text-[24px] font-bold leading-[1.4]">
+            嗨，今天想聊點什麼？
+          </p>
+          <p className="text-[14px] leading-[18px]">
+            賺回饋，買東西，我都很在行
+          </p>
         </div>
       </div>
 
@@ -900,22 +912,6 @@ export default function V13HomePage() {
       {/* 底部留白要讓過 tabbar：55px 膠囊＋底部安全區（真手機 env()+12px、
           桌機預覽 34px），再加 Figma 上 8px 的間距 */}
       <div className="relative flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+75px)] sm:pb-[97px]">
-        {/* 開場招呼語：只在首頁出現，對話展開時跟插圖一起淡出、收起高度 */}
-        <div
-          className="grid"
-          style={{
-            gridTemplateRows: chatOpen ? "0fr" : "1fr",
-            opacity: chatOpen ? 0 : 1,
-            transition: `grid-template-rows ${MODE_TRANSITION_MS}ms ${EASING}, ${fade}`,
-          }}
-          aria-hidden={chatOpen}
-        >
-          <div className="min-h-0 overflow-hidden">
-            <p className="pb-4 text-[24px] font-bold leading-[1.4] text-gray-800">
-              嗨，今天想買些什麼嗎？
-            </p>
-          </div>
-        </div>
         <div className="flex flex-col py-2">
           <div className="flex h-5 items-center justify-between">
             <button
