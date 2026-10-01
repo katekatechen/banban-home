@@ -23,9 +23,6 @@ export type Stage = "idle" | "await_wine_budget" | "done";
 let nextId = 1;
 export const genId = () => nextId++;
 
-export const GREETING_TEXT =
-  "嗨，我是 AIFIAN。想買東西、看回饋，或聊聊怎麼賺回饋，都可以直接說。";
-
 // 對話狀態存在模組層級：切去回饋／兌換分頁再切回來，首頁會重新掛載，
 // 存在 component state 裡的對話會整個不見。放這裡的話只要不重新整理頁面，
 // 回到聊天分頁還是同一段對話
@@ -46,7 +43,8 @@ export const loadChat = (): ChatSnapshot =>
   snapshot ?? {
     open: false,
     historyLoaded: false,
-    messages: [{ id: genId(), role: "bot", text: GREETING_TEXT }],
+    // 不放招呼語：對話是送出第一句話才展開的，一打開就是使用者自己那句
+    messages: [],
     stage: "idle",
     selected: [],
     cartCount: 0,

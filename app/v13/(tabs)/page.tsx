@@ -6,6 +6,7 @@ import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
+import { HERO_TOP_TINT, setTopTint } from "../_lib/top-tint";
 import {
   genId,
   loadChat,
@@ -44,14 +45,9 @@ const SUGGESTION_POOL = [
     label: "AIFIAN 的回饋是現金嗎",
   },
   {
-    key: "restock-drink",
-    prompt: "我想買可樂",
-    label: "上次買的可樂喝完了嗎？要不要補貨",
-  },
-  {
-    key: "noodles",
+    key: "restock-noodles",
     prompt: "推薦幾款好吃的乾拌麵給我",
-    label: "推薦幾款好吃的乾拌麵給我",
+    label: "上次買的乾拌麵吃完了嗎？要不要補貨",
   },
   {
     key: "mid-autumn",
@@ -388,6 +384,13 @@ export default function V13HomePage() {
     setChatOpen(false);
     setChipsOpen(true);
   };
+
+  // 手機瀏覽器頂部狀態列：插圖首頁時塗成插圖頂端的顏色，接得上插圖；
+  // 進到對話（白底）或離開聊天分頁時改回白色
+  useEffect(() => {
+    setTopTint(chatOpen ? null : HERO_TOP_TINT);
+  }, [chatOpen]);
+  useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
   // （對話內容留著，下次點輸入框會接著聊）
