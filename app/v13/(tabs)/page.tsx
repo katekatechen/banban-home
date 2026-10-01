@@ -900,6 +900,22 @@ export default function V13HomePage() {
       {/* 底部留白要讓過 tabbar：55px 膠囊＋底部安全區（真手機 env()+12px、
           桌機預覽 34px），再加 Figma 上 8px 的間距 */}
       <div className="relative flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+75px)] sm:pb-[97px]">
+        {/* 開場招呼語：只在首頁出現，對話展開時跟插圖一起淡出、收起高度 */}
+        <div
+          className="grid"
+          style={{
+            gridTemplateRows: chatOpen ? "0fr" : "1fr",
+            opacity: chatOpen ? 0 : 1,
+            transition: `grid-template-rows ${MODE_TRANSITION_MS}ms ${EASING}, ${fade}`,
+          }}
+          aria-hidden={chatOpen}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <p className="pb-4 text-[24px] font-bold leading-[1.4] text-gray-800">
+              嗨，今天想買些什麼嗎？
+            </p>
+          </div>
+        </div>
         <div className="flex flex-col py-2">
           <div className="flex h-5 items-center justify-between">
             <button
@@ -908,7 +924,7 @@ export default function V13HomePage() {
               className="flex items-center gap-1"
             >
               <span className="text-[16px] font-bold text-gray-800">
-                你可能想知道
+                你可能也想知道
               </span>
               <img
                 src="/figma/v13-nav-arrow-down.svg"
