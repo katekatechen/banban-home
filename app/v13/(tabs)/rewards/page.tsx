@@ -13,7 +13,6 @@ import {
   RATE_FORECAST_POOL,
   REWARD_BALANCE,
   TODAY_REWARD_AMOUNT,
-  TODAY_REWARD_RATE_PCT,
   WINE_SHOP_PRODUCTS,
 } from "../../_lib/mock-data";
 
@@ -37,22 +36,35 @@ function useCountUp(target: number, durationMs = 900) {
   return value;
 }
 
-// v13 回饋分頁上方照 Figma 973:23614：拿掉「回饋」標題列跟右上角頭像
-// （帳號已經是 tabbar 的第四格），改成一句「今天拿到 X 的回饋！」大標，
-// 底下並排「我的回饋」跟「今日回饋率」，再用一條滿版細線跟下面的區塊分開。
-// 往下捲到「我的回饋」那排快看不到時，上方浮出回饋數字膠囊（v12 的做法），
-// 門檻用上方區塊自己的實際高度算，不寫死一個猜的 px 值
+// v13 回饋分頁上方照 Figma 973:23614（第二版）：拿掉「回饋」標題列跟頭像，
+// 左邊一句「今天拿到 X 的回饋！」大標，右邊是回饋數字膠囊。
+// 膠囊等於是 v12 捲動時浮出的那顆：往下捲時大標捲走，膠囊改由上方的浮層
+// 接手、停在同一個位置，看起來像黏在頂端，不會跟著內容一起捲掉
+const PILL_TOP_PX = 8;
+
+function BalancePill({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex shrink-0 items-center gap-1.5 rounded-[22px] bg-white py-1.5 pl-1.5 pr-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
+    >
+      <img src="/figma/reward-icon-hero.svg" alt="" className="size-7" />
+      <span className="text-[16px] font-medium leading-6 text-gray-800">
+        {REWARD_BALANCE.toLocaleString()}
+      </span>
+    </button>
+  );
+}
+
 export default function RewardsTabPage() {
   const router = useRouter();
   const todayIncrease = useCountUp(TODAY_REWARD_AMOUNT);
-  const [showBalancePill, setShowBalancePill] = useState(false);
+  const [pinned, setPinned] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const goHistory = () => router.push("/v13/reward-history");
 
   const handleScroll = () => {
-    const top = scrollRef.current?.scrollTop ?? 0;
-    const heroHeight = heroRef.current?.offsetHeight ?? 160;
-    setShowBalancePill(top > heroHeight - 40);
+    setPinned((scrollRef.current?.scrollTop ?? 0) > PILL_TOP_PX);
   };
 
   return (
@@ -60,39 +72,27 @@ export default function RewardsTabPage() {
       <StatusBar />
 
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* 浮在內容上面的白色漸層＋回饋膠囊，捲動時淡入淡出；沒出現時不擋點擊 */}
+        {/* 捲動後才出現的浮層：白色漸層淡入，膠囊放在跟大標旁那顆完全相同的位置 */}
         <div
-          className={`absolute inset-x-0 top-0 z-10 flex h-[60px] items-start justify-end bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_70%,rgba(255,255,255,0)_100%)] px-4 pt-1 transition-opacity duration-200 ${
-            showBalancePill ? "opacity-100" : "pointer-events-none opacity-0"
+          className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-[64px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_70%,rgba(255,255,255,0)_100%)] transition-opacity duration-200 ${
+            pinned ? "opacity-100" : "opacity-0"
           }`}
-        >
-          <button
-            onClick={() => router.push("/v13/reward-history")}
-            className="flex items-center gap-1.5 rounded-full bg-white py-1.5 pl-1.5 pr-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
-          >
-            <span className="flex size-6 items-center justify-center rounded-full bg-brand text-white">
-              <svg viewBox="0 0 16 16" fill="none" className="size-3">
-                <path
-                  d="M8 12.5V3.5M8 3.5L4 7.5M8 3.5l4 4"
-                  stroke="white"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <span className="text-[14px] font-medium text-gray-800">
-              {REWARD_BALANCE.toLocaleString()}
-            </span>
-          </button>
-        </div>
+        />
+        {pinned && (
+          <div className="absolute right-4 z-10" style={{ top: PILL_TOP_PX }}>
+            <BalancePill onClick={goHistory} />
+          </div>
+        )}
 
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-[110px]"
         >
-          <div ref={heroRef} className="flex flex-col gap-6 px-4 pb-6 pt-2">
+          <div
+            className="flex items-start justify-between px-4 pb-6"
+            style={{ paddingTop: PILL_TOP_PX }}
+          >
             <p className="text-[24px] font-semibold leading-9 text-gray-800">
               今天拿到
               <br />
@@ -101,47 +101,13 @@ export default function RewardsTabPage() {
               </span>{" "}
               的回饋！
             </p>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/v13/reward-history")}
-                className="flex flex-1 flex-col items-start gap-2"
-              >
-                <p className="text-[14px] leading-[18px] text-gray-800">
-                  我的回饋
-                </p>
-                <div className="flex items-center gap-1">
-                  <img
-                    src="/figma/v13-reward-icon.svg"
-                    alt=""
-                    className="size-5"
-                  />
-                  <p className="text-[20px] font-semibold leading-6 text-gray-800">
-                    {REWARD_BALANCE.toLocaleString()}
-                  </p>
-                  <img
-                    src="/figma/v13-nav-arrow-right.svg"
-                    alt=""
-                    className="size-6"
-                  />
-                </div>
-              </button>
-              <button
-                onClick={() => router.push("/v13/reward-history")}
-                className="flex flex-1 flex-col items-start gap-2"
-              >
-                <p className="text-[14px] leading-[18px] text-gray-800">
-                  今日回饋率
-                </p>
-                <p className="text-[20px] font-semibold leading-6 text-gray-800">
-                  {TODAY_REWARD_RATE_PCT}%
-                </p>
-              </button>
+            <div style={{ visibility: pinned ? "hidden" : "visible" }}>
+              <BalancePill onClick={goHistory} />
             </div>
           </div>
-          <div className="h-px bg-gray-100" />
 
           <div className="px-5">
-            <div className="mt-6 flex flex-col gap-6">
+            <div className="mt-4 flex flex-col gap-6">
               <div>
                 <p className="text-[14px] font-bold text-gray-800">智能選品</p>
                 <p className="mb-3 mt-1 text-[12.5px] text-gray-400">
