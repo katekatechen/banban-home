@@ -45,8 +45,9 @@ export function getInitials(name: string) {
 }
 
 export const AI_SELECT_CAPACITY = 1000;
-export const AI_SELECT_FRESH = 997;
-export const AI_SELECT_AGED = 1;
+// v13 照 Figma 973:23614 的數字：初釀 3、純釀 995
+export const AI_SELECT_FRESH = 3;
+export const AI_SELECT_AGED = 995;
 export const AI_SELECT_HOLDING = AI_SELECT_FRESH + AI_SELECT_AGED;
 
 export const WINE_PICKS = [
@@ -190,6 +191,7 @@ export const WINE_SHOP_PRODUCTS: WineProduct[] = [
     price: 999,
     wineType: "威士忌",
     image: "/figma/product-macallan.png",
+    tag: "NEW",
   },
   {
     id: "louve-cortez",
