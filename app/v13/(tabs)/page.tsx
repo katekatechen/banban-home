@@ -479,6 +479,83 @@ export default function V13HomePage() {
     setChipsOpen(true);
   };
 
+  // 首頁也能下拉叫出「載入上次對話」：手指往下拖（桌機是滾輪往上）時，
+  // 招呼語跟著被往下拉開、按鈕從上面慢慢浮出來；拉過臨界點放開就停住，
+  // 沒拉到就彈回去。往反方向推一下就收起來。點按鈕直接進對話、接上上次的紀錄
+  const HOME_PULL_TOUCH_PX = 110;
+  const HOME_PULL_WHEEL_PX = 260;
+  const [homePull, setHomePull] = useState(0);
+  const [homeHistoryShown, setHomeHistoryShown] = useState(false);
+  const [homeHistoryLoading, setHomeHistoryLoading] = useState(false);
+  const homePullStartY = useRef<number | null>(null);
+  const homeWheelPull = useRef(0);
+  const homeWheelTimer = useRef<number | null>(null);
+  const homeReveal = homeHistoryShown || homeHistoryLoading ? 1 : homePull;
+
+  const homeTouchStart = (y: number) => {
+    if (chatOpen) return;
+    homePullStartY.current = y;
+  };
+  const homeTouchMove = (y: number) => {
+    if (chatOpen || homePullStartY.current == null) return;
+    const dy = y - homePullStartY.current;
+    if (homeHistoryShown) {
+      if (dy < -24) setHomeHistoryShown(false);
+      return;
+    }
+    // 越拉越緊：超過臨界點之後就不再跟著手指走
+    setHomePull(Math.max(0, Math.min(1, dy / HOME_PULL_TOUCH_PX)));
+  };
+  const homeTouchEnd = () => {
+    if (homePullStartY.current == null) return;
+    homePullStartY.current = null;
+    if (homePull >= 1) setHomeHistoryShown(true);
+    setHomePull(0);
+  };
+  const homeWheel = (deltaY: number) => {
+    if (chatOpen || homeHistoryLoading) return;
+    if (deltaY > 2) {
+      homeWheelPull.current = 0;
+      setHomePull(0);
+      if (homeHistoryShown) setHomeHistoryShown(false);
+      return;
+    }
+    if (deltaY >= 0 || homeHistoryShown) return;
+    homeWheelPull.current += -deltaY;
+    const p = Math.min(1, homeWheelPull.current / HOME_PULL_WHEEL_PX);
+    if (p >= 1) {
+      homeWheelPull.current = 0;
+      setHomePull(0);
+      setHomeHistoryShown(true);
+      return;
+    }
+    setHomePull(p);
+    // 滾輪停下來還沒到臨界點，就彈回去
+    if (homeWheelTimer.current) window.clearTimeout(homeWheelTimer.current);
+    homeWheelTimer.current = window.setTimeout(() => {
+      homeWheelPull.current = 0;
+      setHomePull(0);
+    }, 250);
+  };
+  const loadHistoryFromHome = () => {
+    if (homeHistoryLoading) return;
+    setHomeHistoryLoading(true);
+    const t = window.setTimeout(() => {
+      setHistoryLoaded(true);
+      setShowHistoryBtn(false);
+      setHomeHistoryLoading(false);
+      setHomeHistoryShown(false);
+      openChat();
+    }, HISTORY_LOADING_MS);
+    timersRef.current.push(t);
+  };
+  // 進入對話（送出或點按鈕）後，首頁的按鈕跟下拉狀態都收掉
+  useEffect(() => {
+    if (!chatOpen) return;
+    setHomeHistoryShown(false);
+    setHomePull(0);
+  }, [chatOpen]);
+
   // 手機瀏覽器頂部狀態列：首頁塗天空的藍色；送出後等雲朵推到頂才改白色，
   // 不然狀態列會比畫面先變白。回首頁時雲是從上面開始往下退，立刻換回藍色。
   // 離開聊天分頁時也還原成白色
@@ -699,6 +776,10 @@ export default function V13HomePage() {
   return (
     <div
       ref={rootRef}
+      onTouchStart={(e) => homeTouchStart(e.touches[0].clientY)}
+      onTouchMove={(e) => homeTouchMove(e.touches[0].clientY)}
+      onTouchEnd={homeTouchEnd}
+      onWheel={(e) => homeWheel(e.deltaY)}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
       <HomeSky covered={chatOpen} intro={playIntro} theme={skyTheme} />
@@ -747,12 +828,65 @@ export default function V13HomePage() {
             )}
           </button>
         </div>
+        {/* 首頁下拉出現的「載入上次對話」：拉的過程跟著淡入、往下滑出來 */}
+        {!chatOpen && (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-full z-20 flex justify-center pt-2"
+            style={{
+              opacity: homeReveal,
+              transform: `translateY(${(homeReveal - 1) * 16}px) scale(${0.92 + homeReveal * 0.08})`,
+              transition:
+                homePull > 0 && !homeHistoryShown
+                  ? "none"
+                  : `opacity 220ms ease, transform 300ms ${EASING}`,
+            }}
+          >
+            <button
+              onClick={loadHistoryFromHome}
+              tabIndex={homeHistoryShown ? 0 : -1}
+              className={`flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] text-gray-800 shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)] ${
+                homeHistoryShown || homeHistoryLoading
+                  ? "pointer-events-auto"
+                  : ""
+              }`}
+            >
+              {homeHistoryLoading ? (
+                <span className="size-3.5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+              ) : (
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="size-3.5"
+                  // 還沒拉到臨界點時，時鐘箭頭跟著拉的進度轉，滿一圈就是到了
+                  style={{ transform: `rotate(${(homeReveal - 1) * 180}deg)` }}
+                >
+                  <path
+                    d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2M8 5.2V8l1.8 1.2"
+                    stroke="#1e2939"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+              {homeHistoryLoading ? "載入中…" : "載入上次對話"}
+            </button>
+          </div>
+        )}
         {/* 開場招呼語：疊在天空上，只在首頁出現，送出後淡出、讓雲蓋過去。
             外層管淡出，內層管載入時浮上來（animation 的 fill 會蓋掉 opacity，要分開兩層） */}
         <div
           aria-hidden={chatOpen}
           className="pointer-events-none absolute inset-x-0 top-full z-10 p-4 text-white"
-          style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
+          style={{
+            opacity: chatOpen ? 0 : 1,
+            // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
+            transform: `translateY(${homeReveal * 52}px)`,
+            transition:
+              homePull > 0 && !homeHistoryShown
+                ? fade
+                : `${fade}, transform 300ms ${EASING}`,
+          }}
         >
           <div
             className="flex flex-col gap-1"

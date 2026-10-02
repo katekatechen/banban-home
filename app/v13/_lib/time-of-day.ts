@@ -33,12 +33,13 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     lightHeader: false,
   },
   day: {
+    // 跟清晨一樣做出明顯的漸層：上面深一點的藍，往下變淺、帶一點暖白
     sky: [
-      ["#77c2d9", 0],
-      ["#84c9de", 55],
-      ["#a3d7e7", 100],
+      ["#4fa6d3", 0],
+      ["#7fc3df", 50],
+      ["#cdebee", 100],
     ],
-    top: "#77c2d9",
+    top: "#4fa6d3",
     front: { fill: "#ffffff", shade: "#d6ecf3" },
     back: { fill: "#e4f3f8", shade: "#c5e3ed" },
     shadow: 1,
@@ -59,12 +60,13 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     lightHeader: false,
   },
   night: {
+    // 上面最深，往下透出一點靛紫色的微光，像地平線那邊還有光
     sky: [
-      ["#0f203d", 0],
-      ["#172c51", 55],
-      ["#223b65", 100],
+      ["#0a1631", 0],
+      ["#1b3260", 50],
+      ["#4a5d93", 100],
     ],
-    top: "#0f203d",
+    top: "#0a1631",
     front: { fill: "#e4eaf4", shade: "#b6c3da" },
     back: { fill: "#8d9ebd", shade: "#7384a6" },
     shadow: 0.55,
