@@ -5,7 +5,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
-import HomeSky, { CLOUD_MS, HERO_TOP_TINT } from "../_components/HomeSky";
+import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
+import {
+  SKY_THEMES,
+  greetingOf,
+  knownTime,
+  resolveTime,
+} from "../_lib/time-of-day";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
 import { setTopTint } from "../_lib/top-tint";
@@ -147,6 +153,17 @@ export default function V13HomePage() {
   const [chat] = useState(loadChat);
   const [chatOpen, setChatOpen] = useState(chat.open);
   const [playIntro] = useState(() => !chat.open && !heroIntroPlayed);
+  // 首頁插圖的時段（清晨／白天／黃昏／夜晚）。第一次載入時伺服器不知道使用者的時間，
+  // 先用白天畫，掛載後才換成真正的時段（天空這時還是全白、正要淡入，看不出切換）；
+  // 切分頁回來直接沿用算過的時段
+  const [time, setTime] = useState(
+    () => knownTime() ?? { period: "day" as const, hour: 12 },
+  );
+  useEffect(() => {
+    setTime(resolveTime());
+  }, []);
+  const skyTheme = SKY_THEMES[time.period];
+  const lightHeader = skyTheme.lightHeader && !chatOpen;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
@@ -467,12 +484,12 @@ export default function V13HomePage() {
   // 離開聊天分頁時也還原成白色
   useEffect(() => {
     if (!chatOpen) {
-      setTopTint(HERO_TOP_TINT);
+      setTopTint(skyTheme.top);
       return;
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
     return () => window.clearTimeout(t);
-  }, [chatOpen]);
+  }, [chatOpen, skyTheme.top]);
   useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
@@ -684,16 +701,22 @@ export default function V13HomePage() {
       ref={rootRef}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      <HomeSky covered={chatOpen} intro={playIntro} />
+      <HomeSky covered={chatOpen} intro={playIntro} theme={skyTheme} />
 
       <div className="relative flex shrink-0 flex-col">
-        <StatusBar />
+        <StatusBar light={lightHeader} />
         <div className="flex h-11 items-center justify-between px-4">
           <button onClick={closeChat} aria-label="AIFIAN 首頁">
             <img
               src="/figma/v13-logo.svg"
               alt="AIFIAN"
               className="h-7 w-auto"
+              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回原色
+              style={{
+                filter: lightHeader ? "brightness(0) invert(1)" : "none",
+                // 送出時等雲推到頂端才換回深色，不然會先壓在深藍天空上
+                transition: `filter 300ms ease ${lightHeader ? 0 : CLOUD_MS * 0.55}ms`,
+              }}
             />
           </button>
           <button
@@ -740,7 +763,7 @@ export default function V13HomePage() {
             }}
           >
             <p className="text-[24px] font-bold leading-[1.4]">
-              嗨，今天想聊點什麼？
+              {greetingOf(time.period, time.hour)}
             </p>
             <p className="text-[14px] leading-[18px]">
               賺回饋，買東西，我都很在行

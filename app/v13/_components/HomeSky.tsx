@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EASING } from "../_lib/page-transition";
+import type { SkyTheme } from "../_lib/time-of-day";
 
 // 首頁插圖：天空跟雲都用程式畫，紙飛機是唯一的圖檔。
 // 載入時天空先淡入藍色，接著兩層白雲從畫面下方升上來、飛機飛進定位；
@@ -9,9 +10,8 @@ import { EASING } from "../_lib/page-transition";
 // 回到首頁時倒著播：雲往下沉、露出天空。
 //
 // 雲跟飛機的座標照 Figma 948:44415：375 寬、往上偏 19px 的框，
-// 雲的 SVG 拉得很長（375×2400），往上推的時候底下還有白色接著，不會露出天空
-export const HERO_TOP_TINT = "#77c2d9";
-
+// 雲的 SVG 拉得很長（375×2400），往上推的時候底下還有白色接著，不會露出天空。
+// 天空跟雲的顏色跟著時段換（_lib/time-of-day），送出時雲一律變成白色，接到對話的白底
 const VB_W = 375;
 const VB_H = 2400;
 
@@ -62,15 +62,33 @@ const BACK_PUFFS: Puff[] = [
   [142, 462, 28],
 ];
 
+// 夜晚海面上的月光閃點：位置寫死（百分比，相對 375×620 的框），避免伺服器跟瀏覽器算出來不一樣
+const GLINTS: [x: number, y: number, size: number, delay: number][] = [
+  [12, 30, 2, 0],
+  [26, 46, 1.5, 1.2],
+  [38, 22, 2, 2.1],
+  [61, 33, 1.5, 0.6],
+  [78, 26, 2, 1.7],
+  [88, 44, 1.5, 2.8],
+  [70, 62, 2, 0.9],
+  [18, 58, 1.5, 2.4],
+  [52, 70, 2, 1.4],
+  [92, 15, 1.5, 3.1],
+  [6, 12, 2, 1.9],
+  [44, 50, 1.5, 3.4],
+];
+
 function CloudLayer({
   puffs,
   fill,
   shade,
   floor,
+  colorTransition,
 }: {
   puffs: Puff[];
   fill: string;
   shade: string;
+  colorTransition: string;
   // 這一層雲朵下面要墊滿顏色的高度（viewBox 座標），往下一路填到底；
   // 遠景那層藏在前景後面，不用墊
   floor?: number;
@@ -84,15 +102,31 @@ function CloudLayer({
       style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
     >
       {floor !== undefined && (
-        <rect x={-60} y={floor} width={VB_W + 120} height={VB_H} fill={fill} />
+        <rect
+          x={-60}
+          y={floor}
+          width={VB_W + 120}
+          height={VB_H}
+          style={{ fill, transition: colorTransition }}
+        />
       )}
       {sorted.map(([cx, cy, r]) => (
         <g key={`${cx}-${cy}`}>
           {/* 貼著底色的那排不畫陰影，不然月牙會落在下面那片白色上 */}
           {(floor === undefined || cy + r * 1.12 <= floor) && (
-            <circle cx={cx + r * 0.07} cy={cy + r * 0.1} r={r} fill={shade} />
+            <circle
+              cx={cx + r * 0.07}
+              cy={cy + r * 0.1}
+              r={r}
+              style={{ fill: shade, transition: colorTransition }}
+            />
           )}
-          <circle cx={cx} cy={cy} r={r} fill={fill} />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            style={{ fill, transition: colorTransition }}
+          />
         </g>
       ))}
     </svg>
@@ -108,7 +142,10 @@ type Phase = "pre" | "sky" | "rest";
 export default function HomeSky({
   covered,
   intro,
+  theme,
 }: {
+  // 這個時段的天空、雲的配色
+  theme: SkyTheme;
   // 對話展開中：雲往上蓋滿畫面
   covered: boolean;
   // 這次掛載要不要播載入動畫（同一次開啟頁面只播一次，切分頁回來不重播）
@@ -144,6 +181,9 @@ export default function HomeSky({
     ? "none"
     : `transform ${intro && phase !== "rest" ? 1400 : CLOUD_MS}ms ${CLOUD_EASE}`;
 
+  // 雲的顏色：送出時在往上推的過程中漸漸變白，回首頁時再變回這個時段的顏色
+  const colorTransition = reduce ? "none" : `fill ${CLOUD_MS}ms ease`;
+
   // 滑翔翼從雲層底下鑽出來：平常停在 Figma 的位置；還沒進場、或對話展開被雲蓋住時，
   // 躲在左下那團雲的底下。進場、回首頁時順著機頭方向（往右上）從雲底下飛出來
   const planeOut = phase === "rest" && !covered;
@@ -158,17 +198,31 @@ export default function HomeSky({
       aria-hidden
       className="pointer-events-none absolute inset-0 select-none"
     >
-      {/* 天空：上面是插圖頂端的藍，往下稍微變亮一點，接近地平線 */}
+      {/* 天空（俯視下去是海）：顏色跟著時段換，往下稍微變亮一點 */}
       <div
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(to bottom, ${HERO_TOP_TINT} 0%, #84c9de 55%, #a3d7e7 100%)`,
+          background: `linear-gradient(to bottom, ${theme.sky.map(([c, at]) => `${c} ${at}%`).join(", ")})`,
           opacity: phase === "pre" ? 0 : 1,
           transition: reduce ? "none" : "opacity 500ms ease",
         }}
       />
 
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
+        {theme.glints &&
+          GLINTS.map(([x, y, size, delay]) => (
+            <span
+              key={`${x}-${y}`}
+              className="sea-glint absolute rounded-full bg-white"
+              style={{
+                left: `${x}%`,
+                top: `${y}%`,
+                width: size * 1.6,
+                height: size,
+                animationDelay: `${delay}s`,
+              }}
+            />
+          ))}
         {/* 滑翔翼：外層管進場、送出時飛走；裡面的飛機跟影子各自跑常駐的浮動。
             俯視的角度，影子落在下方的海面上：飛機往上飄（離鏡頭近一點、稍微放大）時，
             影子離得遠一點、變淡變小，像真的拉開了高度。
@@ -188,17 +242,25 @@ export default function HomeSky({
           }}
         >
           {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
-          <div className="glider-shadow absolute inset-0">
-            <div
-              className="size-full bg-[#0b3a4a]"
-              style={{ clipPath: "polygon(2% 19%, 99% 2%, 94% 98%)" }}
-            />
+          <div className="absolute inset-0" style={{ opacity: theme.shadow }}>
+            <div className="glider-shadow absolute inset-0">
+              <div
+                className="size-full bg-[#0b3a4a]"
+                style={{ clipPath: "polygon(2% 19%, 99% 2%, 94% 98%)" }}
+              />
+            </div>
           </div>
-          <img
-            src="/figma/v13-home-plane-2.png"
-            alt=""
-            className="glider-float relative block w-full"
-          />
+          <div className="glider-float relative">
+            <img
+              src="/figma/v13-home-plane-2.png"
+              alt=""
+              className="block w-full"
+            />
+            {/* 夜晚機翼尖端的閃燈 */}
+            {theme.glints && (
+              <span className="glider-light absolute left-[3%] top-[19%] size-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff5a5a]" />
+            )}
+          </div>
         </div>
 
         {/* 遠景的雲：位置高一點、偏藍，升起的距離也不同，做出前後的層次 */}
@@ -209,7 +271,12 @@ export default function HomeSky({
             transition: cloudTransition,
           }}
         >
-          <CloudLayer puffs={BACK_PUFFS} fill="#e4f3f8" shade="#c5e3ed" />
+          <CloudLayer
+            puffs={BACK_PUFFS}
+            fill={covered ? "#ffffff" : theme.back.fill}
+            shade={covered ? "#ffffff" : theme.back.shade}
+            colorTransition={colorTransition}
+          />
         </div>
         <div
           className="absolute inset-x-0 top-0"
@@ -223,9 +290,10 @@ export default function HomeSky({
         >
           <CloudLayer
             puffs={FRONT_PUFFS}
-            fill="#ffffff"
-            shade="#d6ecf3"
+            fill={covered ? "#ffffff" : theme.front.fill}
+            shade={covered ? "#ffffff" : theme.front.shade}
             floor={590}
+            colorTransition={colorTransition}
           />
         </div>
       </div>

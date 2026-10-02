@@ -7,11 +7,20 @@
 // 一起，很奇怪——所以假狀態列只在 sm 以上的桌機預覽（外面那圈手機外框
 // 的情境）才顯示，用來撐出「這是一支手機」的錯覺。真手機底下改成留一段
 // 安全區高度（避開瀏海/動態島），不留假時間文字。
-export default function StatusBar() {
+//
+// light：底色太深時（首頁的夜晚天空）假時間改成白字
+export default function StatusBar({ light = false }: { light?: boolean }) {
   return (
     <>
       <div className="h-[env(safe-area-inset-top)] shrink-0 sm:hidden" />
-      <div className="hidden shrink-0 items-center px-6 pt-4 pb-1 text-[13px] font-semibold text-gray-800 sm:flex">
+      <div
+        className="hidden shrink-0 items-center px-6 pt-4 pb-1 text-[13px] font-semibold sm:flex"
+        style={{
+          color: light ? "#ffffff" : "var(--color-gray-800, #1e2939)",
+          // 首頁送出時等雲推到頂端才換回深字
+          transition: `color 300ms ease ${light ? 0 : 500}ms`,
+        }}
+      >
         <span>9:41</span>
       </div>
     </>

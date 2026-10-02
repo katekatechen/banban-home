@@ -357,3 +357,42 @@ body {
     animation: none;
   }
 }
+
+/* v13 首頁夜晚：海面的月光閃點一閃一閃，機翼尖端的燈固定節奏閃 */
+.sea-glint {
+  animation: seaGlint 3.6s ease-in-out infinite;
+  opacity: 0;
+}
+@keyframes seaGlint {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45%,
+  55% {
+    opacity: 0.85;
+  }
+}
+.glider-light {
+  box-shadow: 0 0 6px 2px rgba(255, 90, 90, 0.7);
+  animation: gliderLight 1.6s steps(1, end) infinite;
+}
+@keyframes gliderLight {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.15;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sea-glint {
+    animation: none;
+    opacity: 0.5;
+  }
+  .glider-light {
+    animation: none;
+  }
+}
