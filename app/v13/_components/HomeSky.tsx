@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import type { SkyTheme } from "../_lib/time-of-day";
 
@@ -153,36 +153,65 @@ export default function HomeSky({
 }) {
   const [phase, setPhase] = useState<Phase>(intro ? "pre" : "rest");
   const [reduce, setReduce] = useState(false);
+  // 正在播進場（第一次載入、或從對話回首頁）：雲升起比較慢、飛機等雲到位才起飛
+  const [entering, setEntering] = useState(intro);
+  // 這一幀不要過場：回首頁時先把雲瞬間搬回畫面下方（這時畫面還是白的，看不出來）
+  const [jump, setJump] = useState(false);
+  const timers = useRef<number[]>([]);
+
+  // 進場：天空從白淡入，雲從畫面下方升上來，飛機最後從雲底下鑽出來
+  const playEnter = () => {
+    timers.current.forEach((id) => window.clearTimeout(id));
+    setEntering(true);
+    setJump(true);
+    setPhase("pre");
+    // 先畫一幀「全白、雲在下面」，下一幀才開始動，不然瀏覽器會直接跳到結果
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        setJump(false);
+        setPhase("sky");
+      }),
+    );
+    timers.current = [
+      window.setTimeout(() => setPhase("rest"), 380),
+      window.setTimeout(() => setEntering(false), 2800),
+    ];
+  };
 
   useEffect(() => {
     const r = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setReduce(r);
-    if (!intro || r) {
+    if (intro && !r) playEnter();
+    else {
       setPhase("rest");
-      return;
+      setEntering(false);
     }
-    // 先畫一幀「全白」，下一幀才開始淡入，不然瀏覽器會直接跳到結果
-    const raf = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setPhase("sky")),
-    );
-    const t = window.setTimeout(() => setPhase("rest"), 380);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(t);
-    };
-  }, [intro]);
+    const ids = timers.current;
+    return () => ids.forEach((id) => window.clearTimeout(id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 從對話回首頁：不是讓蓋滿畫面的雲往下退，而是跟第一次載入一樣，
+  // 天空重新淡入、雲從下方升上來
+  const wasCovered = useRef(covered);
+  useEffect(() => {
+    if (wasCovered.current && !covered && !reduce) playEnter();
+    wasCovered.current = covered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [covered]);
 
   // 雲的三個位置（百分比是相對 SVG 自己的高度，375×2400）：
   // 載入前在畫面下方外面、平常在 Figma 的位置、送出後往上推到蓋滿畫面
   const cloudY = covered ? "-30%" : phase === "rest" ? "0%" : "28%";
   const backY = covered ? "-29%" : phase === "rest" ? "0%" : "30%";
   // 雲上下移動都用很明顯的 ease in out：慢慢起步、中段衝過去、最後慢慢停住
-  const cloudTransition = reduce
-    ? "none"
-    : `transform ${intro && phase !== "rest" ? 1400 : CLOUD_MS}ms ${CLOUD_EASE}`;
+  const cloudTransition =
+    reduce || jump
+      ? "none"
+      : `transform ${entering ? 1400 : CLOUD_MS}ms ${CLOUD_EASE}`;
 
   // 雲的顏色：送出時在往上推的過程中漸漸變白，回首頁時再變回這個時段的顏色
-  const colorTransition = reduce ? "none" : `fill ${CLOUD_MS}ms ease`;
+  const colorTransition = reduce || jump ? "none" : `fill ${CLOUD_MS}ms ease`;
 
   // 滑翔翼從雲層底下鑽出來：平常停在 Figma 的位置；還沒進場、或對話展開被雲蓋住時，
   // 躲在左下那團雲的底下。進場、回首頁時順著機頭方向（往右上）從雲底下飛出來
@@ -191,7 +220,7 @@ export default function HomeSky({
     ? "translate(0, 0)"
     : "translate(-150px, 230px)";
   // 進場時等雲快升到定位（約九成）才起飛，不然飛機會在雲還沒蓋到的地方露出來
-  const planeDelay = intro ? 1000 : 250;
+  const planeDelay = entering ? 1000 : 250;
 
   return (
     <div
@@ -204,7 +233,7 @@ export default function HomeSky({
         style={{
           background: `linear-gradient(to bottom, ${theme.sky.map(([c, at]) => `${c} ${at}%`).join(", ")})`,
           opacity: phase === "pre" ? 0 : 1,
-          transition: reduce ? "none" : "opacity 500ms ease",
+          transition: reduce || jump ? "none" : "opacity 500ms ease",
         }}
       />
 
@@ -233,22 +262,32 @@ export default function HomeSky({
             // 進場前（雲還在畫面外）先藏起來，其他時候都在，靠雲擋住
             opacity: phase === "rest" ? 1 : 0,
             transform: planeTransform,
-            transition: reduce
-              ? "none"
-              : covered
-                ? // 等雲把畫面蓋白了，才把飛機悄悄搬回雲底下
-                  `transform 0ms linear ${CLOUD_MS}ms`
-                : `transform 1300ms ${EASING} ${planeDelay}ms, opacity 0ms linear ${planeDelay}ms`,
+            transition:
+              reduce || jump
+                ? "none"
+                : covered
+                  ? // 等雲把畫面蓋白了，才把飛機悄悄搬回雲底下
+                    `transform 0ms linear ${CLOUD_MS}ms`
+                  : `transform 1300ms ${EASING} ${planeDelay}ms, opacity 0ms linear ${planeDelay}ms`,
           }}
         >
           {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
           <div className="absolute inset-0" style={{ opacity: theme.shadow }}>
-            <div className="glider-shadow absolute inset-0">
-              <div
-                className="size-full bg-[#0b3a4a]"
-                style={{ clipPath: "polygon(2% 19%, 99% 2%, 94% 98%)" }}
+            {/* 圓角三角形：用同色的粗描邊配圓角接點把三個角磨圓，
+                頂點往內縮一點，抵掉描邊多出來的寬度 */}
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="glider-shadow absolute inset-0 size-full overflow-visible"
+            >
+              <polygon
+                points="7,21 94,7 90,92"
+                fill="#0b3a4a"
+                stroke="#0b3a4a"
+                strokeWidth={10}
+                strokeLinejoin="round"
               />
-            </div>
+            </svg>
           </div>
           <div className="glider-float relative">
             <img
