@@ -320,3 +320,40 @@ body {
     transform: translateY(0);
   }
 }
+
+/* v13 首頁滑翔翼常駐的浮動：飛機上下飄、輕微側傾，影子跟著同一個節奏
+   拉遠、變淡。影子是同一張飛機圖壓成全黑再調透明度、稍微模糊 */
+.glider-float {
+  animation: gliderFloat 5s ease-in-out infinite;
+}
+.glider-shadow {
+  filter: brightness(0) blur(1.5px);
+  transform-origin: 50% 50%;
+  animation: gliderShadow 5s ease-in-out infinite;
+}
+@keyframes gliderFloat {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(1px, -6px) rotate(-1.5deg) scale(1.03);
+  }
+}
+@keyframes gliderShadow {
+  0%,
+  100% {
+    transform: translate(-1%, 36%) scale(0.95, 0.86);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translate(0%, 43%) scale(0.91, 0.82);
+    opacity: 0.14;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glider-float,
+  .glider-shadow {
+    animation: none;
+  }
+}

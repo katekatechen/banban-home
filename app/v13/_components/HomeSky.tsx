@@ -155,9 +155,10 @@ export default function HomeSky({
       />
 
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
-        <img
-          src="/figma/v13-home-plane-2.png"
-          alt=""
+        {/* 滑翔翼：外層管進場、送出時飛走；裡面的飛機跟影子各自跑常駐的浮動。
+            俯視的角度，影子落在下方的海面上：飛機往上飄（離鏡頭近一點、稍微放大）時，
+            影子離得遠一點、變淡變小，像真的拉開了高度 */}
+        <div
           className="absolute left-[44.99%] top-[50.21%] w-[28.91%]"
           style={{
             opacity: planeShown ? 1 : 0,
@@ -168,7 +169,18 @@ export default function HomeSky({
                 ? "transform 520ms cubic-bezier(0.5, 0, 0.75, 0), opacity 420ms ease 100ms"
                 : `transform 900ms ${EASING} ${intro ? 520 : 200}ms, opacity 500ms ease ${intro ? 520 : 200}ms`,
           }}
-        />
+        >
+          <img
+            src="/figma/v13-home-plane-2.png"
+            alt=""
+            className="glider-shadow absolute inset-0 w-full"
+          />
+          <img
+            src="/figma/v13-home-plane-2.png"
+            alt=""
+            className="glider-float relative block w-full"
+          />
+        </div>
 
         {/* 後面那層雲：半透明、位置高一點，升起的距離也不同，做出前後的層次 */}
         <div
