@@ -17,9 +17,12 @@ const VB_H = 2400;
 
 // 雲：參考積雲的俯視插圖，左右兩團從畫面下方兩角湧上來，中間留一道 V 字的
 // 縫露出底下的海，右邊那團比較高、升到飛機旁邊。
-// 畫法參考 iCloud 圖示：每一朵是一顆半透明的大圓，各自從左上（白）漸層到
-// 右下（淡淡的藍），圓跟圓疊在一起時，前面那顆亮的左上緣壓在後面那顆偏暗的
-// 右下角上，就看得出一顆一顆的輪廓。從上面往下畫，下面的雲朵在前面
+// 畫法是結實的 3D 黏土雲（參考天氣 widget 那種）：
+// 1. 先把所有圓聯集起來當外框，裡面墊一層偏暗的顏色當邊緣；
+// 2. 每一朵各自套一個從左上亮到右下暗的放射漸層，左上再加一團白色的反光；
+// 3. 整層打上模糊再用外框裁切：朵與朵之間的硬邊被糊開，接縫處自然變暗，
+//    像真的一團團鼓起來黏在一起；邊緣則因為底下墊了暗色，會有一圈柔和的暗邊。
+// 從上面往下畫，下面的雲朵在前面
 type Puff = [cx: number, cy: number, r: number];
 
 // 前景：左右兩大團
@@ -86,9 +89,10 @@ function CloudLayer({
   floor,
   colorTransition,
 }: {
-  // 漸層的 id 要在整頁唯一，前景、遠景各用一個
+  // 漸層、裁切、濾鏡的 id 要在整頁唯一，前景、遠景各用一組
   id: string;
   puffs: Puff[];
+  // 亮面的顏色（也是雲底下那片的底色）、暗面的顏色
   fill: string;
   shade: string;
   // 這一層雲朵下面要墊滿顏色的高度（viewBox 座標），往下一路填到底；
@@ -97,11 +101,21 @@ function CloudLayer({
   colorTransition: string;
 }) {
   const sorted = [...puffs].sort((a, b) => a[1] - b[1]);
-  const stop = (color: string, opacity: number) => ({
-    stopColor: color,
-    stopOpacity: opacity,
-    transition: colorTransition.replace("fill", "stop-color"),
-  });
+  const stopTransition = colorTransition.replace("fill", "stop-color");
+  const flat = { fill, transition: colorTransition };
+  // 貼著底色的那排不打光，直接用亮面的顏色，接到下面那片才不會有一條暗線
+  const isLow = (cy: number, r: number) =>
+    floor !== undefined && cy + r > floor + 4;
+  const silhouette = (
+    <>
+      {floor !== undefined && (
+        <rect x={-60} y={floor} width={VB_W + 120} height={VB_H} />
+      )}
+      {puffs.map(([cx, cy, r]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} />
+      ))}
+    </>
+  );
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -110,41 +124,72 @@ function CloudLayer({
       style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
     >
       <defs>
-        {/* 每顆圓各自套一次（objectBoundingBox）：左上白、右下帶一點藍，也稍微透明 */}
-        <linearGradient id={id} x1="0.15" y1="0" x2="0.85" y2="1">
-          <stop offset="0" style={stop(fill, 0.97)} />
-          <stop offset="1" style={stop(shade, 0.9)} />
-        </linearGradient>
-      </defs>
-      {floor !== undefined && (
-        <rect
+        {/* 每朵各自套一次：光從左上打下來，越往右下越暗 */}
+        <radialGradient
+          id={`${id}-g`}
+          cx="0.4"
+          cy="0.32"
+          r="0.78"
+          fx="0.34"
+          fy="0.24"
+        >
+          <stop
+            offset="0"
+            style={{ stopColor: fill, transition: stopTransition }}
+          />
+          <stop
+            offset="0.5"
+            style={{ stopColor: fill, transition: stopTransition }}
+          />
+          <stop
+            offset="1"
+            style={{ stopColor: shade, transition: stopTransition }}
+          />
+        </radialGradient>
+        <clipPath id={`${id}-clip`}>{silhouette}</clipPath>
+        <filter
+          id={`${id}-soft`}
+          filterUnits="userSpaceOnUse"
           x={-60}
-          y={floor}
+          y={0}
           width={VB_W + 120}
           height={VB_H}
-          style={{ fill, transition: colorTransition }}
-        />
-      )}
-      {sorted.map(([cx, cy, r]) =>
-        // 貼著底色的那排用實心底色，不然漸層偏暗的下半部會落在下面那片白色上
-        floor !== undefined && cy + r > floor + 4 ? (
-          <circle
-            key={`${cx}-${cy}`}
-            cx={cx}
-            cy={cy}
-            r={r}
-            style={{ fill, transition: colorTransition }}
-          />
-        ) : (
-          <circle
-            key={`${cx}-${cy}`}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill={`url(#${id})`}
-          />
-        ),
-      )}
+        >
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
+      </defs>
+      <g clipPath={`url(#${id}-clip)`}>
+        {/* 墊底的暗色：糊開的邊緣透出來，就是雲朵外圈那道柔和的暗邊 */}
+        <g style={{ fill: shade, transition: colorTransition }}>{silhouette}</g>
+        <g filter={`url(#${id}-soft)`}>
+          {floor !== undefined && (
+            <rect
+              x={-60}
+              y={floor}
+              width={VB_W + 120}
+              height={VB_H}
+              style={flat}
+            />
+          )}
+          {sorted.map(([cx, cy, r]) =>
+            isLow(cy, r) ? (
+              <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} style={flat} />
+            ) : (
+              <g key={`${cx}-${cy}`}>
+                <circle cx={cx} cy={cy} r={r} fill={`url(#${id}-g)`} />
+                {/* 左上的反光 */}
+                <circle
+                  cx={cx - r * 0.3}
+                  cy={cy - r * 0.36}
+                  r={r * 0.42}
+                  fill="#ffffff"
+                  opacity={0.65}
+                />
+              </g>
+            ),
+          )}
+        </g>
+      </g>
     </svg>
   );
 }
@@ -273,7 +318,7 @@ export default function HomeSky({
             影子離得遠一點、變淡變小，像真的拉開了高度。
             飛機要從雲底下鑽出來，所以放在雲層後面 */}
         <div
-          className="absolute left-[47.09%] top-[46.54%] w-[24.71%]"
+          className="absolute left-[48.95%] top-[47.45%] w-[21%]"
           style={{
             // 進場前（雲還在畫面外）先藏起來，其他時候都在，靠雲擋住
             opacity: phase === "rest" ? 1 : 0,
@@ -320,7 +365,7 @@ export default function HomeSky({
 
         {/* 遠景的雲：位置高一點、偏藍，升起的距離也不同，做出前後的層次 */}
         <div
-          className="absolute inset-x-0 top-0"
+          className="absolute inset-x-0 top-0 will-change-transform"
           style={{
             transform: `translateY(${backY})`,
             transition: cloudTransition,
@@ -335,7 +380,7 @@ export default function HomeSky({
           />
         </div>
         <div
-          className="absolute inset-x-0 top-0"
+          className="absolute inset-x-0 top-0 will-change-transform"
           style={{
             transform: `translateY(${cloudY})`,
             transition:
