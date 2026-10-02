@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import type { SkyTheme } from "../_lib/time-of-day";
+import GliderSvg from "./GliderSvg";
 
 // 首頁插圖：天空跟雲都用程式畫，紙飛機是唯一的圖檔。
 // 載入時天空先淡入藍色，接著兩層白雲從畫面下方升上來、飛機飛進定位；
@@ -158,6 +159,12 @@ export default function HomeSky({
   // 這一幀不要過場：回首頁時先把雲瞬間搬回畫面下方（這時畫面還是白的，看不出來）
   const [jump, setJump] = useState(false);
   const timers = useRef<number[]>([]);
+  // 比較用：網址加 ?plane=svg 換成程式畫的扁平滑翔翼，預設還是圖檔
+  const [vectorPlane, setVectorPlane] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("plane") === "svg")
+      setVectorPlane(true);
+  }, []);
 
   // 進場：天空從白淡入，雲從畫面下方升上來，飛機最後從雲底下鑽出來
   const playEnter = () => {
@@ -290,11 +297,15 @@ export default function HomeSky({
             </svg>
           </div>
           <div className="glider-float relative">
-            <img
-              src="/figma/v13-home-plane-2.png"
-              alt=""
-              className="block w-full"
-            />
+            {vectorPlane ? (
+              <GliderSvg className="block h-auto w-full" />
+            ) : (
+              <img
+                src="/figma/v13-home-plane-2.png"
+                alt=""
+                className="block w-full"
+              />
+            )}
             {/* 夜晚機翼尖端的閃燈 */}
             {theme.glints && (
               <span className="glider-light absolute left-[3%] top-[19%] size-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff5a5a]" />
