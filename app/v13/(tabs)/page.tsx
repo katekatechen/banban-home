@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
-import HomeSky, { HERO_TOP_TINT } from "../_components/HomeSky";
+import HomeSky, { CLOUD_MS, HERO_TOP_TINT } from "../_components/HomeSky";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
 import { setTopTint } from "../_lib/top-tint";
@@ -470,7 +470,7 @@ export default function V13HomePage() {
       setTopTint(HERO_TOP_TINT);
       return;
     }
-    const t = window.setTimeout(() => setTopTint(null), 480);
+    const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
     return () => window.clearTimeout(t);
   }, [chatOpen]);
   useEffect(() => () => setTopTint(null), []);
@@ -755,7 +755,7 @@ export default function V13HomePage() {
           opacity: chatOpen ? 1 : 0,
           pointerEvents: chatOpen ? "auto" : "none",
           // 送出後等雲朵把畫面蓋白了，對話內容才淡入
-          transition: chatOpen ? `${fade} 380ms` : fade,
+          transition: chatOpen ? `${fade} ${CLOUD_MS * 0.6}ms` : fade,
         }}
       >
         {/* 浮動的「載入上次對話」：放在捲動區外面，才不會被頂部的淡出遮罩吃掉 */}

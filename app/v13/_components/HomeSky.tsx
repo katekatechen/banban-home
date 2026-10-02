@@ -99,6 +99,10 @@ function CloudLayer({
   );
 }
 
+// 雲移動的時間跟曲線（easeInOutQuint）。首頁送出後也照 CLOUD_MS 算對話什麼時候淡入
+export const CLOUD_MS = 900;
+const CLOUD_EASE = "cubic-bezier(0.83, 0, 0.17, 1)";
+
 type Phase = "pre" | "sky" | "rest";
 
 export default function HomeSky({
@@ -135,18 +139,19 @@ export default function HomeSky({
   // 載入前在畫面下方外面、平常在 Figma 的位置、送出後往上推到蓋滿畫面
   const cloudY = covered ? "-30%" : phase === "rest" ? "0%" : "28%";
   const backY = covered ? "-29%" : phase === "rest" ? "0%" : "30%";
+  // 雲上下移動都用很明顯的 ease in out：慢慢起步、中段衝過去、最後慢慢停住
   const cloudTransition = reduce
     ? "none"
-    : covered
-      ? "transform 720ms cubic-bezier(0.55, 0, 0.25, 1)"
-      : `transform 1100ms ${EASING}`;
+    : `transform ${intro && phase !== "rest" ? 1400 : CLOUD_MS}ms ${CLOUD_EASE}`;
 
-  const planeShown = phase === "rest" && !covered;
-  const planeTransform = covered
-    ? "translate(48px, -72px) rotate(-6deg) scale(0.85)"
-    : planeShown
-      ? "translate(0, 0)"
-      : "translate(-36px, 28px)";
+  // 滑翔翼從雲層底下鑽出來：平常停在 Figma 的位置；還沒進場、或對話展開被雲蓋住時，
+  // 躲在左下那團雲的底下。進場、回首頁時順著機頭方向（往右上）從雲底下飛出來
+  const planeOut = phase === "rest" && !covered;
+  const planeTransform = planeOut
+    ? "translate(0, 0)"
+    : "translate(-150px, 230px)";
+  // 進場時等雲快升到定位（約九成）才起飛，不然飛機會在雲還沒蓋到的地方露出來
+  const planeDelay = intro ? 1000 : 250;
 
   return (
     <div
@@ -164,6 +169,38 @@ export default function HomeSky({
       />
 
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
+        {/* 滑翔翼：外層管進場、送出時飛走；裡面的飛機跟影子各自跑常駐的浮動。
+            俯視的角度，影子落在下方的海面上：飛機往上飄（離鏡頭近一點、稍微放大）時，
+            影子離得遠一點、變淡變小，像真的拉開了高度。
+            飛機要從雲底下鑽出來，所以放在雲層後面 */}
+        <div
+          className="absolute left-[45.71%] top-[45.86%] w-[27.46%]"
+          style={{
+            // 進場前（雲還在畫面外）先藏起來，其他時候都在，靠雲擋住
+            opacity: phase === "rest" ? 1 : 0,
+            transform: planeTransform,
+            transition: reduce
+              ? "none"
+              : covered
+                ? // 等雲把畫面蓋白了，才把飛機悄悄搬回雲底下
+                  `transform 0ms linear ${CLOUD_MS}ms`
+                : `transform 1300ms ${EASING} ${planeDelay}ms, opacity 0ms linear ${planeDelay}ms`,
+          }}
+        >
+          {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
+          <div className="glider-shadow absolute inset-0">
+            <div
+              className="size-full bg-[#0b3a4a]"
+              style={{ clipPath: "polygon(2% 19%, 99% 2%, 94% 98%)" }}
+            />
+          </div>
+          <img
+            src="/figma/v13-home-plane-2.png"
+            alt=""
+            className="glider-float relative block w-full"
+          />
+        </div>
+
         {/* 遠景的雲：位置高一點、偏藍，升起的距離也不同，做出前後的層次 */}
         <div
           className="absolute inset-x-0 top-0"
@@ -189,36 +226,6 @@ export default function HomeSky({
             fill="#ffffff"
             shade="#d6ecf3"
             floor={590}
-          />
-        </div>
-
-        {/* 滑翔翼：外層管進場、送出時飛走；裡面的飛機跟影子各自跑常駐的浮動。
-            俯視的角度，影子落在下方的海面上：飛機往上飄（離鏡頭近一點、稍微放大）時，
-            影子離得遠一點、變淡變小，像真的拉開了高度。
-            飛機在雲的上方飛，所以疊在雲層前面 */}
-        <div
-          className="absolute left-[45.71%] top-[45.86%] w-[27.46%]"
-          style={{
-            opacity: planeShown ? 1 : 0,
-            transform: planeTransform,
-            transition: reduce
-              ? "none"
-              : covered
-                ? "transform 520ms cubic-bezier(0.5, 0, 0.75, 0), opacity 420ms ease 100ms"
-                : `transform 900ms ${EASING} ${intro ? 520 : 200}ms, opacity 500ms ease ${intro ? 520 : 200}ms`,
-          }}
-        >
-          {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
-          <div className="glider-shadow absolute inset-0">
-            <div
-              className="size-full bg-[#0b3a4a]"
-              style={{ clipPath: "polygon(2% 19%, 99% 2%, 94% 98%)" }}
-            />
-          </div>
-          <img
-            src="/figma/v13-home-plane-2.png"
-            alt=""
-            className="glider-float relative block w-full"
           />
         </div>
       </div>
