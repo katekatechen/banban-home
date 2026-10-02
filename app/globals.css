@@ -308,3 +308,15 @@ body {
     opacity: 1;
   }
 }
+
+/* v13 首頁招呼語：載入時從下方浮上來 */
+@keyframes heroGreetIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

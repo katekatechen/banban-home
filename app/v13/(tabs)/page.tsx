@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
+import HomeSky, { HERO_TOP_TINT } from "../_components/HomeSky";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
 import { setTopTint } from "../_lib/top-tint";
@@ -46,8 +47,9 @@ const MODE_TRANSITION_MS = 300;
 const FLY_TO_CART_MS = 650;
 
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
-// 首頁天空底圖最上緣的藍色（取自圖檔頂端像素）
-const HERO_TOP_TINT = "#77c2d9";
+// 首頁的載入動畫（天空淡入、雲升起）只在打開頁面後第一次看到首頁時播，
+// 切去其他分頁再切回來就不重播
+let heroIntroPlayed = false;
 
 const SUGGESTION_POOL = [
   { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
@@ -144,6 +146,10 @@ export default function V13HomePage() {
   const router = useRouter();
   const [chat] = useState(loadChat);
   const [chatOpen, setChatOpen] = useState(chat.open);
+  const [playIntro] = useState(() => !chat.open && !heroIntroPlayed);
+  useEffect(() => {
+    heroIntroPlayed = true;
+  }, []);
   const [messages, setMessages] = useState<Message[]>(chat.messages);
   const [stage, setStage] = useState<Stage>(chat.stage);
   const [selected, setSelected] = useState<string[]>(chat.selected);
@@ -456,10 +462,16 @@ export default function V13HomePage() {
     setChipsOpen(true);
   };
 
-  // 手機瀏覽器頂部狀態列：首頁塗插圖頂端的藍色，跟藍天接起來；
-  // 對話展開後插圖淡掉，改回白色。離開聊天分頁時也還原成白色
+  // 手機瀏覽器頂部狀態列：首頁塗天空的藍色；送出後等雲朵推到頂才改白色，
+  // 不然狀態列會比畫面先變白。回首頁時雲是從上面開始往下退，立刻換回藍色。
+  // 離開聊天分頁時也還原成白色
   useEffect(() => {
-    setTopTint(chatOpen ? null : HERO_TOP_TINT);
+    if (!chatOpen) {
+      setTopTint(HERO_TOP_TINT);
+      return;
+    }
+    const t = window.setTimeout(() => setTopTint(null), 480);
+    return () => window.clearTimeout(t);
   }, [chatOpen]);
   useEffect(() => () => setTopTint(null), []);
 
@@ -672,26 +684,7 @@ export default function V13HomePage() {
       ref={rootRef}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      {/* 首頁插圖（Figma 948:44415）：天空＋雲層底圖跟紙飛機拆成兩張。
-          外框照 Figma 是 375×620、往上偏 19px，底圖在框裡拉成 119.71% 高、
-          往上偏 19.71%（Figma 上就是這樣縱向拉長的）。位置都用百分比換算，
-          手機寬度不同時兩張圖一起等比縮放，飛機不會跑位 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[-19px] aspect-[375/620] select-none overflow-hidden"
-        style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
-      >
-        <img
-          src="/figma/v13-home-sky.jpg"
-          alt=""
-          className="absolute left-0 top-[-19.71%] h-[119.71%] w-full max-w-none"
-        />
-        <img
-          src="/figma/v13-home-plane.png"
-          alt=""
-          className="absolute left-[44.99%] top-[50.21%] w-[28.91%]"
-        />
-      </div>
+      <HomeSky covered={chatOpen} intro={playIntro} />
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar />
@@ -731,18 +724,28 @@ export default function V13HomePage() {
             )}
           </button>
         </div>
-        {/* 開場招呼語：疊在插圖的藍天上，只在首頁出現，對話展開時跟插圖一起淡出 */}
+        {/* 開場招呼語：疊在天空上，只在首頁出現，送出後淡出、讓雲蓋過去。
+            外層管淡出，內層管載入時浮上來（animation 的 fill 會蓋掉 opacity，要分開兩層） */}
         <div
           aria-hidden={chatOpen}
-          className="pointer-events-none absolute inset-x-0 top-full z-10 flex flex-col gap-1 p-4 text-white"
+          className="pointer-events-none absolute inset-x-0 top-full z-10 p-4 text-white"
           style={{ opacity: chatOpen ? 0 : 1, transition: fade }}
         >
-          <p className="text-[24px] font-bold leading-[1.4]">
-            嗨，今天想聊點什麼？
-          </p>
-          <p className="text-[14px] leading-[18px]">
-            賺回饋，買東西，我都很在行
-          </p>
+          <div
+            className="flex flex-col gap-1"
+            style={{
+              animation: playIntro
+                ? `heroGreetIn 600ms ${EASING} 300ms both`
+                : undefined,
+            }}
+          >
+            <p className="text-[24px] font-bold leading-[1.4]">
+              嗨，今天想聊點什麼？
+            </p>
+            <p className="text-[14px] leading-[18px]">
+              賺回饋，買東西，我都很在行
+            </p>
+          </div>
         </div>
       </div>
 
@@ -751,7 +754,8 @@ export default function V13HomePage() {
         style={{
           opacity: chatOpen ? 1 : 0,
           pointerEvents: chatOpen ? "auto" : "none",
-          transition: fade,
+          // 送出後等雲朵把畫面蓋白了，對話內容才淡入
+          transition: chatOpen ? `${fade} 380ms` : fade,
         }}
       >
         {/* 浮動的「載入上次對話」：放在捲動區外面，才不會被頂部的淡出遮罩吃掉 */}
