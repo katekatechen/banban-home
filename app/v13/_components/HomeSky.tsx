@@ -170,11 +170,13 @@ export default function HomeSky({
                 : `transform 900ms ${EASING} ${intro ? 520 : 200}ms, opacity 500ms ease ${intro ? 520 : 200}ms`,
           }}
         >
-          <img
-            src="/figma/v13-home-plane-2.png"
-            alt=""
-            className="glider-shadow absolute inset-0 w-full"
-          />
+          {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
+          <div className="glider-shadow absolute inset-0">
+            <div
+              className="size-full bg-[#0b3a4a]"
+              style={{ clipPath: "polygon(2% 19%, 99% 2%, 94% 98%)" }}
+            />
+          </div>
           <img
             src="/figma/v13-home-plane-2.png"
             alt=""

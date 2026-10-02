@@ -322,12 +322,12 @@ body {
 }
 
 /* v13 首頁滑翔翼常駐的浮動：飛機上下飄、輕微側傾，影子跟著同一個節奏
-   拉遠、變淡。影子是同一張飛機圖壓成全黑再調透明度、稍微模糊 */
+   拉遠、變淡。影子是一塊模糊的三角形，只取機翼輪廓 */
 .glider-float {
   animation: gliderFloat 5s ease-in-out infinite;
 }
 .glider-shadow {
-  filter: brightness(0) blur(1.5px);
+  filter: blur(3px);
   transform-origin: 50% 50%;
   animation: gliderShadow 5s ease-in-out infinite;
 }
@@ -344,11 +344,11 @@ body {
   0%,
   100% {
     transform: translate(-1%, 36%) scale(0.95, 0.86);
-    opacity: 0.22;
+    opacity: 0.28;
   }
   50% {
     transform: translate(0%, 43%) scale(0.91, 0.82);
-    opacity: 0.14;
+    opacity: 0.18;
   }
 }
 @media (prefers-reduced-motion: reduce) {
