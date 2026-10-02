@@ -7,7 +7,8 @@ export type SkyTheme = {
   sky: [string, number][];
   // 手機狀態列的底色，接天空最上緣
   top: string;
-  // 前景、遠景雲的顏色跟月牙陰影的顏色
+  // 前景、遠景雲的漸層：左上的顏色（fill，也是雲底下那片的底色）跟右下的顏色（shade）。
+  // 雲一律以白色為主，只在右下角帶一點該時段的色調
   front: { fill: string; shade: string };
   back: { fill: string; shade: string };
   // 海面的影子濃度倍率：夜晚月光弱，影子淡一點
@@ -26,8 +27,8 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#efcbbd", 100],
     ],
     top: "#86b3d6",
-    front: { fill: "#fffaf6", shade: "#f1d6cc" },
-    back: { fill: "#f5e2dd", shade: "#e5c4bf" },
+    front: { fill: "#ffffff", shade: "#f6e1da" },
+    back: { fill: "#fdf4f1", shade: "#efd6d0" },
     shadow: 0.8,
     glints: false,
     lightHeader: false,
@@ -40,8 +41,8 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#cdebee", 100],
     ],
     top: "#4fa6d3",
-    front: { fill: "#ffffff", shade: "#d6ecf3" },
-    back: { fill: "#e4f3f8", shade: "#c5e3ed" },
+    front: { fill: "#ffffff", shade: "#d9eef5" },
+    back: { fill: "#f4fafc", shade: "#cfe7ef" },
     shadow: 1,
     glints: false,
     lightHeader: false,
@@ -53,8 +54,8 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#e6a48c", 100],
     ],
     top: "#5b7bb5",
-    front: { fill: "#fff5ee", shade: "#efc6b3" },
-    back: { fill: "#efd3ca", shade: "#d9ada3" },
+    front: { fill: "#ffffff", shade: "#f4d9cc" },
+    back: { fill: "#fcefe9", shade: "#ecccc1" },
     shadow: 0.85,
     glints: false,
     lightHeader: false,
@@ -67,8 +68,8 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#4a5d93", 100],
     ],
     top: "#0a1631",
-    front: { fill: "#e4eaf4", shade: "#b6c3da" },
-    back: { fill: "#8d9ebd", shade: "#7384a6" },
+    front: { fill: "#f2f5fa", shade: "#c9d3e6" },
+    back: { fill: "#dfe5f0", shade: "#b3bfd6" },
     shadow: 0.55,
     glints: true,
     lightHeader: true,
