@@ -7,11 +7,10 @@ export type SkyTheme = {
   sky: [string, number][];
   // 手機狀態列的底色，接天空最上緣
   top: string;
-  // 前景、遠景雲的顏色（前景也是雲底下那片的底色）。雲一律以白色為主
-  front: { fill: string };
-  back: { fill: string };
-  // 稜鏡玻璃版的雲（?clouds=glass）邊緣透出來的光
-  glow: string[];
+  // 前景、遠景雲的顏色（fill，也是雲底下那片的底色）跟右下月牙陰影的顏色（shade）。
+  // 雲一律以白色為主，陰影帶一點該時段的色調
+  front: { fill: string; shade: string };
+  back: { fill: string; shade: string };
   // 海面的影子濃度倍率：夜晚月光弱，影子淡一點
   shadow: number;
   // 夜晚的海面月光閃點、機翼的閃燈
@@ -28,24 +27,22 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#efcbbd", 100],
     ],
     top: "#86b3d6",
-    front: { fill: "#ffffff" },
-    back: { fill: "#f5dfda" },
-    glow: ["#ffab94", "#ffd59e", "#c7b2ff"],
+    front: { fill: "#ffffff", shade: "#f6e1da" },
+    back: { fill: "#fdf4f1", shade: "#efd6d0" },
     shadow: 0.8,
     glints: false,
     lightHeader: false,
   },
   day: {
-    // 跟清晨一樣做出明顯的漸層：上面深一點的藍，往下變淺、帶一點暖白
+    // 很淡的天藍，往下漸漸變成帶一點暖的白，雲那一段幾乎是白的
     sky: [
-      ["#4fa6d3", 0],
-      ["#7fc3df", 50],
-      ["#cdebee", 100],
+      ["#bde0f6", 0],
+      ["#e4f0f7", 46],
+      ["#fbfaf7", 72],
     ],
-    top: "#4fa6d3",
-    front: { fill: "#ffffff" },
-    back: { fill: "#d6ebf3" },
-    glow: ["#7cc4ff", "#9b8cff", "#ff9fd0"],
+    top: "#bde0f6",
+    front: { fill: "#ffffff", shade: "#d9eef5" },
+    back: { fill: "#f4fafc", shade: "#cfe7ef" },
     shadow: 1,
     glints: false,
     lightHeader: false,
@@ -57,9 +54,8 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#e6a48c", 100],
     ],
     top: "#5b7bb5",
-    front: { fill: "#ffffff" },
-    back: { fill: "#f1d6cd" },
-    glow: ["#ff8fb3", "#b38cff", "#ffb187"],
+    front: { fill: "#ffffff", shade: "#f4d9cc" },
+    back: { fill: "#fcefe9", shade: "#ecccc1" },
     shadow: 0.85,
     glints: false,
     lightHeader: false,
@@ -72,9 +68,8 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
       ["#4a5d93", 100],
     ],
     top: "#0a1631",
-    front: { fill: "#f2f5fa" },
-    back: { fill: "#c3cde1" },
-    glow: ["#5a6cff", "#9a6bff", "#3fc0ff"],
+    front: { fill: "#f2f5fa", shade: "#c9d3e6" },
+    back: { fill: "#dfe5f0", shade: "#b3bfd6" },
     shadow: 0.55,
     glints: true,
     lightHeader: true,
