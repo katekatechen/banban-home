@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import type { SkyTheme } from "../_lib/time-of-day";
 import GliderSvg from "./GliderSvg";
+import GlassScene from "./GlassClouds";
 
 // 首頁插圖：天空跟雲都用程式畫，紙飛機是唯一的圖檔。
 // 載入時天空先淡入藍色，接著兩層白雲從畫面下方升上來、飛機飛進定位；
@@ -185,9 +186,12 @@ export default function HomeSky({
   const [popKey, setPopKey] = useState(0);
   // 比較用：網址加 ?plane=svg 換成程式畫的扁平滑翔翼，預設還是圖檔
   const [vectorPlane, setVectorPlane] = useState(false);
+  // 比較用：網址加 ?clouds=glass 換成稜鏡玻璃版的雲
+  const [glass, setGlass] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("plane") === "svg")
-      setVectorPlane(true);
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("plane") === "svg") setVectorPlane(true);
+    if (q.get("clouds") === "glass") setGlass(true);
   }, []);
 
   // 進場：天空從白淡入，雲從畫面下方升上來，飛機最後從雲底下鑽出來
@@ -340,43 +344,67 @@ export default function HomeSky({
           </div>
         </div>
 
-        {/* 遠景的雲：位置高一點、偏藍，升起的距離也不同，做出前後的層次 */}
-        <div
-          className="absolute inset-x-0 top-0 will-change-transform"
-          style={{
-            transform: `translateY(${backY})`,
-            transition: cloudTransition,
-          }}
-        >
-          <CloudLayer
-            puffs={BACK_PUFFS}
-            key={`back-${popKey}`}
-            fill={covered ? "#ffffff" : theme.back.fill}
-            colorTransition={colorTransition}
-            pop={entering && !reduce}
-            popDelay={520}
-          />
-        </div>
-        <div
-          className="absolute inset-x-0 top-0 will-change-transform"
-          style={{
-            transform: `translateY(${cloudY})`,
-            transition:
-              cloudTransition === "none"
-                ? "none"
-                : `${cloudTransition} ${covered ? "0ms" : "90ms"}`,
-          }}
-        >
-          <CloudLayer
-            puffs={FRONT_PUFFS}
-            key={`front-${popKey}`}
-            fill={covered ? "#ffffff" : theme.front.fill}
-            floor={590}
-            colorTransition={colorTransition}
-            pop={entering && !reduce}
-            popDelay={120}
-          />
-        </div>
+        {glass ? (
+          // 稜鏡玻璃版：整層一起動，送出時往上推蓋滿畫面
+          <div
+            className="absolute inset-0 will-change-transform"
+            style={{
+              transform: `translateY(${covered ? "-110%" : "0%"})`,
+              transition: cloudTransition,
+            }}
+          >
+            <GlassScene
+              key={`glass-${popKey}`}
+              frontPuffs={FRONT_PUFFS}
+              backPuffs={BACK_PUFFS}
+              front={covered ? "#ffffff" : theme.front.fill}
+              back={theme.back.fill}
+              glow={theme.glow}
+              entering={entering}
+              reduce={reduce}
+            />
+          </div>
+        ) : (
+          <>
+            {/* 遠景的雲：位置高一點、偏藍，升起的距離也不同，做出前後的層次 */}
+            <div
+              className="absolute inset-x-0 top-0 will-change-transform"
+              style={{
+                transform: `translateY(${backY})`,
+                transition: cloudTransition,
+              }}
+            >
+              <CloudLayer
+                puffs={BACK_PUFFS}
+                key={`back-${popKey}`}
+                fill={covered ? "#ffffff" : theme.back.fill}
+                colorTransition={colorTransition}
+                pop={entering && !reduce}
+                popDelay={520}
+              />
+            </div>
+            <div
+              className="absolute inset-x-0 top-0 will-change-transform"
+              style={{
+                transform: `translateY(${cloudY})`,
+                transition:
+                  cloudTransition === "none"
+                    ? "none"
+                    : `${cloudTransition} ${covered ? "0ms" : "90ms"}`,
+              }}
+            >
+              <CloudLayer
+                puffs={FRONT_PUFFS}
+                key={`front-${popKey}`}
+                fill={covered ? "#ffffff" : theme.front.fill}
+                floor={590}
+                colorTransition={colorTransition}
+                pop={entering && !reduce}
+                popDelay={120}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -10,6 +10,8 @@ export type SkyTheme = {
   // 前景、遠景雲的顏色（前景也是雲底下那片的底色）。雲一律以白色為主
   front: { fill: string };
   back: { fill: string };
+  // 稜鏡玻璃版的雲（?clouds=glass）邊緣透出來的光
+  glow: string[];
   // 海面的影子濃度倍率：夜晚月光弱，影子淡一點
   shadow: number;
   // 夜晚的海面月光閃點、機翼的閃燈
@@ -28,6 +30,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     top: "#86b3d6",
     front: { fill: "#ffffff" },
     back: { fill: "#f5dfda" },
+    glow: ["#ffab94", "#ffd59e", "#c7b2ff"],
     shadow: 0.8,
     glints: false,
     lightHeader: false,
@@ -42,6 +45,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     top: "#4fa6d3",
     front: { fill: "#ffffff" },
     back: { fill: "#d6ebf3" },
+    glow: ["#7cc4ff", "#9b8cff", "#ff9fd0"],
     shadow: 1,
     glints: false,
     lightHeader: false,
@@ -55,6 +59,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     top: "#5b7bb5",
     front: { fill: "#ffffff" },
     back: { fill: "#f1d6cd" },
+    glow: ["#ff8fb3", "#b38cff", "#ffb187"],
     shadow: 0.85,
     glints: false,
     lightHeader: false,
@@ -69,6 +74,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     top: "#0a1631",
     front: { fill: "#f2f5fa" },
     back: { fill: "#c3cde1" },
+    glow: ["#5a6cff", "#9a6bff", "#3fc0ff"],
     shadow: 0.55,
     glints: true,
     lightHeader: true,

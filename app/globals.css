@@ -414,3 +414,24 @@ body {
     fill: var(--pop-to);
   }
 }
+
+/* v13 首頁稜鏡玻璃版的雲：玻璃條進場時從下面浮上來，常駐時每條各自上下漂 */
+@keyframes glassIn {
+  from {
+    opacity: 0;
+    transform: translateY(70px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes glassDrift {
+  0%,
+  100% {
+    transform: translateY(var(--dy));
+  }
+  50% {
+    transform: translateY(calc(var(--dy) + 6px));
+  }
+}
