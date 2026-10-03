@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import type { SkyTheme } from "../_lib/time-of-day";
 import GliderSvg from "./GliderSvg";
@@ -18,9 +18,10 @@ const VB_H = 2400;
 
 // 雲：參考積雲的俯視插圖，左右兩團從畫面下方兩角湧上來，中間留一道 V 字的
 // 縫露出底下的海，右邊那團比較高、升到飛機旁邊。
-// 畫法是扁平向量：每一朵是一顆大圓，先畫一顆淺藍的「影子圓」往右下偏一點，
-// 再疊一顆白圓，兩顆錯開的地方就是一道月牙形的陰影。從上面往下畫，
-// 下面的雲朵會蓋住上面那朵的下半部，堆出一朵壓一朵的體積感
+// 畫法刻意抽象：只用實心的圓疊出雲的輪廓，不畫陰影，前景白、遠景帶一點時段色。
+// 進場時每顆圓從 0 彈性放大，一開始是鮮豔的向量色（粉、藍、黃、紫、綠輪流），
+// 長大的同時褪成白色，從下往上一顆顆冒出來，最後拼成雲的造型。
+// 從上面往下畫，下面的雲朵在前面
 type Puff = [cx: number, cy: number, r: number];
 
 // 前景：左右兩大團
@@ -79,22 +80,34 @@ const GLINTS: [x: number, y: number, size: number, delay: number][] = [
   [44, 50, 1.5, 3.4],
 ];
 
+// 進場時雲朵一開始的顏色
+const POP_PALETTE = ["#ffc4b5", "#b5dcff", "#ffe59a", "#d0c5ff", "#b5f0d6"];
+const POP_MS = 560;
+const POP_STAGGER_MS = 28;
+
 function CloudLayer({
   puffs,
   fill,
-  shade,
   floor,
   colorTransition,
+  pop,
+  popDelay = 0,
 }: {
   puffs: Puff[];
   fill: string;
-  shade: string;
-  colorTransition: string;
   // 這一層雲朵下面要墊滿顏色的高度（viewBox 座標），往下一路填到底；
   // 遠景那層藏在前景後面，不用墊
   floor?: number;
+  colorTransition: string;
+  // 要不要播進場的「冒出來」動畫，以及這一層從幾毫秒後開始
+  pop: boolean;
+  popDelay?: number;
 }) {
   const sorted = [...puffs].sort((a, b) => a[1] - b[1]);
+  // 冒出來的順序：從最下面那顆開始往上
+  const order = [...puffs]
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+    .map((p) => `${p[0]}-${p[1]}`);
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -111,25 +124,34 @@ function CloudLayer({
           style={{ fill, transition: colorTransition }}
         />
       )}
-      {sorted.map(([cx, cy, r]) => (
-        <g key={`${cx}-${cy}`}>
-          {/* 貼著底色的那排不畫陰影，不然月牙會落在下面那片白色上 */}
-          {(floor === undefined || cy + r * 1.12 <= floor) && (
-            <circle
-              cx={cx + r * 0.07}
-              cy={cy + r * 0.1}
-              r={r}
-              style={{ fill: shade, transition: colorTransition }}
-            />
-          )}
+      {sorted.map(([cx, cy, r]) => {
+        const key = `${cx}-${cy}`;
+        const i = order.indexOf(key);
+        const delay = popDelay + i * POP_STAGGER_MS;
+        return (
           <circle
+            key={key}
             cx={cx}
             cy={cy}
             r={r}
-            style={{ fill, transition: colorTransition }}
+            style={
+              {
+                fill,
+                transition: colorTransition,
+                transformBox: "fill-box",
+                transformOrigin: "center",
+                // backwards：還沒輪到的時候停在「0 大小、鮮豔色」，播完回到原本的樣子，
+                // 之後送出時變白的 transition 才不會被動畫蓋掉
+                animation: pop
+                  ? `cloudPop ${POP_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms backwards, cloudTint ${POP_MS + 300}ms ease ${delay}ms backwards`
+                  : undefined,
+                "--pop-from": POP_PALETTE[i % POP_PALETTE.length],
+                "--pop-to": fill,
+              } as React.CSSProperties
+            }
           />
-        </g>
-      ))}
+        );
+      })}
     </svg>
   );
 }
@@ -159,6 +181,8 @@ export default function HomeSky({
   // 這一幀不要過場：回首頁時先把雲瞬間搬回畫面下方（這時畫面還是白的，看不出來）
   const [jump, setJump] = useState(false);
   const timers = useRef<number[]>([]);
+  // 每次進場換一個 key，讓雲朵重新掛載、冒出來的動畫從頭播
+  const [popKey, setPopKey] = useState(0);
   // 比較用：網址加 ?plane=svg 換成程式畫的扁平滑翔翼，預設還是圖檔
   const [vectorPlane, setVectorPlane] = useState(false);
   useEffect(() => {
@@ -170,6 +194,7 @@ export default function HomeSky({
   const playEnter = () => {
     timers.current.forEach((id) => window.clearTimeout(id));
     setEntering(true);
+    setPopKey((k) => k + 1);
     setJump(true);
     setPhase("pre");
     // 先畫一幀「全白、雲在下面」，下一幀才開始動，不然瀏覽器會直接跳到結果
@@ -200,8 +225,10 @@ export default function HomeSky({
 
   // 從對話回首頁：不是讓蓋滿畫面的雲往下退，而是跟第一次載入一樣，
   // 天空重新淡入、雲從下方升上來
+  // 用 layout effect：要在瀏覽器畫出這一幀之前就切到「不要過場」，
+  // 不然雲會先開始往下退，冒出來的動畫就跑在畫面上方
   const wasCovered = useRef(covered);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (wasCovered.current && !covered && !reduce) playEnter();
     wasCovered.current = covered;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,8 +236,8 @@ export default function HomeSky({
 
   // 雲的三個位置（百分比是相對 SVG 自己的高度，375×2400）：
   // 載入前在畫面下方外面、平常在 Figma 的位置、送出後往上推到蓋滿畫面
-  const cloudY = covered ? "-30%" : phase === "rest" ? "0%" : "28%";
-  const backY = covered ? "-29%" : phase === "rest" ? "0%" : "30%";
+  const cloudY = covered ? "-30%" : "0%";
+  const backY = covered ? "-29%" : "0%";
   // 雲上下移動都用很明顯的 ease in out：慢慢起步、中段衝過去、最後慢慢停住
   const cloudTransition =
     reduce || jump
@@ -227,7 +254,7 @@ export default function HomeSky({
     ? "translate(0, 0)"
     : "translate(-150px, 230px)";
   // 進場時等雲快升到定位（約九成）才起飛，不然飛機會在雲還沒蓋到的地方露出來
-  const planeDelay = entering ? 650 : 250;
+  const planeDelay = entering ? 700 : 250;
 
   return (
     <div
@@ -323,9 +350,11 @@ export default function HomeSky({
         >
           <CloudLayer
             puffs={BACK_PUFFS}
+            key={`back-${popKey}`}
             fill={covered ? "#ffffff" : theme.back.fill}
-            shade={covered ? "#ffffff" : theme.back.shade}
             colorTransition={colorTransition}
+            pop={entering && !reduce}
+            popDelay={520}
           />
         </div>
         <div
@@ -340,10 +369,12 @@ export default function HomeSky({
         >
           <CloudLayer
             puffs={FRONT_PUFFS}
+            key={`front-${popKey}`}
             fill={covered ? "#ffffff" : theme.front.fill}
-            shade={covered ? "#ffffff" : theme.front.shade}
             floor={590}
             colorTransition={colorTransition}
+            pop={entering && !reduce}
+            popDelay={120}
           />
         </div>
       </div>

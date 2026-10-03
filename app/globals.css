@@ -396,3 +396,21 @@ body {
     animation: none;
   }
 }
+
+/* v13 首頁雲朵進場：每顆圓從 0 彈性放大，顏色從鮮豔的向量色褪成白色 */
+@keyframes cloudPop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes cloudTint {
+  from {
+    fill: var(--pop-from);
+  }
+  to {
+    fill: var(--pop-to);
+  }
+}
