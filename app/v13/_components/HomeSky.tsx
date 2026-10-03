@@ -180,8 +180,8 @@ export default function HomeSky({
       }),
     );
     timers.current = [
-      window.setTimeout(() => setPhase("rest"), 380),
-      window.setTimeout(() => setEntering(false), 2800),
+      window.setTimeout(() => setPhase("rest"), 120),
+      window.setTimeout(() => setEntering(false), 2200),
     ];
   };
 
@@ -215,7 +215,7 @@ export default function HomeSky({
   const cloudTransition =
     reduce || jump
       ? "none"
-      : `transform ${entering ? 1400 : CLOUD_MS}ms ${CLOUD_EASE}`;
+      : `transform ${entering ? 1000 : CLOUD_MS}ms ${CLOUD_EASE}`;
 
   // 雲的顏色：送出時在往上推的過程中漸漸變白，回首頁時再變回這個時段的顏色
   const colorTransition = reduce || jump ? "none" : `fill ${CLOUD_MS}ms ease`;
@@ -227,7 +227,7 @@ export default function HomeSky({
     ? "translate(0, 0)"
     : "translate(-150px, 230px)";
   // 進場時等雲快升到定位（約九成）才起飛，不然飛機會在雲還沒蓋到的地方露出來
-  const planeDelay = entering ? 1000 : 250;
+  const planeDelay = entering ? 650 : 250;
 
   return (
     <div
