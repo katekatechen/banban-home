@@ -21,10 +21,6 @@ export default function GliderSvg({ className }: { className?: string }) {
           strokeWidth={6}
         />
       </g>
-      <g fill="#203a78">
-        <circle cx="238" cy="366" r="7" />
-        <circle cx="268" cy="383" r="7" />
-      </g>
 
       {/* 左翼：受光面 */}
       <path
