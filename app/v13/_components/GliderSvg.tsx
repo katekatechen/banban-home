@@ -9,20 +9,16 @@ export default function GliderSvg({ className }: { className?: string }) {
     <svg viewBox="0 0 600 488" className={className} aria-hidden>
       {/* 骨架：先畫，機翼會蓋住上半截。粗線加一道細的亮線，看起來是金屬管 */}
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        {/* 左邊斜桿往下、底桿斜過去，右邊直直往上接到右翼底下 */}
         <path
-          d="M172 200 L154 300 Q150 318 166 328 L380 444 L358 392"
+          d="M172 200 L154 300 Q150 318 166 328 L366 436 Q380 444 380 428 L380 360"
           stroke="#56769a"
           strokeWidth={22}
         />
         <path
-          d="M172 200 L154 300 Q150 318 166 328 L380 444"
+          d="M172 200 L154 300 Q150 318 166 328 L366 436 Q380 444 380 428 L380 360"
           stroke="#86a6c4"
           strokeWidth={6}
-        />
-        <path
-          d="M256 364 L334 292 M282 380 L352 316"
-          stroke="#6f8faf"
-          strokeWidth={14}
         />
       </g>
       <g fill="#203a78">
