@@ -264,7 +264,7 @@ export default function HomeSky({
             影子離得遠一點、變淡變小，像真的拉開了高度。
             飛機要從雲底下鑽出來，所以放在雲層後面 */}
         <div
-          className="absolute left-[48.95%] top-[47.45%] w-[21%]"
+          className="absolute left-[50.53%] top-[48.23%] w-[17.85%]"
           style={{
             // 進場前（雲還在畫面外）先藏起來，其他時候都在，靠雲擋住
             opacity: phase === "rest" ? 1 : 0,

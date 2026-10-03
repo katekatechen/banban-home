@@ -17,6 +17,8 @@ export type SkyTheme = {
   glints: boolean;
   // AIFIAN logo 跟桌機預覽的假狀態列要不要改白字（底色太深時）
   lightHeader: boolean;
+  // 招呼語要不要用深色字（天空很淺的時段，白字會看不清楚）
+  darkGreeting: boolean;
 };
 
 export const SKY_THEMES: Record<Period, SkyTheme> = {
@@ -32,6 +34,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 0.8,
     glints: false,
     lightHeader: false,
+    darkGreeting: false,
   },
   day: {
     // 很淡的天藍，往下漸漸變成帶一點暖的白，雲那一段幾乎是白的
@@ -46,6 +49,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 1,
     glints: false,
     lightHeader: false,
+    darkGreeting: true,
   },
   dusk: {
     sky: [
@@ -59,6 +63,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 0.85,
     glints: false,
     lightHeader: false,
+    darkGreeting: false,
   },
   night: {
     // 上面最深，往下透出一點靛紫色的微光，像地平線那邊還有光
@@ -73,6 +78,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 0.55,
     glints: true,
     lightHeader: true,
+    darkGreeting: false,
   },
 };
 

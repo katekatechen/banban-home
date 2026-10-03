@@ -877,7 +877,7 @@ export default function V13HomePage() {
             外層管淡出，內層管載入時浮上來（animation 的 fill 會蓋掉 opacity，要分開兩層） */}
         <div
           aria-hidden={chatOpen}
-          className="pointer-events-none absolute inset-x-0 top-full z-10 p-4 text-white"
+          className="pointer-events-none absolute inset-x-0 top-full z-10 p-4"
           style={{
             opacity: chatOpen ? 0 : 1,
             // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
@@ -896,10 +896,16 @@ export default function V13HomePage() {
                 : undefined,
             }}
           >
-            <p className="text-[24px] font-bold leading-[1.4]">
+            <p
+              className="text-[24px] font-bold leading-[1.4]"
+              style={{ color: skyTheme.darkGreeting ? "#1e2939" : "#ffffff" }}
+            >
               {greetingOf(time.period, time.hour)}
             </p>
-            <p className="text-[14px] leading-[18px]">
+            <p
+              className="text-[14px] leading-[18px]"
+              style={{ color: skyTheme.darkGreeting ? "#4a5565" : "#ffffff" }}
+            >
               賺回饋，買東西，我都很在行
             </p>
           </div>
