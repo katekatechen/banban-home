@@ -16,52 +16,75 @@ import GliderSvg from "./GliderSvg";
 const VB_W = 375;
 const VB_H = 2400;
 
-// 雲：參考積雲的俯視插圖，左右兩團從畫面下方兩角湧上來，中間留一道 V 字的
-// 縫露出底下的海，右邊那團比較高、升到飛機旁邊。
-// 畫法是扁平向量：每一朵是一顆大圓，先畫一顆淺藍的「影子圓」往右下偏一點，
-// 再疊一顆白圓，兩顆錯開的地方就是一道月牙形的陰影。從上面往下畫，
-// 下面的雲朵會蓋住上面那朵的下半部，堆出一朵壓一朵的體積感
-type Puff = [cx: number, cy: number, r: number];
+// 雲：參考積雲的扁平插畫，左右兩團從畫面下方兩角湧上來，中間留一道 V 字的
+// 縫露出底下的海，右邊那團比較小。
+// 每一團（lobe）都是「一顆大圓＋上半圈一排小圓」拼出凹凸的邊。
+// 先畫灰色的一團當背光面，再把同一團往右上挪一點、縮小一點畫成白色，
+// 左下就露出一道邊緣凹凸的灰色陰影；灰色的部分再壓一層顆粒，像印刷的質感。
+// 從上面往下畫，下面那團的白色頂端會壓在上面那團的灰色底部上
+type Lobe = [cx: number, cy: number, r: number];
 
 // 前景：左右兩大團
-const FRONT_PUFFS: Puff[] = [
-  // 右邊那團（比較高，但比左邊小一號，不要搶飛機）
-  [386, 455, 35],
-  [356, 486, 27],
-  [395, 508, 41],
-  [333, 518, 24],
-  [365, 538, 36],
-  [311, 550, 22],
-  [342, 570, 30],
+const FRONT_LOBES: Lobe[] = [
   // 左邊那團
-  [8, 450, 54],
-  [66, 468, 44],
-  [-18, 516, 66],
-  [118, 500, 38],
-  [48, 540, 56],
-  [164, 540, 36],
-  [110, 572, 48],
-  [206, 572, 32],
-  // V 字谷底收圓
-  [234, 588, 28],
-  // 最底下一排，把雲朵之間的縫封起來
-  [24, 588, 34],
-  [80, 592, 32],
-  [152, 588, 30],
-  [272, 584, 30],
-  [334, 586, 34],
-  [384, 580, 36],
-  [362, 552, 30],
+  [14, 462, 66],
+  [82, 446, 48],
+  [136, 494, 40],
+  [44, 528, 60],
+  [180, 538, 34],
+  [112, 560, 46],
+  [214, 576, 30],
+  // 右邊那團（比較小）
+  [372, 466, 40],
+  [338, 504, 30],
+  [392, 520, 42],
+  [304, 544, 26],
+  [352, 562, 34],
+  [266, 584, 28],
+  // 最底下一排，把雲團之間的縫封起來（貼著底色，不畫陰影）
+  [20, 596, 44],
+  [96, 600, 40],
+  [160, 598, 36],
+  [236, 600, 34],
+  [306, 598, 36],
+  [380, 596, 44],
 ];
 
-// 遠景：比前景高一點、顏色偏藍，從前景後面探出頭
-const BACK_PUFFS: Puff[] = [
-  [378, 426, 27],
-  [351, 451, 20],
-  [36, 408, 40],
-  [92, 430, 32],
-  [142, 462, 28],
+// 遠景：從前景後面探出頭的幾團，顏色偏淡
+const BACK_LOBES: Lobe[] = [
+  [60, 404, 40],
+  [130, 440, 30],
+  [356, 424, 30],
 ];
+
+// 一團雲 → 一組圓：中間一顆大圓，上半圈（左→上→右）排一圈小圓做出凹凸的邊。
+// 小圓的大小用固定的規律稍微錯開，不會整齊得像花邊
+const BUMPS = 7;
+function lobeCircles(
+  [cx, cy, r]: Lobe,
+  shift = { dx: 0, dy: 0, k: 1 },
+): [number, number, number][] {
+  const x0 = cx + shift.dx * r;
+  const y0 = cy + shift.dy * r;
+  const R = r * shift.k;
+  const out: [number, number, number][] = [[x0, y0, R * 0.8]];
+  for (let i = 0; i < BUMPS; i++) {
+    const a = Math.PI * (1 + i / (BUMPS - 1)); // 180°（左）→ 270°（上）→ 360°（右）
+    const size = 0.3 + 0.07 * Math.sin(i * 2.3 + cx * 0.05);
+    out.push([
+      x0 + Math.cos(a) * R * 0.74,
+      y0 + Math.sin(a) * R * 0.74,
+      R * size,
+    ]);
+  }
+  // 四捨五入到小數點兩位：伺服器跟瀏覽器的三角函數最後幾位會不一樣，
+  // 不修掉的話 SSR 對不上（hydration mismatch）
+  return out.map(
+    (c) => c.map((v) => Math.round(v * 100) / 100) as [number, number, number],
+  );
+}
+// 白色的那層：往右上挪、稍微縮小
+const LIT = { dx: 0.16, dy: -0.2, k: 0.86 };
 
 // 夜晚海面上的月光閃點：位置寫死（百分比，相對 375×620 的框），避免伺服器跟瀏覽器算出來不一樣
 const GLINTS: [x: number, y: number, size: number, delay: number][] = [
@@ -80,21 +103,27 @@ const GLINTS: [x: number, y: number, size: number, delay: number][] = [
 ];
 
 function CloudLayer({
-  puffs,
+  id,
+  lobes,
   fill,
   shade,
   floor,
   colorTransition,
 }: {
-  puffs: Puff[];
+  // 顆粒濾鏡的 id，前景、遠景各用一個
+  id: string;
+  lobes: Lobe[];
+  // 受光面（白）跟背光面（灰）的顏色；fill 也是雲底下那片的底色
   fill: string;
   shade: string;
-  colorTransition: string;
   // 這一層雲朵下面要墊滿顏色的高度（viewBox 座標），往下一路填到底；
   // 遠景那層藏在前景後面，不用墊
   floor?: number;
+  colorTransition: string;
 }) {
-  const sorted = [...puffs].sort((a, b) => a[1] - b[1]);
+  const sorted = [...lobes].sort((a, b) => a[1] - b[1]);
+  const lit = { fill, transition: colorTransition };
+  const dark = { fill: shade, transition: colorTransition };
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -102,34 +131,62 @@ function CloudLayer({
       className="block h-auto w-full overflow-visible"
       style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
     >
-      {floor !== undefined && (
-        <rect
-          x={-60}
-          y={floor}
-          width={VB_W + 120}
-          height={VB_H}
-          style={{ fill, transition: colorTransition }}
-        />
-      )}
-      {sorted.map(([cx, cy, r]) => (
-        <g key={`${cx}-${cy}`}>
-          {/* 貼著底色的那排不畫陰影，不然月牙會落在下面那片白色上 */}
-          {(floor === undefined || cy + r * 1.12 <= floor) && (
-            <circle
-              cx={cx + r * 0.07}
-              cy={cy + r * 0.1}
-              r={r}
-              style={{ fill: shade, transition: colorTransition }}
-            />
-          )}
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            style={{ fill, transition: colorTransition }}
+      <defs>
+        {/* 灰色陰影上的顆粒：雜訊轉成稀疏的深色小點，只留在灰色範圍裡 */}
+        <filter id={`${id}-grain`} x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="1.1"
+            numOctaves="2"
+            seed="7"
+            result="noise"
           />
-        </g>
-      ))}
+          <feColorMatrix
+            in="noise"
+            type="matrix"
+            values="0 0 0 0 0.25  0 0 0 0 0.28  0 0 0 0 0.35  0 0 0 -2.4 1.25"
+            result="specks"
+          />
+          <feComposite
+            in="specks"
+            in2="SourceGraphic"
+            operator="in"
+            result="grain"
+          />
+          <feMerge>
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="grain" />
+          </feMerge>
+        </filter>
+      </defs>
+      {floor !== undefined && (
+        <rect x={-60} y={floor} width={VB_W + 120} height={VB_H} style={lit} />
+      )}
+      {sorted.map((lobe) => {
+        const [cx, cy, r] = lobe;
+        // 貼著底色的那幾團不畫灰色，不然陰影會落在下面那片白色上
+        const low = floor !== undefined && cy + r * 0.9 > floor;
+        return (
+          <g key={`${cx}-${cy}`}>
+            {/* 灰色的背光面；送出時陰影變白，顆粒也一起拿掉 */}
+            {!low && (
+              <g
+                style={dark}
+                filter={shade === "#ffffff" ? undefined : `url(#${id}-grain)`}
+              >
+                {lobeCircles(lobe).map(([x, y, rr], i) => (
+                  <circle key={i} cx={x} cy={y} r={rr} />
+                ))}
+              </g>
+            )}
+            <g style={lit}>
+              {lobeCircles(lobe, low ? undefined : LIT).map(([x, y, rr], i) => (
+                <circle key={i} cx={x} cy={y} r={rr} />
+              ))}
+            </g>
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -322,7 +379,8 @@ export default function HomeSky({
           }}
         >
           <CloudLayer
-            puffs={BACK_PUFFS}
+            id="v13-cloud-back"
+            lobes={BACK_LOBES}
             fill={covered ? "#ffffff" : theme.back.fill}
             shade={covered ? "#ffffff" : theme.back.shade}
             colorTransition={colorTransition}
@@ -339,7 +397,8 @@ export default function HomeSky({
           }}
         >
           <CloudLayer
-            puffs={FRONT_PUFFS}
+            id="v13-cloud-front"
+            lobes={FRONT_LOBES}
             fill={covered ? "#ffffff" : theme.front.fill}
             shade={covered ? "#ffffff" : theme.front.shade}
             floor={590}
