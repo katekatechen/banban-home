@@ -6,7 +6,7 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
-import GlowHome from "../_components/GlowHome";
+import GlowHome, { GLOW_TOP } from "../_components/GlowHome";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
 import {
@@ -190,9 +190,9 @@ export default function V13HomePage() {
   }, []);
   const glowHome = variant === "glow";
   const skyTheme = SKY_THEMES[time.period];
-  // 光暈版是白底：logo、招呼語都用深色，狀態列白色
-  const lightHeader = !glowHome && skyTheme.lightHeader && !chatOpen;
-  const darkGreeting = glowHome || skyTheme.darkGreeting;
+  // 光暈版上面是很紅的漸層：logo、招呼語都用白字，狀態列接漸層最上緣的紅
+  const lightHeader = (glowHome || skyTheme.lightHeader) && !chatOpen;
+  const darkGreeting = !glowHome && skyTheme.darkGreeting;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
@@ -595,7 +595,7 @@ export default function V13HomePage() {
       return;
     }
     if (!chatOpen) {
-      setTopTint(glowHome ? null : skyTheme.top);
+      setTopTint(glowHome ? GLOW_TOP : skyTheme.top);
       return;
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);

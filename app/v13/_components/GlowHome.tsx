@@ -4,21 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import GliderSvg from "./GliderSvg";
 import { CLOUD_MS } from "./HomeSky";
-import { BLOBS } from "./Splash";
 
-// 光暈版首頁（?home=glow）：延續開場畫面的風格。白底，滑翔翼後面墊一大團
-// 慢慢旋轉、呼吸的品牌紅光團，滑翔翼改成白色，就像開場畫面那顆白色 logo mark
-// 長大成了飛機。沒有雲，也不分時段。
+// 光暈版首頁（?home=glow）：延續開場畫面的風格。整個畫面鋪滿靜態的品牌紅漸層
+// （開場畫面光團的那組顏色，上面最紅、往下漸漸變成淡淡的桃色），
+// 滑翔翼改成白色，就像開場畫面那顆白色 logo mark 長大成了飛機。沒有雲，也不分時段。
 //
 // 座標系跟 HomeSky 一樣是 375×620、往上偏 19px 的框，飛機停的位置也一樣，
 // 開場畫面的 logo mark 才能直接飛過來接手。
-// 送出時光團放大淡掉、飛機往右上飛走，留下白底接到對話；回首頁時再重新浮出來
+// 送出時漸層淡掉、飛機往右上飛走，留下白底接到對話；回首頁時再重新浮出來
 const PLANE = { left: 50.53, top: 48.23, w: 17.85 };
 // 飛機中心（框的 %）：光團就墊在這裡
 const CENTER = {
   x: PLANE.left + PLANE.w / 2,
   y: PLANE.top + (PLANE.w * 375 * (488 / 600)) / 620 / 2,
 };
+
+export const GLOW_TOP = "#ff4a3c";
+
+const GRADIENT = [
+  "radial-gradient(90% 45% at 12% 8%, rgba(255, 150, 90, 0.9) 0%, rgba(255, 150, 90, 0) 70%)",
+  "radial-gradient(80% 50% at 92% 28%, rgba(255, 61, 110, 0.85) 0%, rgba(255, 61, 110, 0) 70%)",
+  "radial-gradient(90% 40% at 30% 48%, rgba(224, 32, 79, 0.55) 0%, rgba(224, 32, 79, 0) 70%)",
+  `linear-gradient(to bottom, ${GLOW_TOP} 0%, #ff3030 30%, #ff6a52 50%, #ffa48c 64%, #ffe1d8 78%, #fff6f3 100%)`,
+].join(", ");
 
 export default function GlowHome({
   covered,
@@ -69,40 +77,24 @@ export default function GlowHome({
       className="pointer-events-none absolute inset-0 select-none"
     >
       <div className="absolute inset-0 bg-white" />
+      {/* 滿版的品牌紅漸層（靜態）：幾團放射漸層疊在一條由上往下的漸層上，
+          做出像網格漸層那種有深有淺的紅；下面漸漸淡成桃白色，「你可能也想知道」
+          跟輸入框那一段才看得清楚 */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: GRADIENT,
+          opacity: visible ? 1 : 0,
+          transition: reduce ? "none" : `opacity ${covered ? 600 : 900}ms ease`,
+        }}
+      />
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
-        {/* 光團：跟開場畫面同一組顏色，放大成一大團墊在飛機後面 */}
+        {/* 開場畫面的光團要飛到這裡再散開，接進滿版的漸層 */}
         <div
           data-warm-glow
-          className="absolute aspect-square w-[78%]"
-          style={{
-            left: `${CENTER.x}%`,
-            top: `${CENTER.y}%`,
-            transform: `translate(-50%, -50%) scale(${visible ? 1 : covered ? 1.4 : 0.6})`,
-            opacity: visible ? 1 : 0,
-            transition: reduce
-              ? "none"
-              : `transform ${covered ? CLOUD_MS : 1100}ms ${EASING}, opacity ${covered ? 500 : 900}ms ease`,
-          }}
-        >
-          <div
-            className="splash-blob absolute inset-0"
-            style={{ filter: "blur(34px)" }}
-          >
-            {BLOBS.map(([x, y, size, color]) => (
-              <span
-                key={color}
-                className="absolute left-1/2 top-1/2 rounded-full"
-                style={{
-                  width: `${size * 0.9}%`,
-                  height: `${size * 0.9}%`,
-                  background: color,
-                  opacity: 0.85,
-                  transform: `translate(calc(-50% + ${x * 1.6}%), calc(-50% + ${y * 1.6}%))`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
+          className="absolute size-px"
+          style={{ left: `${CENTER.x}%`, top: `${CENTER.y}%` }}
+        />
 
         {/* 飛機停好的位置（不跟著動）：開場畫面要量這裡，把 logo mark 飛過來 */}
         <div
