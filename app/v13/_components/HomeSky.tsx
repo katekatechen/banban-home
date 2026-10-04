@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import type { SkyTheme } from "../_lib/time-of-day";
 import GliderSvg from "./GliderSvg";
@@ -128,6 +128,9 @@ function CloudLayer({
 // 雲移動的時間跟曲線（easeInOutQuint）。首頁送出後也照 CLOUD_MS 算對話什麼時候淡入
 export const CLOUD_MS = 900;
 const CLOUD_EASE = "cubic-bezier(0.83, 0, 0.17, 1)";
+// 進場（載入、從對話回首頁）時雲從下方升起：一開始就冒上來、最後慢慢停住，
+// 不用 ease in out，不然前一秒幾乎不動，看起來像雲直接出現
+const RISE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 type Phase = "pre" | "sky" | "rest";
 
@@ -175,7 +178,7 @@ export default function HomeSky({
       }),
     );
     timers.current = [
-      window.setTimeout(() => setPhase("rest"), 380),
+      window.setTimeout(() => setPhase("rest"), 120),
       window.setTimeout(() => setEntering(false), 2800),
     ];
   };
@@ -195,8 +198,10 @@ export default function HomeSky({
 
   // 從對話回首頁：不是讓蓋滿畫面的雲往下退，而是跟第一次載入一樣，
   // 天空重新淡入、雲從下方升上來
+  // 用 layout effect：要在瀏覽器畫出這一幀之前就把雲瞬間搬到畫面下方，
+  // 不然雲會先從蓋滿畫面的位置往下掉，看起來像從上面進來
   const wasCovered = useRef(covered);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (wasCovered.current && !covered && !reduce) playEnter();
     wasCovered.current = covered;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,7 +214,9 @@ export default function HomeSky({
   const cloudTransition =
     reduce || jump
       ? "none"
-      : `transform ${entering ? 1400 : CLOUD_MS}ms ${CLOUD_EASE}`;
+      : entering
+        ? `transform 1000ms ${RISE_EASE}`
+        : `transform ${CLOUD_MS}ms ${CLOUD_EASE}`;
 
   // 雲的顏色：送出時在往上推的過程中漸漸變白，回首頁時再變回這個時段的顏色
   const colorTransition = reduce || jump ? "none" : `fill ${CLOUD_MS}ms ease`;
@@ -227,7 +234,7 @@ export default function HomeSky({
     ? "translate(0, 0)"
     : "translate(-150px, 230px)";
   // 進場時等雲快升到定位（約九成）才起飛，不然飛機會在雲還沒蓋到的地方露出來
-  const planeDelay = entering ? 1000 : 250;
+  const planeDelay = entering ? 600 : 250;
 
   return (
     <div

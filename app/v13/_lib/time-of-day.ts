@@ -40,14 +40,14 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     darkGreeting: false,
   },
   day: {
-    // 上面是白色，往下漸漸變成淡藍、到雲後面最深，雲底下再回到接近白
+    // 上面是淺灰白，往下漸漸變成淡藍，到雲後面是最飽和的天藍
     sky: [
-      ["#ffffff", 0],
+      ["#f7f7f7", 0],
       ["#d7eff9", 37],
-      ["#bad6e5", 65],
-      ["#f3f5f5", 80],
+      ["#87c5e6", 65],
+      ["#9bc6de", 80],
     ],
-    top: "#ffffff",
+    top: "#f7f7f7",
     front: { fill: "#ffffff", shade: "#d9eef5" },
     back: { fill: "#f4fafc", shade: "#cfe7ef" },
     shadow: 1,
