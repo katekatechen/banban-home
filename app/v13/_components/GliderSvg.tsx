@@ -6,6 +6,12 @@ const NOSE = "595 3";
 
 // 兩套配色：red 是首頁原本的品牌紅；white 給「光暈版」首頁用，
 // 白色機身疊在紅色光團上，跟開場畫面的白色 logo mark 一致
+// 光暈版的白色滑翔翼外圍那圈光
+export const GLIDER_GLOW: React.CSSProperties = {
+  filter:
+    "drop-shadow(0 0 6px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 18px rgba(255, 236, 228, 0.7))",
+};
+
 const TONES = {
   red: {
     frame: "#56769a",
@@ -32,27 +38,34 @@ const TONES = {
 export default function GliderSvg({
   className,
   tone = "red",
+  frame = true,
+  style,
 }: {
   className?: string;
+  style?: React.CSSProperties;
   tone?: keyof typeof TONES;
+  // 要不要畫機翼下面的骨架（光暈版首頁不畫，只留機翼）
+  frame?: boolean;
 }) {
   const c = TONES[tone];
   return (
-    <svg viewBox="0 0 600 488" className={className} aria-hidden>
+    <svg viewBox="0 0 600 488" className={className} style={style} aria-hidden>
       {/* 骨架：先畫，機翼會蓋住上半截。粗線加一道細的亮線，看起來是金屬管 */}
-      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {/* 左邊斜桿往下、底桿斜過去，右邊直直往上接到右翼底下 */}
-        <path
-          d="M172 200 L154 300 Q150 318 166 328 L366 436 Q380 444 380 428 L380 360"
-          stroke={c.frame}
-          strokeWidth={22}
-        />
-        <path
-          d="M172 200 L154 300 Q150 318 166 328 L366 436 Q380 444 380 428 L380 360"
-          stroke={c.frameHi}
-          strokeWidth={6}
-        />
-      </g>
+      {frame && (
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+          {/* 左邊斜桿往下、底桿斜過去，右邊直直往上接到右翼底下 */}
+          <path
+            d="M172 200 L154 300 Q150 318 166 328 L366 436 Q380 444 380 428 L380 360"
+            stroke={c.frame}
+            strokeWidth={22}
+          />
+          <path
+            d="M172 200 L154 300 Q150 318 166 328 L366 436 Q380 444 380 428 L380 360"
+            stroke={c.frameHi}
+            strokeWidth={6}
+          />
+        </g>
+      )}
 
       {/* 左翼：受光面 */}
       <path

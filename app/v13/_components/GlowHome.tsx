@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
-import GliderSvg from "./GliderSvg";
+import GliderSvg, { GLIDER_GLOW } from "./GliderSvg";
 import { CLOUD_MS } from "./HomeSky";
 
 // 光暈版首頁（?home=glow）：延續開場畫面的風格。整個畫面鋪滿靜態的品牌紅漸層
@@ -147,7 +147,13 @@ export default function GlowHome({
             </svg>
           </div>
           <div className="glider-float relative">
-            <GliderSvg tone="white" className="block h-auto w-full" />
+            {/* 白色機身外圍一圈柔和的光暈，像開場畫面那顆發光的 logo mark */}
+            <GliderSvg
+              tone="white"
+              frame={false}
+              className="block h-auto w-full"
+              style={GLIDER_GLOW}
+            />
           </div>
         </div>
       </div>
