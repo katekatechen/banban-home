@@ -831,6 +831,8 @@ export default function V13HomePage() {
             intro={playIntro}
             theme={skyTheme}
             planeHandoff={splash === "leaving"}
+            pull={homeReveal}
+            pullDragging={homePull > 0 && !homeHistoryShown}
           />
         ))}
 

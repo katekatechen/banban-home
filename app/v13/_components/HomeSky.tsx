@@ -139,7 +139,14 @@ export default function HomeSky({
   intro,
   theme,
   planeHandoff = false,
+  pull = 0,
+  pullDragging = false,
 }: {
+  // 首頁下拉的進度（0～1）：雲、飛機、暖光各自往下移不同距離，做出視差。
+  // 俯視的角度，越靠近鏡頭的移得越多：雲（最近）> 飛機（在雲底下）> 暖光、海面
+  pull?: number;
+  // 手指還在拖：跟著手指走、不要過場；放開後才彈回去
+  pullDragging?: boolean;
   // 開場畫面的 logo mark 正飛過來變成滑翔翼：這段期間首頁自己的飛機先藏著、
   // 直接停在定位，等開場畫面收掉（這個值變回 false）才現身接手
   planeHandoff?: boolean;
@@ -236,6 +243,12 @@ export default function HomeSky({
   // 進場時等雲快升到定位（約九成）才起飛，不然飛機會在雲還沒蓋到的地方露出來
   const planeDelay = entering ? 600 : 250;
 
+  // 視差：每一層各自往下移 pull × 距離
+  const parallax = (px: number): React.CSSProperties => ({
+    transform: `translateY(${pull * px}px)`,
+    transition: pullDragging ? "none" : `transform 320ms ${EASING}`,
+  });
+
   return (
     <div
       aria-hidden
@@ -252,120 +265,126 @@ export default function HomeSky({
       />
 
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
-        {/* 品牌色的暖光：延續開場畫面的光團，在雲後面、地平線附近，像太陽剛升起；
+        <div className="absolute inset-0" style={parallax(4)}>
+          {/* 品牌色的暖光：延續開場畫面的光團，在雲後面、地平線附近，像太陽剛升起；
             跟開場畫面同樣 5 秒一次慢慢呼吸。強弱跟著時段 */}
-        <div
-          data-warm-glow
-          className="warm-glow absolute left-[56%] top-[70%] aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            background: `radial-gradient(closest-side, ${theme.warmGlow[0]}, ${theme.warmGlow[1]} 45%, transparent 100%)`,
-            opacity: phase === "pre" ? 0 : 1,
-            transition: reduce || jump ? "none" : "opacity 900ms ease 200ms",
-          }}
-        />
+          <div
+            data-warm-glow
+            className="warm-glow absolute left-[56%] top-[70%] aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              background: `radial-gradient(closest-side, ${theme.warmGlow[0]}, ${theme.warmGlow[1]} 45%, transparent 100%)`,
+              opacity: phase === "pre" ? 0 : 1,
+              transition: reduce || jump ? "none" : "opacity 900ms ease 200ms",
+            }}
+          />
+        </div>
         {/* 飛機停好的位置（不跟著動）：開場畫面要量這裡，把 logo mark 飛過來 */}
         <div
           data-glider-anchor
           className="pointer-events-none absolute left-[50.53%] top-[48.23%] aspect-[600/488] w-[17.85%]"
         />
-        {theme.glints &&
-          GLINTS.map(([x, y, size, delay]) => (
-            <span
-              key={`${x}-${y}`}
-              className="sea-glint absolute rounded-full bg-white"
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                width: size * 1.6,
-                height: size,
-                animationDelay: `${delay}s`,
-              }}
-            />
-          ))}
-        {/* 滑翔翼：外層管進場、送出時飛走；裡面的飛機跟影子各自跑常駐的浮動。
+        <div className="absolute inset-0" style={parallax(12)}>
+          {theme.glints &&
+            GLINTS.map(([x, y, size, delay]) => (
+              <span
+                key={`${x}-${y}`}
+                className="sea-glint absolute rounded-full bg-white"
+                style={{
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  width: size * 1.6,
+                  height: size,
+                  animationDelay: `${delay}s`,
+                }}
+              />
+            ))}
+          {/* 滑翔翼：外層管進場、送出時飛走；裡面的飛機跟影子各自跑常駐的浮動。
             俯視的角度，影子落在下方的海面上：飛機往上飄（離鏡頭近一點、稍微放大）時，
             影子離得遠一點、變淡變小，像真的拉開了高度。
             飛機要從雲底下鑽出來，所以放在雲層後面 */}
-        <div
-          className="absolute left-[50.53%] top-[48.23%] w-[17.85%]"
-          style={{
-            // 進場前（雲還在畫面外）先藏起來，其他時候都在，靠雲擋住
-            opacity: fromSplash
-              ? planeHandoff
-                ? 0
-                : 1
-              : phase === "rest"
-                ? 1
-                : 0,
-            transform: fromSplash ? "translate(0, 0)" : planeTransform,
-            transition:
-              fromSplash || reduce || jump
-                ? "none"
-                : covered
-                  ? // 等雲把畫面蓋白了，才把飛機悄悄搬回雲底下
-                    `transform 0ms linear ${CLOUD_MS}ms`
-                  : `transform 1300ms ${EASING} ${planeDelay}ms, opacity 0ms linear ${planeDelay}ms`,
-          }}
-        >
-          {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
           <div
-            className="absolute inset-0"
+            className="absolute left-[50.53%] top-[48.23%] w-[17.85%]"
             style={{
-              // 從開場畫面接手時，影子等飛機落定才慢慢浮出來
-              opacity: fromSplash && planeHandoff ? 0 : theme.shadow,
-              transition: "opacity 600ms ease",
+              // 進場前（雲還在畫面外）先藏起來，其他時候都在，靠雲擋住
+              opacity: fromSplash
+                ? planeHandoff
+                  ? 0
+                  : 1
+                : phase === "rest"
+                  ? 1
+                  : 0,
+              transform: fromSplash ? "translate(0, 0)" : planeTransform,
+              transition:
+                fromSplash || reduce || jump
+                  ? "none"
+                  : covered
+                    ? // 等雲把畫面蓋白了，才把飛機悄悄搬回雲底下
+                      `transform 0ms linear ${CLOUD_MS}ms`
+                    : `transform 1300ms ${EASING} ${planeDelay}ms, opacity 0ms linear ${planeDelay}ms`,
             }}
           >
-            {/* 圓角三角形：用同色的粗描邊配圓角接點把三個角磨圓，
-                頂點往內縮一點，抵掉描邊多出來的寬度 */}
-            <svg
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              className="glider-shadow absolute inset-0 size-full overflow-visible"
+            {/* 影子只取機翼的大三角形輪廓，不畫骨架細節 */}
+            <div
+              className="absolute inset-0"
+              style={{
+                // 從開場畫面接手時，影子等飛機落定才慢慢浮出來
+                opacity: fromSplash && planeHandoff ? 0 : theme.shadow,
+                transition: "opacity 600ms ease",
+              }}
             >
-              <polygon
-                points="7,21 94,7 90,92"
-                fill="#0b3a4a"
-                stroke="#0b3a4a"
-                strokeWidth={10}
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="glider-float relative">
-            {vectorPlane ? (
-              <GliderSvg frame={false} className="block h-auto w-full" />
-            ) : (
-              <img
-                src="/figma/v13-home-plane-2.png"
-                alt=""
-                className="block w-full"
-              />
-            )}
-            {/* 夜晚機翼尖端的閃燈 */}
-            {theme.glints && (
-              <span className="glider-light absolute left-[3%] top-[19%] size-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff5a5a]" />
-            )}
+              {/* 圓角三角形：用同色的粗描邊配圓角接點把三個角磨圓，
+                頂點往內縮一點，抵掉描邊多出來的寬度 */}
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="glider-shadow absolute inset-0 size-full overflow-visible"
+              >
+                <polygon
+                  points="7,21 94,7 90,92"
+                  fill="#0b3a4a"
+                  stroke="#0b3a4a"
+                  strokeWidth={10}
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="glider-float relative">
+              {vectorPlane ? (
+                <GliderSvg frame={false} className="block h-auto w-full" />
+              ) : (
+                <img
+                  src="/figma/v13-home-plane-2.png"
+                  alt=""
+                  className="block w-full"
+                />
+              )}
+              {/* 夜晚機翼尖端的閃燈 */}
+              {theme.glints && (
+                <span className="glider-light absolute left-[3%] top-[19%] size-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff5a5a]" />
+              )}
+            </div>
           </div>
         </div>
 
-        <div
-          className="absolute inset-x-0 top-0 will-change-transform"
-          style={{
-            transform: `translateY(${cloudY})`,
-            transition:
-              cloudTransition === "none"
-                ? "none"
-                : `${cloudTransition} ${covered ? "0ms" : "90ms"}`,
-          }}
-        >
-          <CloudLayer
-            puffs={FRONT_PUFFS}
-            fill={covered ? "#ffffff" : theme.front.fill}
-            shade={covered ? "#ffffff" : theme.front.shade}
-            floor={590}
-            colorTransition={colorTransition}
-          />
+        <div className="absolute inset-0" style={parallax(30)}>
+          <div
+            className="absolute inset-x-0 top-0 will-change-transform"
+            style={{
+              transform: `translateY(${cloudY})`,
+              transition:
+                cloudTransition === "none"
+                  ? "none"
+                  : `${cloudTransition} ${covered ? "0ms" : "90ms"}`,
+            }}
+          >
+            <CloudLayer
+              puffs={FRONT_PUFFS}
+              fill={covered ? "#ffffff" : theme.front.fill}
+              shade={covered ? "#ffffff" : theme.front.shade}
+              floor={590}
+              colorTransition={colorTransition}
+            />
+          </div>
         </div>
       </div>
     </div>
