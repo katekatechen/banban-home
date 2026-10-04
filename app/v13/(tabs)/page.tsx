@@ -164,7 +164,7 @@ export default function V13HomePage() {
     const t1 = window.setTimeout(() => setSplash("leaving"), SPLASH_HOLD_MS);
     const t2 = window.setTimeout(
       () => setSplash("done"),
-      SPLASH_HOLD_MS + SPLASH_EXIT_MS + 200,
+      SPLASH_HOLD_MS + SPLASH_EXIT_MS + 60,
     );
     return () => {
       window.clearTimeout(t1);
@@ -809,7 +809,12 @@ export default function V13HomePage() {
       {splash !== "done" && <Splash leaving={splash === "leaving"} />}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
       {splash !== "show" && (
-        <HomeSky covered={chatOpen} intro={playIntro} theme={skyTheme} />
+        <HomeSky
+          covered={chatOpen}
+          intro={playIntro}
+          theme={skyTheme}
+          planeHandoff={splash === "leaving"}
+        />
       )}
 
       <div className="relative flex shrink-0 flex-col">
