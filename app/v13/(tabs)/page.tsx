@@ -6,6 +6,7 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
+import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
 import {
   SKY_THEMES,
   greetingOf,
@@ -153,6 +154,24 @@ export default function V13HomePage() {
   const [chat] = useState(loadChat);
   const [chatOpen, setChatOpen] = useState(chat.open);
   const [playIntro] = useState(() => !chat.open && !heroIntroPlayed);
+  // 開場畫面：跟首頁進場動畫一樣，只在打開頁面後第一次看到首頁時出現。
+  // show（停 2 秒）→ leaving（淡出，同時首頁開始進場）→ done
+  const [splash, setSplash] = useState<"show" | "leaving" | "done">(() =>
+    playIntro ? "show" : "done",
+  );
+  useEffect(() => {
+    if (splash !== "show") return;
+    const t1 = window.setTimeout(() => setSplash("leaving"), SPLASH_HOLD_MS);
+    const t2 = window.setTimeout(
+      () => setSplash("done"),
+      SPLASH_HOLD_MS + SPLASH_EXIT_MS + 200,
+    );
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // 首頁插圖的時段（清晨／白天／黃昏／夜晚）。第一次載入時伺服器不知道使用者的時間，
   // 先用白天畫，掛載後才換成真正的時段（天空這時還是全白、正要淡入，看不出切換）；
   // 切分頁回來直接沿用算過的時段
@@ -560,13 +579,18 @@ export default function V13HomePage() {
   // 不然狀態列會比畫面先變白。回首頁時雲是從上面開始往下退，立刻換回藍色。
   // 離開聊天分頁時也還原成白色
   useEffect(() => {
+    // 開場畫面是白底，狀態列先維持白色
+    if (splash === "show") {
+      setTopTint(null);
+      return;
+    }
     if (!chatOpen) {
       setTopTint(skyTheme.top);
       return;
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
     return () => window.clearTimeout(t);
-  }, [chatOpen, skyTheme.top]);
+  }, [chatOpen, skyTheme.top, splash]);
   useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
@@ -782,7 +806,11 @@ export default function V13HomePage() {
       onWheel={(e) => homeWheel(e.deltaY)}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      <HomeSky covered={chatOpen} intro={playIntro} theme={skyTheme} />
+      {splash !== "done" && <Splash leaving={splash === "leaving"} />}
+      {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
+      {splash !== "show" && (
+        <HomeSky covered={chatOpen} intro={playIntro} theme={skyTheme} />
+      )}
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar light={lightHeader} />
@@ -875,41 +903,43 @@ export default function V13HomePage() {
         )}
         {/* 開場招呼語：疊在天空上，只在首頁出現，送出後淡出、讓雲蓋過去。
             外層管淡出，內層管載入時浮上來（animation 的 fill 會蓋掉 opacity，要分開兩層） */}
-        <div
-          aria-hidden={chatOpen}
-          className="pointer-events-none absolute inset-x-0 top-full z-10 p-4"
-          style={{
-            opacity: chatOpen ? 0 : 1,
-            // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
-            transform: `translateY(${homeReveal * 52}px)`,
-            transition:
-              homePull > 0 && !homeHistoryShown
-                ? fade
-                : `${fade}, transform 300ms ${EASING}`,
-          }}
-        >
+        {splash !== "show" && (
           <div
-            className="flex flex-col gap-1"
+            aria-hidden={chatOpen}
+            className="pointer-events-none absolute inset-x-0 top-full z-10 p-4"
             style={{
-              animation: playIntro
-                ? `heroGreetIn 600ms ${EASING} 300ms both`
-                : undefined,
+              opacity: chatOpen ? 0 : 1,
+              // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
+              transform: `translateY(${homeReveal * 52}px)`,
+              transition:
+                homePull > 0 && !homeHistoryShown
+                  ? fade
+                  : `${fade}, transform 300ms ${EASING}`,
             }}
           >
-            <p
-              className="text-[24px] font-bold leading-[1.4]"
-              style={{ color: skyTheme.darkGreeting ? "#1e2939" : "#ffffff" }}
+            <div
+              className="flex flex-col gap-1"
+              style={{
+                animation: playIntro
+                  ? `heroGreetIn 600ms ${EASING} 300ms both`
+                  : undefined,
+              }}
             >
-              {greetingOf(time.period, time.hour)}
-            </p>
-            <p
-              className="text-[14px] leading-[18px]"
-              style={{ color: skyTheme.darkGreeting ? "#4a5565" : "#ffffff" }}
-            >
-              賺回饋，買東西，我都很在行
-            </p>
+              <p
+                className="text-[24px] font-bold leading-[1.4]"
+                style={{ color: skyTheme.darkGreeting ? "#1e2939" : "#ffffff" }}
+              >
+                {greetingOf(time.period, time.hour)}
+              </p>
+              <p
+                className="text-[14px] leading-[18px]"
+                style={{ color: skyTheme.darkGreeting ? "#4a5565" : "#ffffff" }}
+              >
+                賺回饋，買東西，我都很在行
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div

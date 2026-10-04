@@ -435,3 +435,34 @@ body {
     transform: translateY(calc(var(--dy) + 6px));
   }
 }
+
+/* v13 開場畫面：光團跟 logo 從小放大浮出來，光團後面慢慢轉、輕輕呼吸 */
+.splash-in {
+  animation: splashIn 700ms cubic-bezier(0.2, 0.9, 0.25, 1) backwards;
+}
+@keyframes splashIn {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.splash-blob {
+  animation: splashSpin 5s linear infinite;
+}
+@keyframes splashSpin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-in,
+  .splash-blob {
+    animation: none;
+  }
+}
