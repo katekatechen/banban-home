@@ -54,15 +54,6 @@ const FRONT_PUFFS: Puff[] = [
   [362, 552, 30],
 ];
 
-// 遠景：比前景高一點、顏色偏藍，從前景後面探出頭
-const BACK_PUFFS: Puff[] = [
-  [378, 426, 27],
-  [351, 451, 20],
-  [36, 408, 40],
-  [92, 430, 32],
-  [142, 462, 28],
-];
-
 // 夜晚海面上的月光閃點：位置寫死（百分比，相對 375×620 的框），避免伺服器跟瀏覽器算出來不一樣
 const GLINTS: [x: number, y: number, size: number, delay: number][] = [
   [12, 30, 2, 0],
@@ -214,7 +205,6 @@ export default function HomeSky({
   // 雲的三個位置（百分比是相對 SVG 自己的高度，375×2400）：
   // 載入前在畫面下方外面、平常在 Figma 的位置、送出後往上推到蓋滿畫面
   const cloudY = covered ? "-30%" : phase === "rest" ? "0%" : "28%";
-  const backY = covered ? "-29%" : phase === "rest" ? "0%" : "30%";
   // 雲上下移動都用很明顯的 ease in out：慢慢起步、中段衝過去、最後慢慢停住
   const cloudTransition =
     reduce || jump
@@ -352,21 +342,6 @@ export default function HomeSky({
           </div>
         </div>
 
-        {/* 遠景的雲：位置高一點、偏藍，升起的距離也不同，做出前後的層次 */}
-        <div
-          className="absolute inset-x-0 top-0 will-change-transform"
-          style={{
-            transform: `translateY(${backY})`,
-            transition: cloudTransition,
-          }}
-        >
-          <CloudLayer
-            puffs={BACK_PUFFS}
-            fill={covered ? "#ffffff" : theme.back.fill}
-            shade={covered ? "#ffffff" : theme.back.shade}
-            colorTransition={colorTransition}
-          />
-        </div>
         <div
           className="absolute inset-x-0 top-0 will-change-transform"
           style={{
