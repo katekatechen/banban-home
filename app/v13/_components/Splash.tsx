@@ -69,7 +69,7 @@ export default function Splash({ leaving }: { leaving: boolean }) {
         </div>
         <svg
           viewBox="0 0 21 18"
-          className="absolute left-1/2 top-1/2 w-[46px]"
+          className="absolute left-1/2 top-1/2 w-[48.3px]"
           style={{
             transform: leaving
               ? "translate(-50%, -50%) scale(0.8)"
