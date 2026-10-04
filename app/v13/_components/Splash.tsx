@@ -39,7 +39,7 @@ const MARK_W = 48.3;
 
 export default function Splash({ leaving }: { leaving: boolean }) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
-  const [vectorPlane, setVectorPlane] = useState(false);
+  const [vectorPlane, setVectorPlane] = useState(true);
   // 光暈版首頁：飛過去的是白色滑翔翼
   const [glow, setGlow] = useState(false);
   // 量好首頁飛機、暖光的位置後才開始飛（先停一幀在起點，過場才看得到）
@@ -49,7 +49,7 @@ export default function Splash({ leaving }: { leaving: boolean }) {
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
     setVectorPlane(
-      new URLSearchParams(window.location.search).get("plane") === "svg",
+      new URLSearchParams(window.location.search).get("plane") !== "png",
     );
     setGlow(resolveHomeVariant() === "glow");
   }, []);
@@ -164,7 +164,7 @@ export default function Splash({ leaving }: { leaving: boolean }) {
                 className="block h-auto w-full"
               />
             ) : vectorPlane ? (
-              <GliderSvg className="block h-auto w-full" />
+              <GliderSvg frame={false} className="block h-auto w-full" />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img

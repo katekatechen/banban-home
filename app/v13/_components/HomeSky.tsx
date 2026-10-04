@@ -154,11 +154,11 @@ export default function HomeSky({
   // 這一幀不要過場：回首頁時先把雲瞬間搬回畫面下方（這時畫面還是白的，看不出來）
   const [jump, setJump] = useState(false);
   const timers = useRef<number[]>([]);
-  // 比較用：網址加 ?plane=svg 換成程式畫的扁平滑翔翼，預設還是圖檔
-  const [vectorPlane, setVectorPlane] = useState(false);
+  // 滑翔翼預設是程式畫的扁平版（沒有骨架）；比較用：網址加 ?plane=png 換回原本的圖檔
+  const [vectorPlane, setVectorPlane] = useState(true);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("plane") === "svg")
-      setVectorPlane(true);
+    if (new URLSearchParams(window.location.search).get("plane") === "png")
+      setVectorPlane(false);
   }, []);
 
   // 進場：天空從白淡入，雲從畫面下方升上來，飛機最後從雲底下鑽出來
@@ -327,7 +327,7 @@ export default function HomeSky({
           </div>
           <div className="glider-float relative">
             {vectorPlane ? (
-              <GliderSvg className="block h-auto w-full" />
+              <GliderSvg frame={false} className="block h-auto w-full" />
             ) : (
               <img
                 src="/figma/v13-home-plane-2.png"
