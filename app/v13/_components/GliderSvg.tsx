@@ -6,12 +6,6 @@ const NOSE = "595 3";
 
 // 兩套配色：red 是首頁原本的品牌紅；white 給「光暈版」首頁用，
 // 白色機身疊在紅色光團上，跟開場畫面的白色 logo mark 一致
-// 光暈版的白色滑翔翼外圍那圈光
-export const GLIDER_GLOW: React.CSSProperties = {
-  filter:
-    "drop-shadow(0 0 6px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 18px rgba(255, 236, 228, 0.7))",
-};
-
 const TONES = {
   red: {
     frame: "#56769a",

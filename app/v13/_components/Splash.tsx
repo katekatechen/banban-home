@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import GliderSvg, { GLIDER_GLOW } from "./GliderSvg";
+import GliderSvg from "./GliderSvg";
 import { resolveHomeVariant } from "../_lib/home-variant";
 
 // 開場畫面（launch screen）：白底中間一顆白色的 AIFIAN logo mark，
@@ -162,7 +162,6 @@ export default function Splash({ leaving }: { leaving: boolean }) {
                 tone="white"
                 frame={false}
                 className="block h-auto w-full"
-                style={GLIDER_GLOW}
               />
             ) : vectorPlane ? (
               <GliderSvg className="block h-auto w-full" />
