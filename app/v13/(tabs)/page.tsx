@@ -6,6 +6,8 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
+import GlowHome from "../_components/GlowHome";
+import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
 import {
   SKY_THEMES,
@@ -181,8 +183,16 @@ export default function V13HomePage() {
   useEffect(() => {
     setTime(resolveTime());
   }, []);
+  // 首頁插圖的版本（天空版／光暈版，?home=glow），跟時段一樣掛載後才讀網址
+  const [variant, setVariant] = useState(() => knownHomeVariant() ?? "sky");
+  useEffect(() => {
+    setVariant(resolveHomeVariant());
+  }, []);
+  const glowHome = variant === "glow";
   const skyTheme = SKY_THEMES[time.period];
-  const lightHeader = skyTheme.lightHeader && !chatOpen;
+  // 光暈版是白底：logo、招呼語都用深色，狀態列白色
+  const lightHeader = !glowHome && skyTheme.lightHeader && !chatOpen;
+  const darkGreeting = glowHome || skyTheme.darkGreeting;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
@@ -585,12 +595,12 @@ export default function V13HomePage() {
       return;
     }
     if (!chatOpen) {
-      setTopTint(skyTheme.top);
+      setTopTint(glowHome ? null : skyTheme.top);
       return;
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
     return () => window.clearTimeout(t);
-  }, [chatOpen, skyTheme.top, splash]);
+  }, [chatOpen, skyTheme.top, splash, glowHome]);
   useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
@@ -808,14 +818,21 @@ export default function V13HomePage() {
     >
       {splash !== "done" && <Splash leaving={splash === "leaving"} />}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
-      {splash !== "show" && (
-        <HomeSky
-          covered={chatOpen}
-          intro={playIntro}
-          theme={skyTheme}
-          planeHandoff={splash === "leaving"}
-        />
-      )}
+      {splash !== "show" &&
+        (glowHome ? (
+          <GlowHome
+            covered={chatOpen}
+            intro={playIntro}
+            planeHandoff={splash === "leaving"}
+          />
+        ) : (
+          <HomeSky
+            covered={chatOpen}
+            intro={playIntro}
+            theme={skyTheme}
+            planeHandoff={splash === "leaving"}
+          />
+        ))}
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar light={lightHeader} />
@@ -932,13 +949,13 @@ export default function V13HomePage() {
             >
               <p
                 className="text-[24px] font-bold leading-[1.4]"
-                style={{ color: skyTheme.darkGreeting ? "#1e2939" : "#ffffff" }}
+                style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
               >
                 {greetingOf(time.period, time.hour)}
               </p>
               <p
                 className="text-[14px] leading-[18px]"
-                style={{ color: skyTheme.darkGreeting ? "#4a5565" : "#ffffff" }}
+                style={{ color: darkGreeting ? "#4a5565" : "#ffffff" }}
               >
                 賺回饋，買東西，我都很在行
               </p>

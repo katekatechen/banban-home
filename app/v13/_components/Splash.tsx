@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import GliderSvg from "./GliderSvg";
+import { resolveHomeVariant } from "../_lib/home-variant";
 
 // 開場畫面（launch screen）：白底中間一顆白色的 AIFIAN logo mark，
 // 後面墊一團模糊、慢慢旋轉的品牌色光。
@@ -24,7 +25,7 @@ const MARK_PATH =
 
 // 光團：以品牌紅 #ff3030 為主，搭配同色系的珊瑚橘、粉紅跟深一點的洋紅，
 // 幾顆圓錯開擺、整團一起轉，紅色就會在 logo 後面流動
-const BLOBS: [x: number, y: number, size: number, color: string][] = [
+export const BLOBS: [x: number, y: number, size: number, color: string][] = [
   [-12, -14, 78, "#ff3030"],
   [16, -10, 66, "#ff7a45"],
   [12, 16, 74, "#ff3d6e"],
@@ -39,6 +40,8 @@ const MARK_W = 48.3;
 export default function Splash({ leaving }: { leaving: boolean }) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
   const [vectorPlane, setVectorPlane] = useState(false);
+  // 光暈版首頁：飛過去的是白色滑翔翼
+  const [glow, setGlow] = useState(false);
   // 量好首頁飛機、暖光的位置後才開始飛（先停一幀在起點，過場才看得到）
   const [flight, setFlight] = useState<Flight | null>(null);
   const [flying, setFlying] = useState(false);
@@ -48,6 +51,7 @@ export default function Splash({ leaving }: { leaving: boolean }) {
     setVectorPlane(
       new URLSearchParams(window.location.search).get("plane") === "svg",
     );
+    setGlow(resolveHomeVariant() === "glow");
   }, []);
 
   useEffect(() => {
@@ -94,7 +98,7 @@ export default function Splash({ leaving }: { leaving: boolean }) {
           className="splash-in relative -ml-[75px] -mt-[75px] size-[150px]"
           style={{
             transform: fly
-              ? `translateY(${flight.glowDy}px) scale(3.2)`
+              ? `translateY(${flight.glowDy}px) scale(${glow ? 2 : 3.2})`
               : "translateY(0) scale(1)",
             opacity: fly ? 0 : 1,
             transition: `transform ${t(SPLASH_EXIT_MS)}, opacity ${t(SPLASH_EXIT_MS * 0.8, 120, "ease")}`,
@@ -153,7 +157,9 @@ export default function Splash({ leaving }: { leaving: boolean }) {
               transition: `transform ${t(SPLASH_EXIT_MS)}, opacity ${t(SPLASH_EXIT_MS * 0.45, SPLASH_EXIT_MS * 0.15, "ease")}`,
             }}
           >
-            {vectorPlane ? (
+            {glow ? (
+              <GliderSvg tone="white" className="block h-auto w-full" />
+            ) : vectorPlane ? (
               <GliderSvg className="block h-auto w-full" />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
