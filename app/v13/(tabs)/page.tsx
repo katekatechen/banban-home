@@ -178,7 +178,12 @@ export default function V13HomePage() {
   // 先用白天畫，掛載後才換成真正的時段（天空這時還是全白、正要淡入，看不出切換）；
   // 切分頁回來直接沿用算過的時段
   const [time, setTime] = useState(
-    () => knownTime() ?? { period: "day" as const, hour: 12 },
+    () =>
+      knownTime() ?? {
+        period: "day" as const,
+        greet: "day" as const,
+        hour: 12,
+      },
   );
   useEffect(() => {
     setTime(resolveTime());
@@ -953,7 +958,7 @@ export default function V13HomePage() {
                 className="text-[24px] font-bold leading-[1.4]"
                 style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
               >
-                {greetingOf(time.period, time.hour)}
+                {greetingOf(time.greet, time.hour)}
               </p>
               <p
                 className="text-[14px] leading-[18px]"
