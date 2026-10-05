@@ -846,20 +846,45 @@ export default function V13HomePage() {
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar light={lightHeader} />
-        <div className="flex h-11 items-center justify-between px-4">
-          <button onClick={closeChat} aria-label="AIFIAN 首頁">
+        <div className="relative flex h-11 items-center justify-between px-4">
+          <button
+            onClick={closeChat}
+            aria-label="AIFIAN 首頁"
+            // 光暈版：logo 置中（購物車還是在右邊）
+            className={
+              glowHome
+                ? "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                : "relative"
+            }
+          >
             <img
               src="/figma/v13-logo.svg"
               alt="AIFIAN"
               className="h-7 w-auto"
-              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回原色
+              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回原色。
+              // 光暈版進入對話時換成 logo mark，這張淡掉
               style={{
                 filter: lightHeader ? "brightness(0) invert(1)" : "none",
+                opacity: glowHome && chatOpen ? 0 : 1,
                 // 送出時等雲推到頂端才換回深色，不然會先壓在深藍天空上
-                transition: `filter 300ms ease ${lightHeader ? 0 : CLOUD_MS * 0.55}ms`,
+                transition: `filter 300ms ease ${lightHeader ? 0 : CLOUD_MS * 0.55}ms, opacity ${MODE_TRANSITION_MS}ms ease`,
               }}
             />
+            {glowHome && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/figma/v13-logo-mark-red.svg"
+                alt=""
+                className="absolute left-1/2 top-1/2 h-6 w-auto"
+                style={{
+                  opacity: chatOpen ? 1 : 0,
+                  transform: `translate(-50%, -50%) scale(${chatOpen ? 1 : 0.8})`,
+                  transition: `opacity ${MODE_TRANSITION_MS}ms ease, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
+                }}
+              />
+            )}
           </button>
+          {glowHome && <span />}
           <button
             aria-label="購物車"
             tabIndex={showCart ? 0 : -1}
