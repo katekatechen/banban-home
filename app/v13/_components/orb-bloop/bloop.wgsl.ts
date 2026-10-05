@@ -1,4 +1,4 @@
-// Bloop orb 的 WGSL shader，原封不動取自 Space UI（MIT 授權）
+// Bloop orb 的 WGSL shader，取自 Space UI（MIT 授權）；只改了 listenDist（標 AIFIAN 改）
 // https://github.com/usespaceui/ui/blob/main/src/registry/components/orb/bloop/bloop.wgsl.ts
 
 export const BLOOP_WGSL = /* wgsl */ `
@@ -192,11 +192,8 @@ fn idleDist(st: vec2f, time: f32) -> f32 {
 }
 
 fn listenDist(st: vec2f, duration: f32, time: f32, mic: f32) -> f32 {
-  let breathingSequence = sin(time) * 0.5 + 0.5;
-  let entryAnimation = fixedSpring(scaled(0.0, 3.0, duration), 0.9);
-  let l1 = mic;
-  var radius = 0.38 + l1 * 0.05 + breathingSequence * 0.03;
-  radius *= 1.0 - (1.0 - entryAnimation) * 0.25;
+  // AIFIAN 改：首頁的球大小固定，不跟著呼吸、聲音或進場放大縮小，只留球裡的紋理流動
+  let radius = 0.42;
   return length(st) - radius;
 }
 

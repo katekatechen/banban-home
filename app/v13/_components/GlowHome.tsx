@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import GliderSvg from "./GliderSvg";
-import { CLOUD_MS } from "./HomeSky";
 import OrbBloop, { hexToRgb } from "./orb-bloop/OrbBloop";
 
 // 光暈版首頁（?home=glow）：延續開場畫面的風格。白底上，
@@ -13,7 +12,7 @@ import OrbBloop, { hexToRgb } from "./orb-bloop/OrbBloop";
 //
 // 座標系跟 HomeSky 一樣是 375×620、往上偏 19px 的框；開場畫面會量這裡的
 // data-glider-anchor、data-warm-glow，把 logo mark、光團飛過來接手。
-// 送出時光球放大淡掉、飛機往右上飛走，留下白底接到對話；回首頁時再重新浮出來
+// 送出時光球淡掉、飛機往右上飛走，留下白底接到對話；回首頁時再重新浮出來
 const PLANE = { w: 17.85, cy: 52.6 };
 // 光球、飛機的中心（框的 %）：水平置中
 const CENTER = { x: 50, y: PLANE.cy };
@@ -114,15 +113,16 @@ export default function GlowHome({
           style={{
             left: `${CENTER.x}%`,
             top: `${CENTER.y}%`,
-            transform: `translate(-50%, -50%) scale(${visible ? 1 : covered ? 1.3 : 0.6})`,
+            // 只淡入淡出，不放大縮小
+            transform: "translate(-50%, -50%)",
             opacity: visible ? 1 : 0,
             transition: reduce
               ? "none"
-              : `transform ${covered ? CLOUD_MS : 1100}ms ${EASING}, opacity ${covered ? 500 : 800}ms ease`,
+              : `opacity ${covered ? 500 : 800}ms ease`,
           }}
         >
-          {/* listen 狀態：球直接長到完整大小，邊緣跟著模擬的聲音輕輕起伏，
-              像伴伴正在等你開口（idle 會先縮成小點、十幾秒才慢慢長大，還會一直明暗閃） */}
+          {/* listen 狀態：球一出現就是完整大小、不會明暗閃（idle 會先縮成小點再慢慢長大）；
+              大小固定（shader 裡改過），只有球裡的紋理在流動 */}
           {orbSize > 0 && (
             <OrbBloop
               size={orbSize}
