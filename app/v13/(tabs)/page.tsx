@@ -850,11 +850,16 @@ export default function V13HomePage() {
           <button
             onClick={closeChat}
             aria-label="AIFIAN 首頁"
-            // 光暈版：logo 置中（購物車還是在右邊）
-            className={
+            // 光暈版：首頁時 logo 置中（購物車還是在右邊）；進入對話後滑到左邊、換成 logo mark
+            className={glowHome ? "absolute top-1/2" : "relative"}
+            style={
               glowHome
-                ? "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                : "relative"
+                ? {
+                    left: chatOpen ? 16 : "50%",
+                    transform: `translate(${chatOpen ? "0" : "-50%"}, -50%)`,
+                    transition: `left ${MODE_TRANSITION_MS}ms ${EASING}, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
+                  }
+                : undefined
             }
           >
             <img
@@ -875,10 +880,10 @@ export default function V13HomePage() {
               <img
                 src="/figma/v13-logo-mark-red.svg"
                 alt=""
-                className="absolute left-1/2 top-1/2 h-6 w-auto"
+                className="absolute left-0 top-1/2 h-6 w-auto origin-left"
                 style={{
                   opacity: chatOpen ? 1 : 0,
-                  transform: `translate(-50%, -50%) scale(${chatOpen ? 1 : 0.8})`,
+                  transform: `translateY(-50%) scale(${chatOpen ? 1 : 0.8})`,
                   transition: `opacity ${MODE_TRANSITION_MS}ms ease, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
                 }}
               />
