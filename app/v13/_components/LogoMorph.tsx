@@ -12,7 +12,7 @@ import SvgPath from "svgpath";
 // mark 放大到 24px 高、貼齊左邊，跟對話裡原本 h-6 的 mark 一樣大
 const W = 95.4393;
 const H = 28;
-const MS = 720;
+const MS = 950;
 
 // 第一個 A 以外的字母，依「先縮進去的」排序（從右到左），附上每個字母的中心 x
 const LETTERS: [d: string, cx: number][] = [
@@ -55,6 +55,8 @@ const morph = interpolate(A_OUTER, MARK, { maxSegmentLength: 1 });
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 const easeInOut = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeInOutQuart = (t: number) =>
+  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 
 export default function LogoMorph({
   mark,
@@ -68,7 +70,7 @@ export default function LogoMorph({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  // p：0 是完整字樣、1 是 mark。每一格往目標推進，中途反向也接得上
+  // p：0 是完整字樣、1 是 mark
   const [p, setP] = useState(mark ? 1 : 0);
   const pRef = useRef(p);
   useEffect(() => {
@@ -78,19 +80,19 @@ export default function LogoMorph({
       setP(target);
       return;
     }
+    // 整段用 ease in out 推進：起步慢、中段快、最後慢慢停住。
+    // 從目前的位置出發（中途反向也接得上），時間依剩下的距離等比縮短
     let raf = 0;
-    let last = performance.now();
+    const from = pRef.current;
+    const dist = Math.abs(target - from);
+    const duration = MS * dist;
+    const start = performance.now();
     const tick = (now: number) => {
-      const dt = now - last;
-      last = now;
-      const cur = pRef.current;
-      const next =
-        target > cur
-          ? Math.min(target, cur + dt / MS)
-          : Math.max(target, cur - dt / MS);
+      const t = duration > 0 ? clamp((now - start) / duration) : 1;
+      const next = from + (target - from) * easeInOutQuart(t);
       pRef.current = next;
       setP(next);
-      if (next !== target) raf = requestAnimationFrame(tick);
+      if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
