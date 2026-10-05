@@ -6,9 +6,12 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
-import GlowHome, { GLOW_TOP } from "../_components/GlowHome";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
-import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
+import Splash, {
+  BrandGlow,
+  SPLASH_EXIT_MS,
+  SPLASH_HOLD_MS,
+} from "../_components/Splash";
 import {
   SKY_THEMES,
   greetingOf,
@@ -600,7 +603,7 @@ export default function V13HomePage() {
       return;
     }
     if (!chatOpen) {
-      setTopTint(glowHome ? GLOW_TOP : skyTheme.top);
+      setTopTint(glowHome ? null : skyTheme.top);
       return;
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
@@ -829,13 +832,8 @@ export default function V13HomePage() {
       )}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
       {splash !== "show" &&
-        (glowHome ? (
-          <GlowHome
-            covered={chatOpen}
-            intro={playIntro}
-            planeHandoff={splash === "leaving"}
-          />
-        ) : (
+        // 光暈版沒有插圖背景（白底），光團＋logo 放在招呼語上面
+        !glowHome && (
           <HomeSky
             covered={chatOpen}
             intro={playIntro}
@@ -844,7 +842,7 @@ export default function V13HomePage() {
             pull={homeReveal}
             pullDragging={homePull > 0 && !homeHistoryShown}
           />
-        ))}
+        )}
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar light={lightHeader} />
@@ -940,7 +938,9 @@ export default function V13HomePage() {
         {splash !== "show" && (
           <div
             aria-hidden={chatOpen}
-            className="pointer-events-none absolute inset-x-0 top-full z-10 p-4"
+            className={`pointer-events-none absolute inset-x-0 top-full z-10 p-4 ${
+              glowHome ? "flex flex-col items-center pt-20 text-center" : ""
+            }`}
             style={{
               opacity: chatOpen ? 0 : 1,
               // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
@@ -951,6 +951,15 @@ export default function V13HomePage() {
                   : `${fade}, transform 300ms ${EASING}`,
             }}
           >
+            {/* 光暈版：開場畫面那顆光團＋logo 停在這裡（開場畫面結束時整顆移過來接手，
+                移動的期間先藏著），標題置中排在下面 */}
+            {glowHome && (
+              <BrandGlow
+                anchor
+                className="mb-3"
+                style={{ opacity: splash === "done" ? 1 : 0 }}
+              />
+            )}
             <div
               className="flex flex-col gap-1"
               style={{

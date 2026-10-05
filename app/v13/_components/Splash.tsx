@@ -2,22 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import GliderSvg from "./GliderSvg";
-import { resolveHomeVariant } from "../_lib/home-variant";
 
 // 開場畫面（launch screen），兩個版本，跟著首頁的版本走：
 // - 預設（天空版首頁）：白底中間放紅色的 AIFIAN 完整 logo，停 2 秒後淡出接首頁；
-// - 光暈版（?home=glow）：白底中間一顆白色的 AIFIAN logo mark，
-//   後面墊一團模糊、慢慢旋轉的品牌色光。停 2 秒後接到首頁，兩個畫面用同一組元素串起來：
-//   - logo mark 轉向、縮小，飛到首頁滑翔翼停的位置，途中交叉淡化成滑翔翼
-//     （mark 是往上指的尖角，滑翔翼的機頭朝右上，轉 50 度剛好對上）；
-//   - 光團飛到首頁光球的位置、散開，接成那顆光球；
-//   - 白底同時淡出，露出正在進場的首頁。
+// - 光暈版（?home=glow）：白底中間一團模糊、慢慢旋轉的品牌色光，上面一顆白色 logo mark。
+//   首頁也是同一顆光團加 logo（標題置中排在下面），開場畫面結束時白底淡出、
+//   這顆整個往上移到首頁的位置，兩個畫面無縫接起來。
 // 跟商品細節頁一樣用 portal 掛到 #v13-frame，才蓋得過 tabbar
 export const SPLASH_HOLD_MS = 2000;
 export const SPLASH_EXIT_MS = 1000;
-// 滑翔翼機頭相對 logo mark（正上方）的角度
-const NOSE_DEG = 50;
 const FLY_EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
 
 // logo mark 的路徑（取自 AIFIAN 工作素材 logo_2.svg，原本是品牌紅，這裡填白色）
@@ -34,9 +27,54 @@ export const BLOBS: [x: number, y: number, size: number, color: string][] = [
   [2, -24, 48, "#ffa064"],
 ];
 
-type Flight = { dx: number; dy: number; planeW: number; glowDy: number };
-
 const MARK_W = 48.3;
+
+// 品牌光團＋白色 logo mark：開場畫面（光暈版）跟光暈版首頁共用同一顆，
+// 開場畫面結束時直接把這顆從畫面中間移到首頁的位置，兩邊無縫接起來
+export function BrandGlow({
+  className,
+  style,
+  anchor = false,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+  // 首頁那顆標上 data-warm-glow，開場畫面量它的位置飛過去
+  anchor?: boolean;
+}) {
+  return (
+    <div
+      data-warm-glow={anchor || undefined}
+      className={`relative size-[150px] shrink-0 ${className ?? ""}`}
+      style={style}
+    >
+      <div
+        className="splash-blob absolute inset-0"
+        style={{ filter: "blur(16px)" }}
+      >
+        {BLOBS.map(([x, y, size, color]) => (
+          <span
+            key={color}
+            className="absolute left-1/2 top-1/2 rounded-full"
+            style={{
+              width: size,
+              height: size,
+              background: color,
+              opacity: 0.9,
+              transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+            }}
+          />
+        ))}
+      </div>
+      <svg
+        viewBox="0 0 21 18"
+        className="absolute left-1/2 top-1/2"
+        style={{ width: MARK_W, transform: "translate(-50%, -50%)" }}
+      >
+        <path d={MARK_PATH} fill="#ffffff" />
+      </svg>
+    </div>
+  );
+}
 
 export default function Splash({
   leaving,
@@ -46,41 +84,27 @@ export default function Splash({
   variant?: "plain" | "glow";
 }) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
-  const [vectorPlane, setVectorPlane] = useState(true);
-  // 光暈版首頁：飛過去的是白色滑翔翼
-  const [glow, setGlow] = useState(false);
-  // 量好首頁飛機、暖光的位置後才開始飛（先停一幀在起點，過場才看得到）
-  const [flight, setFlight] = useState<Flight | null>(null);
-  const [flying, setFlying] = useState(false);
+  // 光暈版：量好首頁那顆光團的位置後才開始移（先停一幀在起點，過場才看得到）
+  const [target, setTarget] = useState<{ dx: number; dy: number } | null>(null);
+  const [moving, setMoving] = useState(false);
 
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
-    setVectorPlane(
-      new URLSearchParams(window.location.search).get("plane") !== "png",
-    );
-    setGlow(resolveHomeVariant() === "glow");
   }, []);
 
   useEffect(() => {
-    if (!leaving || !frame) return;
+    if (!leaving || !frame || variant !== "glow") return;
     const f = frame.getBoundingClientRect();
-    const anchor = frame
-      .querySelector("[data-glider-anchor]")
-      ?.getBoundingClientRect();
-    const glow = frame
-      .querySelector("[data-warm-glow]")
-      ?.getBoundingClientRect();
-    setFlight({
-      dx: anchor ? anchor.left + anchor.width / 2 - (f.left + f.width / 2) : 0,
-      dy: anchor ? anchor.top + anchor.height / 2 - (f.top + f.height / 2) : 0,
-      planeW: anchor?.width ?? 70,
-      glowDy: glow ? glow.top + glow.height / 2 - (f.top + f.height / 2) : 200,
+    const g = frame.querySelector("[data-warm-glow]")?.getBoundingClientRect();
+    setTarget({
+      dx: g ? g.left + g.width / 2 - (f.left + f.width / 2) : 0,
+      dy: g ? g.top + g.height / 2 - (f.top + f.height / 2) : 0,
     });
     const raf = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setFlying(true)),
+      requestAnimationFrame(() => setMoving(true)),
     );
     return () => cancelAnimationFrame(raf);
-  }, [leaving, frame]);
+  }, [leaving, frame, variant]);
 
   if (!frame) return null;
 
@@ -111,104 +135,29 @@ export default function Splash({
     );
   }
 
-  const fly = flying && flight;
-  const t = (ms: number, delay = 0, ease = FLY_EASE) =>
-    `${ms}ms ${ease} ${delay}ms`;
-
+  // 光暈版：白底淡出，光團＋logo mark 整顆往上移到首頁那顆的位置，大小不變
+  const move = moving && target;
   return createPortal(
     <div aria-hidden className="absolute inset-0 z-[80]">
-      {/* 白底：開始飛的同時淡出，露出後面正在進場的首頁 */}
       <div
         className="absolute inset-0 bg-white"
         style={{
-          opacity: fly ? 0 : 1,
-          transition: `opacity ${t(520, 80, "ease")}`,
+          opacity: move ? 0 : 1,
+          transition: "opacity 520ms ease 80ms",
         }}
       />
-
-      {/* 光團：往下散開到地平線的位置，變大、變淡，接上首頁的暖光 */}
       <div className="absolute left-1/2 top-1/2">
         <div
-          className="splash-in relative -ml-[75px] -mt-[75px] size-[150px]"
+          className="-ml-[75px] -mt-[75px]"
           style={{
-            transform: fly
-              ? `translateY(${flight.glowDy}px) scale(${glow ? 2 : 3.2})`
-              : "translateY(0) scale(1)",
-            opacity: fly ? 0 : 1,
-            transition: `transform ${t(SPLASH_EXIT_MS)}, opacity ${t(SPLASH_EXIT_MS * 0.8, 120, "ease")}`,
+            transform: move
+              ? `translate(${target.dx}px, ${target.dy}px)`
+              : "translate(0, 0)",
+            transition: `transform ${SPLASH_EXIT_MS}ms ${FLY_EASE}`,
           }}
         >
-          <div
-            className="splash-blob absolute inset-0"
-            style={{ filter: "blur(16px)" }}
-          >
-            {BLOBS.map(([x, y, size, color]) => (
-              <span
-                key={color}
-                className="absolute left-1/2 top-1/2 rounded-full"
-                style={{
-                  width: size,
-                  height: size,
-                  background: color,
-                  opacity: 0.9,
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                }}
-              />
-            ))}
-          </div>
+          <BrandGlow className="splash-in" />
         </div>
-      </div>
-
-      {/* logo mark → 滑翔翼：同一條路徑飛過去，mark 前半段淡掉、滑翔翼前半段浮出 */}
-      <div className="absolute left-1/2 top-1/2">
-        <svg
-          viewBox="0 0 21 18"
-          className="splash-in absolute"
-          style={{
-            width: MARK_W,
-            left: -MARK_W / 2,
-            top: -(MARK_W * 18) / 21 / 2,
-            transform: fly
-              ? `translate(${flight.dx}px, ${flight.dy}px) rotate(${NOSE_DEG}deg) scale(${(flight.planeW * 0.7) / MARK_W})`
-              : "none",
-            opacity: fly ? 0 : 1,
-            transition: `transform ${t(SPLASH_EXIT_MS)}, opacity ${t(SPLASH_EXIT_MS * 0.45, SPLASH_EXIT_MS * 0.2, "ease")}`,
-          }}
-        >
-          <path d={MARK_PATH} fill="#ffffff" />
-        </svg>
-        {flight && (
-          <div
-            className="absolute"
-            style={{
-              width: flight.planeW,
-              left: -flight.planeW / 2,
-              top: -(flight.planeW * 488) / 600 / 2,
-              transform: fly
-                ? `translate(${flight.dx}px, ${flight.dy}px) rotate(0deg) scale(1)`
-                : `rotate(${-NOSE_DEG}deg) scale(${MARK_W / flight.planeW})`,
-              opacity: fly ? 1 : 0,
-              transition: `transform ${t(SPLASH_EXIT_MS)}, opacity ${t(SPLASH_EXIT_MS * 0.45, SPLASH_EXIT_MS * 0.15, "ease")}`,
-            }}
-          >
-            {glow ? (
-              <GliderSvg
-                tone="white"
-                frame={false}
-                className="block h-auto w-full"
-              />
-            ) : vectorPlane ? (
-              <GliderSvg frame={false} className="block h-auto w-full" />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src="/figma/v13-home-plane-2.png"
-                alt=""
-                className="block w-full"
-              />
-            )}
-          </div>
-        )}
       </div>
     </div>,
     frame,
