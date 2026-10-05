@@ -1162,7 +1162,7 @@ export default function V13HomePage() {
                   <button
                     key={q}
                     onClick={() => handleQuickReply(q)}
-                    className={CHIP_CLASS}
+                    className={glowHome ? CHIP_CLASS : CHIP_CLASS_SHADOW}
                   >
                     {q}
                   </button>
@@ -1256,7 +1256,7 @@ export default function V13HomePage() {
                           : "none",
                       }}
                       tabIndex={chipsOpen ? 0 : -1}
-                      className={CHIP_CLASS}
+                      className={glowHome ? CHIP_CLASS : CHIP_CLASS_SHADOW}
                     >
                       {s.label}
                     </button>
@@ -1342,6 +1342,9 @@ export default function V13HomePage() {
 
 const CHIP_CLASS =
   "max-w-full rounded-[999px] border border-[#d1d6db] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461]";
+// 預設版（照 Figma 1017:3714）：不要邊框，改用淡淡的陰影浮在天空漸層上
+const CHIP_CLASS_SHADOW =
+  "max-w-full rounded-[999px] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]";
 
 function DateDivider({ label }: { label: string }) {
   return (
