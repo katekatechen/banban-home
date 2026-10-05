@@ -160,24 +160,6 @@ export default function HomeSky({
       />
 
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
-        <div className="absolute inset-0" style={parallax(4)}>
-          {/* 品牌色的暖光：延續開場畫面的光團，在雲後面、地平線附近，像太陽剛升起；
-            跟開場畫面同樣 5 秒一次慢慢呼吸。強弱跟著時段 */}
-          <div
-            data-warm-glow
-            className="warm-glow absolute left-[56%] top-[70%] aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              background: `radial-gradient(closest-side, ${theme.warmGlow[0]}, ${theme.warmGlow[1]} 45%, transparent 100%)`,
-              opacity: phase === "pre" || covered ? 0 : 1,
-              transition:
-                reduce || jump
-                  ? "none"
-                  : covered
-                    ? `opacity ${CLOUD_MS * 0.6}ms ease`
-                    : "opacity 900ms ease 200ms",
-            }}
-          />
-        </div>
         {/* 飛機停好的位置（不跟著動）：開場畫面要量這裡，把 logo mark 飛過來 */}
         <div
           data-glider-anchor

@@ -20,8 +20,6 @@ export type SkyTheme = {
   glints: boolean;
   // AIFIAN logo 跟桌機預覽的假狀態列要不要改白字（底色太深時）
   lightHeader: boolean;
-  // 地平線附近品牌色暖光的顏色：[中心, 半途]，延續開場畫面的光團
-  warmGlow: [string, string];
   // 招呼語要不要用深色字（天空很淺的時段，白字會看不清楚）
   darkGreeting: boolean;
 };
@@ -39,7 +37,6 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 0.8,
     glints: false,
     lightHeader: false,
-    warmGlow: ["rgba(255, 48, 48, 0.32)", "rgba(255, 140, 90, 0.16)"],
     darkGreeting: false,
   },
   day: {
@@ -58,7 +55,6 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 1,
     glints: false,
     lightHeader: false,
-    warmGlow: ["rgba(255, 48, 48, 0.16)", "rgba(255, 120, 90, 0.07)"],
     darkGreeting: true,
   },
   dusk: {
@@ -73,7 +69,6 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 0.85,
     glints: false,
     lightHeader: false,
-    warmGlow: ["rgba(255, 48, 48, 0.42)", "rgba(255, 110, 80, 0.2)"],
     darkGreeting: false,
   },
   night: {
@@ -89,7 +84,6 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     shadow: 0.55,
     glints: true,
     lightHeader: true,
-    warmGlow: ["rgba(255, 48, 48, 0.22)", "rgba(200, 40, 90, 0.1)"],
     darkGreeting: false,
   },
 };

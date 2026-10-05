@@ -467,21 +467,3 @@ body {
   }
 }
 
-/* v13 首頁地平線的品牌色暖光：跟開場畫面光團一樣 5 秒一次慢慢呼吸 */
-.warm-glow {
-  animation: warmGlow 5s ease-in-out infinite;
-}
-@keyframes warmGlow {
-  0%,
-  100% {
-    scale: 1;
-  }
-  50% {
-    scale: 1.08;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .warm-glow {
-    animation: none;
-  }
-}
