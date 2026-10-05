@@ -24,13 +24,13 @@ const ORB_RATIO = 0.44;
 
 export const GLOW_TOP = "#ffffff";
 
-// 光球的配色跟開場畫面的光團同一組：偏粉的品牌紅為主，搭粉紅、珊瑚橘。
+// 光球的配色跟開場畫面的光團同一組（粉紅的紅、粉紅、珊瑚橘），整體調亮、白多一點。
 // shader 會把 main 跟其他顏色做加深混色，main 要放最淡的那個，不然整顆會發黑
 const SPLASH_PALETTE = {
-  main: hexToRgb("#ffdbe2"),
-  low: hexToRgb("#ff2f5c"),
-  mid: hexToRgb("#ff6fa3"),
-  high: hexToRgb("#ff9a5a"),
+  main: hexToRgb("#fff1f3"),
+  low: hexToRgb("#ff5476"),
+  mid: hexToRgb("#ff9cbd"),
+  high: hexToRgb("#ffb38a"),
 };
 
 const GRADIENT = "#ffffff";
@@ -124,7 +124,18 @@ export default function GlowHome({
           {/* listen 狀態：球直接長到完整大小，邊緣跟著模擬的聲音輕輕起伏，
               像伴伴正在等你開口（idle 會先縮成小點、十幾秒才慢慢長大，還會一直明暗閃） */}
           {orbSize > 0 && (
-            <OrbBloop size={orbSize} state="listen" palette={SPLASH_PALETTE} />
+            <OrbBloop
+              size={orbSize}
+              state="listen"
+              palette={SPLASH_PALETTE}
+              // 邊緣往外淡成透明，削弱一圈清楚的輪廓，像開場畫面那團光一樣柔
+              style={{
+                maskImage:
+                  "radial-gradient(circle closest-side, #000 52%, rgba(0,0,0,0.6) 70%, transparent 92%)",
+                WebkitMaskImage:
+                  "radial-gradient(circle closest-side, #000 52%, rgba(0,0,0,0.6) 70%, transparent 92%)",
+              }}
+            />
           )}
         </div>
 
