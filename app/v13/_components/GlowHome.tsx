@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import GliderSvg from "./GliderSvg";
 import { CLOUD_MS } from "./HomeSky";
-import OrbBloop from "./orb-bloop/OrbBloop";
+import OrbBloop, { hexToRgb } from "./orb-bloop/OrbBloop";
 
-// 光暈版首頁（?home=glow）：延續開場畫面的風格。淡淡的白到桃色滿版漸層上，
+// 光暈版首頁（?home=glow）：延續開場畫面的風格。白底上，
 // 正中間一顆用 WebGPU 畫的品牌紅光球（Bloop orb，會像語音助理那顆球一樣流動），
 // 白色滑翔翼停在光球中央，就像開場畫面那顆白色 logo mark 長大成了飛機。
 // 沒有雲，也不分時段。
@@ -19,12 +19,21 @@ const PLANE = { w: 17.85, cy: 52.6 };
 const CENTER = { x: 50, y: PLANE.cy };
 const PLANE_LEFT = CENTER.x - PLANE.w / 2;
 const PLANE_TOP = CENTER.y - (PLANE.w * 375 * (488 / 600)) / 620 / 2;
-// 光球的寬度：畫面寬的 68%
-const ORB_RATIO = 0.68;
+// 光球的寬度：畫面寬的 52%（飛機尺寸不變）
+const ORB_RATIO = 0.52;
 
 export const GLOW_TOP = "#ffffff";
 
-const GRADIENT = `linear-gradient(to bottom, #ffffff 0%, #fff7f5 45%, #ffeae5 75%, #fff4f1 100%)`;
+// 光球的配色跟開場畫面的光團同一組：品牌紅 #ff3030 為主，搭粉紅、珊瑚橘。
+// shader 會把 main 跟其他顏色做加深混色，main 要放最淡的那個，不然整顆會發黑
+const SPLASH_PALETTE = {
+  main: hexToRgb("#ffe2d2"),
+  low: hexToRgb("#ff3030"),
+  mid: hexToRgb("#e8285a"),
+  high: hexToRgb("#ff9a5a"),
+};
+
+const GRADIENT = "#ffffff";
 
 export default function GlowHome({
   covered,
@@ -114,7 +123,9 @@ export default function GlowHome({
         >
           {/* listen 狀態：球直接長到完整大小，邊緣跟著模擬的聲音輕輕起伏，
               像伴伴正在等你開口（idle 會先縮成小點、十幾秒才慢慢長大，還會一直明暗閃） */}
-          {orbSize > 0 && <OrbBloop size={orbSize} state="listen" />}
+          {orbSize > 0 && (
+            <OrbBloop size={orbSize} state="listen" palette={SPLASH_PALETTE} />
+          )}
         </div>
 
         {/* 飛機停好的位置（不跟著動）：開場畫面要量這裡，把 logo mark 飛過來 */}
