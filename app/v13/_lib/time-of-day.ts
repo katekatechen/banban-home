@@ -41,14 +41,14 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     darkGreeting: false,
   },
   day: {
-    // 上面是淺灰白，往下漸漸變成淡藍，到雲後面是最飽和的天藍
+    // 照 Figma 1017:3714：上面白，往下漸漸變成天藍，最底下透出一點粉紅
     sky: [
-      ["#f7f7f7", 0],
-      ["#d7eff9", 37],
-      ["#87c5e6", 65],
-      ["#9bc6de", 80],
+      ["#ffffff", 8.17],
+      ["#addef4", 62.5],
+      ["#9ad0f1", 78.85],
+      ["#f9d4e8", 100],
     ],
-    top: "#f7f7f7",
+    top: "#ffffff",
     front: { fill: "#ffffff", shade: "#d9eef5" },
     back: { fill: "#f4fafc", shade: "#cfe7ef" },
     shadow: 1,
