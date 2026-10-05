@@ -6,6 +6,8 @@ export type Period = "dawn" | "day" | "dusk" | "night";
 export type SkyTheme = {
   // 天空（俯視下去其實是海）由上往下的漸層，[顏色, 位置%]
   sky: [string, number][];
+  // 疊在天空漸層上面的一層（例如底部的圓弧光），沒有就不疊
+  skyArc?: string;
   // 手機狀態列的底色，接天空最上緣
   top: string;
   // 前景、遠景雲的顏色（fill，也是雲底下那片的底色）跟右下月牙陰影的顏色（shade）。
@@ -41,13 +43,15 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     darkGreeting: false,
   },
   day: {
-    // 照 Figma 1017:3714：上面白，往下漸漸變成天藍，最底下透出一點粉紅
+    // 照 Figma 1017:3714：上面白，往下漸漸變成天藍
     sky: [
       ["#ffffff", 8.17],
       ["#addef4", 62.5],
-      ["#9ad0f1", 78.85],
-      ["#f9d4e8", 100],
+      ["#9ad0f1", 100],
     ],
+    // 最底下的粉紅色（Figma #fddbdc）做成從畫面底部中間鼓起來的圓弧，不是一條橫的色帶
+    skyArc:
+      "radial-gradient(ellipse 120% 26% at 50% 100%, #fddbdc 0%, rgba(253, 219, 220, 0.9) 40%, rgba(253, 219, 220, 0) 100%)",
     top: "#ffffff",
     front: { fill: "#ffffff", shade: "#d9eef5" },
     back: { fill: "#f4fafc", shade: "#cfe7ef" },

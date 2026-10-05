@@ -145,7 +145,12 @@ export default function HomeSky({
       <div
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(to bottom, ${theme.sky.map(([c, at]) => `${c} ${at}%`).join(", ")})`,
+          background: [
+            theme.skyArc,
+            `linear-gradient(to bottom, ${theme.sky.map(([c, at]) => `${c} ${at}%`).join(", ")})`,
+          ]
+            .filter(Boolean)
+            .join(", "),
           opacity: phase === "pre" || covered ? 0 : 1,
           transition:
             reduce || jump
