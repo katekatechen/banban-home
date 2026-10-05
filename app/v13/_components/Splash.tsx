@@ -5,13 +5,14 @@ import { createPortal } from "react-dom";
 import GliderSvg from "./GliderSvg";
 import { resolveHomeVariant } from "../_lib/home-variant";
 
-// 開場畫面（launch screen）：白底中間一顆白色的 AIFIAN logo mark，
-// 後面墊一團模糊、慢慢旋轉的品牌色光。
-// 停 2 秒後接到首頁，兩個畫面用同一組元素串起來：
-// - logo mark 轉向、縮小，飛到首頁滑翔翼停的位置，途中交叉淡化成滑翔翼
-//   （mark 是往上指的尖角，滑翔翼的機頭朝右上，轉 50 度剛好對上）；
-// - 光團往下散開、淡掉，變成首頁地平線那團品牌色的暖光；
-// - 白底同時淡出，露出正在進場的首頁。
+// 開場畫面（launch screen），兩個版本，跟著首頁的版本走：
+// - 預設（天空版首頁）：白底中間放紅色的 AIFIAN 完整 logo，停 2 秒後淡出接首頁；
+// - 光暈版（?home=glow）：白底中間一顆白色的 AIFIAN logo mark，
+//   後面墊一團模糊、慢慢旋轉的品牌色光。停 2 秒後接到首頁，兩個畫面用同一組元素串起來：
+//   - logo mark 轉向、縮小，飛到首頁滑翔翼停的位置，途中交叉淡化成滑翔翼
+//     （mark 是往上指的尖角，滑翔翼的機頭朝右上，轉 50 度剛好對上）；
+//   - 光團飛到首頁光球的位置、散開，接成那顆光球；
+//   - 白底同時淡出，露出正在進場的首頁。
 // 跟商品細節頁一樣用 portal 掛到 #v13-frame，才蓋得過 tabbar
 export const SPLASH_HOLD_MS = 2000;
 export const SPLASH_EXIT_MS = 1000;
@@ -37,7 +38,13 @@ type Flight = { dx: number; dy: number; planeW: number; glowDy: number };
 
 const MARK_W = 48.3;
 
-export default function Splash({ leaving }: { leaving: boolean }) {
+export default function Splash({
+  leaving,
+  variant = "plain",
+}: {
+  leaving: boolean;
+  variant?: "plain" | "glow";
+}) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
   const [vectorPlane, setVectorPlane] = useState(true);
   // 光暈版首頁：飛過去的是白色滑翔翼
@@ -76,6 +83,33 @@ export default function Splash({ leaving }: { leaving: boolean }) {
   }, [leaving, frame]);
 
   if (!frame) return null;
+
+  if (variant === "plain") {
+    // 預設版：紅色完整 logo，結束時 logo 稍微縮小淡掉、白底跟著淡出
+    return createPortal(
+      <div
+        aria-hidden
+        className="absolute inset-0 z-[80] flex items-center justify-center bg-white"
+        style={{
+          opacity: leaving ? 0 : 1,
+          transition: `opacity 600ms ease ${leaving ? 200 : 0}ms`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/figma/v13-logo-full-red.svg"
+          alt=""
+          className="splash-in w-[112px]"
+          style={{
+            opacity: leaving ? 0 : 1,
+            transform: leaving ? "scale(0.92)" : "scale(1)",
+            transition: "opacity 400ms ease, transform 500ms ease",
+          }}
+        />
+      </div>,
+      frame,
+    );
+  }
 
   const fly = flying && flight;
   const t = (ms: number, delay = 0, ease = FLY_EASE) =>

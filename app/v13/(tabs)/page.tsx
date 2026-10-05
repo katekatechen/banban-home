@@ -821,7 +821,12 @@ export default function V13HomePage() {
       onWheel={(e) => homeWheel(e.deltaY)}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      {splash !== "done" && <Splash leaving={splash === "leaving"} />}
+      {splash !== "done" && (
+        <Splash
+          leaving={splash === "leaving"}
+          variant={glowHome ? "glow" : "plain"}
+        />
+      )}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
       {splash !== "show" &&
         (glowHome ? (
@@ -835,7 +840,7 @@ export default function V13HomePage() {
             covered={chatOpen}
             intro={playIntro}
             theme={skyTheme}
-            planeHandoff={splash === "leaving"}
+            planeHandoff={false}
             pull={homeReveal}
             pullDragging={homePull > 0 && !homeHistoryShown}
           />
