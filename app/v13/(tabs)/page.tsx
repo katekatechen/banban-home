@@ -867,27 +867,26 @@ export default function V13HomePage() {
               alt="AIFIAN"
               className="h-7 w-auto"
               // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回原色。
-              // 光暈版進入對話時換成 logo mark，這張淡掉
+              // 進入對話時換成 logo mark，這張淡掉
               style={{
                 filter: lightHeader ? "brightness(0) invert(1)" : "none",
-                opacity: glowHome && chatOpen ? 0 : 1,
+                opacity: chatOpen ? 0 : 1,
                 // 送出時等雲推到頂端才換回深色，不然會先壓在深藍天空上
                 transition: `filter 300ms ease ${lightHeader ? 0 : CLOUD_MS * 0.55}ms, opacity ${MODE_TRANSITION_MS}ms ease`,
               }}
             />
-            {glowHome && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src="/figma/v13-logo-mark-red.svg"
-                alt=""
-                className="absolute left-0 top-1/2 h-6 w-auto origin-left"
-                style={{
-                  opacity: chatOpen ? 1 : 0,
-                  transform: `translateY(-50%) scale(${chatOpen ? 1 : 0.8})`,
-                  transition: `opacity ${MODE_TRANSITION_MS}ms ease, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
-                }}
-              />
-            )}
+            {/* 進入對話後左上角換成 logo mark（跟 AIFIAN 字樣同一個深色） */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/figma/v13-logo-mark.svg"
+              alt=""
+              className="absolute left-0 top-1/2 h-6 w-auto origin-left"
+              style={{
+                opacity: chatOpen ? 1 : 0,
+                transform: `translateY(-50%) scale(${chatOpen ? 1 : 0.8})`,
+                transition: `opacity ${MODE_TRANSITION_MS}ms ease, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
+              }}
+            />
           </button>
           {glowHome && <span />}
           <button
