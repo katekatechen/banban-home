@@ -48,7 +48,7 @@ export const SKY_THEMES: Record<Period, SkyTheme> = {
     ],
     // 最底下的粉紅色（Figma #fddbdc）做成從畫面底部中間鼓起來的圓弧，不是一條橫的色帶
     skyArc:
-      "radial-gradient(ellipse 120% 26% at 50% 100%, #fddbdc 0%, rgba(253, 219, 220, 0.9) 40%, rgba(253, 219, 220, 0) 100%)",
+      "radial-gradient(ellipse 100% 17% at 50% 100%, #fddbdc 0%, rgba(253, 219, 220, 0.8) 40%, rgba(253, 219, 220, 0) 100%)",
     top: "#ffffff",
     front: { fill: "#ffffff", shade: "#d9eef5" },
     back: { fill: "#f4fafc", shade: "#cfe7ef" },
