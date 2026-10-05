@@ -4,29 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 import GliderSvg from "./GliderSvg";
 import { CLOUD_MS } from "./HomeSky";
+import OrbBloop from "./orb-bloop/OrbBloop";
 
-// 光暈版首頁（?home=glow）：延續開場畫面的風格。整個畫面鋪滿靜態的品牌紅漸層
-// （開場畫面光團的那組顏色，上面最紅、往下漸漸變成淡淡的桃色），
-// 滑翔翼改成白色，就像開場畫面那顆白色 logo mark 長大成了飛機。沒有雲，也不分時段。
+// 光暈版首頁（?home=glow）：延續開場畫面的風格。淡淡的白到桃色滿版漸層上，
+// 正中間一顆用 WebGPU 畫的品牌紅光球（Bloop orb，會像語音助理那顆球一樣流動），
+// 白色滑翔翼停在光球中央，就像開場畫面那顆白色 logo mark 長大成了飛機。
+// 沒有雲，也不分時段。
 //
-// 座標系跟 HomeSky 一樣是 375×620、往上偏 19px 的框，飛機停的位置也一樣，
-// 開場畫面的 logo mark 才能直接飛過來接手。
-// 送出時漸層淡掉、飛機往右上飛走，留下白底接到對話；回首頁時再重新浮出來
-const PLANE = { left: 50.53, top: 48.23, w: 17.85 };
-// 飛機中心（框的 %）：光團就墊在這裡
-const CENTER = {
-  x: PLANE.left + PLANE.w / 2,
-  y: PLANE.top + (PLANE.w * 375 * (488 / 600)) / 620 / 2,
-};
+// 座標系跟 HomeSky 一樣是 375×620、往上偏 19px 的框；開場畫面會量這裡的
+// data-glider-anchor、data-warm-glow，把 logo mark、光團飛過來接手。
+// 送出時光球放大淡掉、飛機往右上飛走，留下白底接到對話；回首頁時再重新浮出來
+const PLANE = { w: 17.85, cy: 52.6 };
+// 光球、飛機的中心（框的 %）：水平置中
+const CENTER = { x: 50, y: PLANE.cy };
+const PLANE_LEFT = CENTER.x - PLANE.w / 2;
+const PLANE_TOP = CENTER.y - (PLANE.w * 375 * (488 / 600)) / 620 / 2;
+// 光球的寬度：畫面寬的 68%
+const ORB_RATIO = 0.68;
 
-export const GLOW_TOP = "#ff4a3c";
+export const GLOW_TOP = "#ffffff";
 
-const GRADIENT = [
-  "radial-gradient(90% 45% at 12% 8%, rgba(255, 150, 90, 0.9) 0%, rgba(255, 150, 90, 0) 70%)",
-  "radial-gradient(80% 50% at 92% 28%, rgba(255, 61, 110, 0.85) 0%, rgba(255, 61, 110, 0) 70%)",
-  "radial-gradient(90% 40% at 30% 48%, rgba(224, 32, 79, 0.55) 0%, rgba(224, 32, 79, 0) 70%)",
-  `linear-gradient(to bottom, ${GLOW_TOP} 0%, #ff3030 30%, #ff6a52 50%, #ffa48c 64%, #ffe1d8 78%, #fff6f3 100%)`,
-].join(", ");
+const GRADIENT = `linear-gradient(to bottom, #ffffff 0%, #fff7f5 45%, #ffeae5 75%, #fff4f1 100%)`;
 
 export default function GlowHome({
   covered,
@@ -61,6 +59,14 @@ export default function GlowHome({
     wasCovered.current = covered;
   }, [covered, reduce]);
 
+  // 光球的像素大小要在掛載時就決定（GPU 畫布照這個大小建）
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [orbSize, setOrbSize] = useState(0);
+  useEffect(() => {
+    const w = boxRef.current?.getBoundingClientRect().width ?? 375;
+    setOrbSize(Math.round(w * ORB_RATIO));
+  }, []);
+
   const visible = shown && !covered;
   const planeOpacity = fromSplash ? (planeHandoff ? 0 : 1) : visible ? 1 : 0;
   const planeTransform = fromSplash
@@ -88,21 +94,36 @@ export default function GlowHome({
           transition: reduce ? "none" : `opacity ${covered ? 600 : 900}ms ease`,
         }}
       />
-      <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
-        {/* 開場畫面的光團要飛到這裡再散開，接進滿版的漸層 */}
+      <div
+        ref={boxRef}
+        className="absolute inset-x-0 top-[-19px] aspect-[375/620]"
+      >
+        {/* 光球：開場畫面的光團會飛到這裡（data-warm-glow）再散開，接成這顆球 */}
         <div
           data-warm-glow
-          className="absolute size-px"
-          style={{ left: `${CENTER.x}%`, top: `${CENTER.y}%` }}
-        />
+          className="absolute"
+          style={{
+            left: `${CENTER.x}%`,
+            top: `${CENTER.y}%`,
+            transform: `translate(-50%, -50%) scale(${visible ? 1 : covered ? 1.3 : 0.6})`,
+            opacity: visible ? 1 : 0,
+            transition: reduce
+              ? "none"
+              : `transform ${covered ? CLOUD_MS : 1100}ms ${EASING}, opacity ${covered ? 500 : 800}ms ease`,
+          }}
+        >
+          {/* listen 狀態：球直接長到完整大小，邊緣跟著模擬的聲音輕輕起伏，
+              像伴伴正在等你開口（idle 會先縮成小點、十幾秒才慢慢長大，還會一直明暗閃） */}
+          {orbSize > 0 && <OrbBloop size={orbSize} state="listen" />}
+        </div>
 
         {/* 飛機停好的位置（不跟著動）：開場畫面要量這裡，把 logo mark 飛過來 */}
         <div
           data-glider-anchor
           className="absolute aspect-[600/488]"
           style={{
-            left: `${PLANE.left}%`,
-            top: `${PLANE.top}%`,
+            left: `${PLANE_LEFT}%`,
+            top: `${PLANE_TOP}%`,
             width: `${PLANE.w}%`,
           }}
         />
@@ -111,8 +132,8 @@ export default function GlowHome({
         <div
           className="absolute"
           style={{
-            left: `${PLANE.left}%`,
-            top: `${PLANE.top}%`,
+            left: `${PLANE_LEFT}%`,
+            top: `${PLANE_TOP}%`,
             width: `${PLANE.w}%`,
             opacity: planeOpacity,
             transform: planeTransform,
@@ -124,7 +145,7 @@ export default function GlowHome({
                   : `transform 1100ms ${EASING} 250ms, opacity 700ms ease 250ms`,
           }}
         >
-          {/* 影子：落在光團上，用深一點的紅 */}
+          {/* 影子：落在光球上，用深一點的紅 */}
           <div
             className="absolute inset-0"
             style={{

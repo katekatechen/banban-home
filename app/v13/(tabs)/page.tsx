@@ -195,9 +195,9 @@ export default function V13HomePage() {
   }, []);
   const glowHome = variant === "glow";
   const skyTheme = SKY_THEMES[time.period];
-  // 光暈版上面是很紅的漸層：logo、招呼語都用白字，狀態列接漸層最上緣的紅
-  const lightHeader = (glowHome || skyTheme.lightHeader) && !chatOpen;
-  const darkGreeting = !glowHome && skyTheme.darkGreeting;
+  // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
+  const lightHeader = !glowHome && skyTheme.lightHeader && !chatOpen;
+  const darkGreeting = glowHome || skyTheme.darkGreeting;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
