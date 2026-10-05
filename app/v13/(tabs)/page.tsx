@@ -6,6 +6,7 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
+import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, {
   BrandGlow,
@@ -862,30 +863,12 @@ export default function V13HomePage() {
                 : undefined
             }
           >
-            <img
-              src="/figma/v13-logo.svg"
-              alt="AIFIAN"
-              className="h-7 w-auto"
-              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回原色。
-              // 進入對話時換成 logo mark，這張淡掉
-              style={{
-                filter: lightHeader ? "brightness(0) invert(1)" : "none",
-                opacity: chatOpen ? 0 : 1,
-                // 送出時等雲推到頂端才換回深色，不然會先壓在深藍天空上
-                transition: `filter 300ms ease ${lightHeader ? 0 : CLOUD_MS * 0.55}ms, opacity ${MODE_TRANSITION_MS}ms ease`,
-              }}
-            />
-            {/* 進入對話後左上角換成 logo mark（跟 AIFIAN 字樣同一個深色） */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/figma/v13-logo-mark.svg"
-              alt=""
-              className="absolute left-0 top-1/2 h-6 w-auto origin-left"
-              style={{
-                opacity: chatOpen ? 1 : 0,
-                transform: `translateY(-50%) scale(${chatOpen ? 1 : 0.8})`,
-                transition: `opacity ${MODE_TRANSITION_MS}ms ease, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
-              }}
+            {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark */}
+            <LogoMorph
+              mark={chatOpen}
+              className="block h-7 w-[95.44px]"
+              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色
+              color={lightHeader ? "#ffffff" : "#1E2939"}
             />
           </button>
           {glowHome && <span />}
