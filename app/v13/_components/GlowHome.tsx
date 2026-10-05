@@ -19,17 +19,17 @@ const PLANE = { w: 17.85, cy: 52.6 };
 const CENTER = { x: 50, y: PLANE.cy };
 const PLANE_LEFT = CENTER.x - PLANE.w / 2;
 const PLANE_TOP = CENTER.y - (PLANE.w * 375 * (488 / 600)) / 620 / 2;
-// 光球的寬度：畫面寬的 52%（飛機尺寸不變）
-const ORB_RATIO = 0.52;
+// 光球的寬度：畫面寬的 44%（飛機尺寸不變）
+const ORB_RATIO = 0.44;
 
 export const GLOW_TOP = "#ffffff";
 
-// 光球的配色跟開場畫面的光團同一組：品牌紅 #ff3030 為主，搭粉紅、珊瑚橘。
+// 光球的配色跟開場畫面的光團同一組：偏粉的品牌紅為主，搭粉紅、珊瑚橘。
 // shader 會把 main 跟其他顏色做加深混色，main 要放最淡的那個，不然整顆會發黑
 const SPLASH_PALETTE = {
-  main: hexToRgb("#ffe2d2"),
-  low: hexToRgb("#ff3030"),
-  mid: hexToRgb("#e8285a"),
+  main: hexToRgb("#ffdbe2"),
+  low: hexToRgb("#ff2f5c"),
+  mid: hexToRgb("#ff6fa3"),
   high: hexToRgb("#ff9a5a"),
 };
 
