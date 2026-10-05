@@ -16,42 +16,35 @@ import GliderSvg from "./GliderSvg";
 const VB_W = 375;
 const VB_H = 2400;
 
-// 雲：參考積雲的俯視插圖，左右兩團從畫面下方兩角湧上來，中間留一道 V 字的
-// 縫露出底下的海，右邊那團比較高、升到飛機旁邊。
+// 雲：一整片雲層沿著平緩的斜線從左上鋪到右下，上緣的雲朵大小交錯、高低稍微錯開。
 // 畫法是扁平向量：每一朵是一顆大圓，先畫一顆淺藍的「影子圓」往右下偏一點，
 // 再疊一顆白圓，兩顆錯開的地方就是一道月牙形的陰影。從上面往下畫，
 // 下面的雲朵會蓋住上面那朵的下半部，堆出一朵壓一朵的體積感
 type Puff = [cx: number, cy: number, r: number];
 
-// 前景：左右兩大團
 const FRONT_PUFFS: Puff[] = [
-  // 右邊那團（比較高，但比左邊小一號，不要搶飛機）
-  [386, 455, 35],
-  [356, 486, 27],
-  [395, 508, 41],
-  [333, 518, 24],
-  [365, 538, 36],
-  [311, 550, 22],
-  [342, 570, 30],
-  // 左邊那團
-  [8, 450, 54],
-  [66, 468, 44],
-  [-18, 516, 66],
-  [118, 500, 38],
-  [48, 540, 56],
-  [164, 540, 36],
-  [110, 572, 48],
-  [206, 572, 32],
-  // V 字谷底收圓
-  [234, 588, 28],
-  // 最底下一排，把雲朵之間的縫封起來
-  [24, 588, 34],
-  [80, 592, 32],
-  [152, 588, 30],
-  [272, 584, 30],
-  [334, 586, 34],
-  [384, 580, 36],
-  [362, 552, 30],
+  // 最上面那排：沿著一條平緩的斜線從左上排到右下，大小交錯、高低稍微錯開
+  [-12, 430, 42],
+  [42, 441, 30],
+  [92, 472, 40],
+  [146, 481, 30],
+  [196, 511, 38],
+  [246, 518, 28],
+  [292, 545, 36],
+  [340, 552, 30],
+  [388, 580, 40],
+  // 第二、三排：墊在後面把雲身填滿，接到下面那片底色
+  [10, 492, 50],
+  [80, 518, 46],
+  [150, 544, 48],
+  [222, 570, 44],
+  [290, 595, 46],
+  [360, 621, 48],
+  [30, 561, 56],
+  [120, 594, 52],
+  [205, 626, 50],
+  // 補一個小縫
+  [174, 586, 18],
 ];
 
 // 夜晚海面上的月光閃點：位置寫死（百分比，相對 375×620 的框），避免伺服器跟瀏覽器算出來不一樣
@@ -76,16 +69,23 @@ function CloudLayer({
   shade,
   floor,
   colorTransition,
+  shadeCount = Infinity,
 }: {
   puffs: Puff[];
   fill: string;
   shade: string;
   colorTransition: string;
-  // 這一層雲朵下面要墊滿顏色的高度（viewBox 座標），往下一路填到底；
-  // 遠景那層藏在前景後面，不用墊
+  // 這一層雲朵下面要墊滿顏色的高度（viewBox 座標），往下一路填到底
   floor?: number;
+  // 前幾顆要畫月牙陰影（預設全部）
+  shadeCount?: number;
 }) {
   const sorted = [...puffs].sort((a, b) => a[1] - b[1]);
+  // 只有最上面那排（陣列的前 shadeCount 顆）畫月牙陰影；後排墊底的雲朵畫了，
+  // 月牙會從前排的縫裡露出一小截，看起來像髒點
+  const shaded = new Set(
+    puffs.slice(0, shadeCount).map((p) => `${p[0]}-${p[1]}`),
+  );
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
@@ -104,15 +104,15 @@ function CloudLayer({
       )}
       {sorted.map(([cx, cy, r]) => (
         <g key={`${cx}-${cy}`}>
-          {/* 貼著底色的那排不畫陰影，不然月牙會落在下面那片白色上 */}
-          {(floor === undefined || cy + r * 1.12 <= floor) && (
-            <circle
-              cx={cx + r * 0.07}
-              cy={cy + r * 0.1}
-              r={r}
-              style={{ fill: shade, transition: colorTransition }}
-            />
-          )}
+          {shaded.has(`${cx}-${cy}`) &&
+            (floor === undefined || cy + r * 1.12 <= floor) && (
+              <circle
+                cx={cx + r * 0.07}
+                cy={cy + r * 0.1}
+                r={r}
+                style={{ fill: shade, transition: colorTransition }}
+              />
+            )}
           <circle
             cx={cx}
             cy={cy}
@@ -382,6 +382,7 @@ export default function HomeSky({
               fill={covered ? "#ffffff" : theme.front.fill}
               shade={covered ? "#ffffff" : theme.front.shade}
               floor={590}
+              shadeCount={9}
               colorTransition={colorTransition}
             />
           </div>
