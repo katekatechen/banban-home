@@ -4,26 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import GliderSvg from "./GliderSvg";
 import { EASING } from "../_lib/page-transition";
 
-// 光暈版首頁的底色：配色參考 helia——左邊深藍綠，經過一點梅紫，
-// 中間深莓紅到亮紅粉，往右退成淺粉、白。不滿版：只壓在畫面上方，往下退成白色，
-// 下半部留白（快捷問題、輸入框都在白底上）。
+// 光暈版首頁的底色：參考 MYOB 的色光帶，但倒過來放——鮮豔的顏色在畫面最上緣，
+// 往下退成白色，下半部留白（快捷問題、輸入框都在白底上）。
+// 左上亮藍、藍綠、天藍，右上主色紅 #ff3b3b 帶一點珊瑚。不用紫：藍跟紅中間隔著藍綠，避免疊出紫色。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
 export const GLOW_TEXT_ON_COLOR = true;
 const BASE = "#ffffff";
-export const GLOW_TOP = "#c8234f";
+export const GLOW_TOP = "#1f7bff";
 export const GLOW_BG = BASE;
 const W = 375;
 const cq = (px: number) => `${(px / W) * 100}cqw`;
 
 // [顏色, x, 距頂部, 寬, 高, 模糊(px@375), 透明度]
 const BAND: [string, number, number, number, number, number, number][] = [
-  ["#2f6b8c", -190, -90, 300, 330, 48, 0.95],
-  ["#4c3c7e", -90, -170, 220, 300, 48, 0.75],
-  ["#b81f4b", 30, -150, 260, 330, 48, 0.95],
-  ["#e8385a", 140, -180, 250, 320, 48, 0.95],
-  ["#f27c96", 230, -130, 200, 260, 46, 0.75],
-  ["#f9c6d3", 300, -150, 200, 260, 46, 0.7],
+  ["#1f7bff", -170, -110, 320, 340, 44, 0.95],
+  ["#14c8b4", 0, -80, 230, 250, 44, 0.9],
+  ["#3fb0ff", 60, -190, 200, 240, 44, 0.6],
+  ["#ff3b3b", 200, -160, 260, 300, 44, 0.9],
+  ["#ff8a6a", 300, -70, 160, 210, 42, 0.65],
 ];
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
