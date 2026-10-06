@@ -7,6 +7,7 @@ import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
 import HomeGradient, {
+  GLOW_IS_DARK,
   GLOW_TOP,
   GRADIENT_EXIT_MS,
 } from "../_components/HomeGradient";
@@ -203,10 +204,13 @@ export default function V13HomePage() {
   const glowHome = variant === "glow";
   const skyTheme = SKY_THEMES[time.period];
   // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
-  // 光暈版是深靛藍到紫的底：logo、狀態列、招呼語、快捷問題都改白色；進入對話後是白底，換回深色
-  const lightHeader = glowHome ? !chatOpen : skyTheme.lightHeader && !chatOpen;
-  const darkGreeting = !glowHome && skyTheme.darkGreeting;
-  const glowDark = glowHome && !chatOpen;
+  // 光暈版底色是深色時（GLOW_IS_DARK）：logo、狀態列、招呼語、快捷問題改白色；
+  // 現在是亮色漸層到白，維持深色字。進入對話後是白底，一律深色
+  const glowDark = glowHome && GLOW_IS_DARK && !chatOpen;
+  const lightHeader = glowHome
+    ? glowDark
+    : skyTheme.lightHeader && !chatOpen;
+  const darkGreeting = glowHome ? !GLOW_IS_DARK : skyTheme.darkGreeting;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
