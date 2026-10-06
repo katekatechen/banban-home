@@ -10,7 +10,6 @@ import HomeGradient, { GRADIENT_EXIT_MS } from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, {
-  HomeMark,
   SPLASH_EXIT_MS,
   SPLASH_HOLD_MS,
 } from "../_components/Splash";
@@ -199,43 +198,6 @@ export default function V13HomePage() {
     setVariant(resolveHomeVariant());
   }, []);
   const glowHome = variant === "glow";
-  // 光暈版：招呼語上方的大 logo mark 進入對話時飛到左上角 header 的 mark 位置。
-  // 量兩邊的位置（量的時候先拿掉 transform），算出位移跟縮放；
-  // 第一次量完才打開過場，重新整理時若已在對話中就直接停在左上角
-  const homeMarkRef = useRef<HTMLDivElement>(null);
-  const logoBtnRef = useRef<HTMLButtonElement>(null);
-  const [markFly, setMarkFly] = useState<{
-    dx: number;
-    dy: number;
-    s: number;
-    ready: boolean;
-  } | null>(null);
-  useLayoutEffect(() => {
-    if (!glowHome || splash === "show") return;
-    const measure = () => {
-      const el = homeMarkRef.current;
-      const svg = logoBtnRef.current?.querySelector("svg");
-      if (!el || !svg) return;
-      const prev = el.style.transform;
-      el.style.transform = "none";
-      const a = el.getBoundingClientRect();
-      el.style.transform = prev;
-      const b = svg.getBoundingClientRect();
-      // header 的 mark：LogoMorph 裡 mark 寬 28、離上緣 2（viewBox 跟 px 1:1）
-      setMarkFly((cur) => ({
-        dx: b.left - a.left,
-        dy: b.top + 2 - a.top,
-        s: 28 / a.width,
-        ready: cur?.ready ?? false,
-      }));
-      requestAnimationFrame(() =>
-        setMarkFly((cur) => (cur ? { ...cur, ready: true } : cur)),
-      );
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [glowHome, splash]);
   const skyTheme = SKY_THEMES[time.period];
   // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
   const lightHeader = !glowHome && skyTheme.lightHeader && !chatOpen;
@@ -890,16 +852,13 @@ export default function V13HomePage() {
         <StatusBar light={lightHeader} />
         <div className="relative flex h-11 items-center justify-between px-4">
           <button
-            ref={logoBtnRef}
             onClick={closeChat}
             aria-label="AIFIAN 首頁"
             className="relative"
           >
-            {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark。
-                光暈版：A 不變形，跟著字母一起收掉，由招呼語上方那顆大 mark 飛上來接手 */}
+            {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark */}
             <LogoMorph
               mark={chatOpen}
-              vanish={glowHome}
               className="block h-7 w-[95.44px]"
               // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色
               color={lightHeader ? "#ffffff" : "#1E2939"}
@@ -984,11 +943,10 @@ export default function V13HomePage() {
           <div
             aria-hidden={chatOpen}
             className={`pointer-events-none absolute inset-x-0 top-full z-10 p-4 ${
-              glowHome ? "pt-6" : ""
+              glowHome ? "pt-8" : ""
             }`}
             style={{
-              // 光暈版：外層不淡出（裡面的 logo mark 要留著飛到左上角），只淡掉招呼語
-              opacity: chatOpen && !glowHome ? 0 : 1,
+              opacity: chatOpen ? 0 : 1,
               // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
               transform: `translateY(${homeReveal * 52}px)`,
               transition:
@@ -997,24 +955,6 @@ export default function V13HomePage() {
                   : `${fade}, transform 300ms ${EASING}`,
             }}
           >
-            {/* 光暈版：招呼語上方一顆深色 logo mark，靠左（照 Figma 1068:26391）。
-                開場畫面的光團會飛到這裡淡掉，等它收掉才現身 */}
-            {glowHome && (
-              <HomeMark
-                ref={homeMarkRef}
-                style={{
-                  opacity: splash === "done" ? 1 : 0,
-                  transformOrigin: "0 0",
-                  transform:
-                    chatOpen && markFly
-                      ? `translate(${markFly.dx}px, ${markFly.dy}px) scale(${markFly.s})`
-                      : "none",
-                  transition: markFly?.ready
-                    ? `opacity 400ms ease, transform 620ms cubic-bezier(0.65, 0, 0.35, 1) ${chatOpen ? 120 : 0}ms`
-                    : "opacity 400ms ease",
-                }}
-              />
-            )}
             <div
               style={{
                 opacity: glowHome && chatOpen ? 0 : 1,

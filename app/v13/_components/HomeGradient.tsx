@@ -1,12 +1,9 @@
 "use client";
 
 // 光暈版首頁的底色：參考 Gemini Enterprise 的 App 首頁——
-// 不放大塊色光，整片是很淡的粉色洗染，從上方的淡粉慢慢退成白，
-// 左上 logo mark 後面多一圈若有似無的粉光。安靜、乾淨，顏色交給 logo mark 跟主色按鈕。
+// 不放大塊色光，整片是很淡的粉色洗染，從上方的淡粉慢慢退成白。安靜、乾淨。
 const WASH =
   "linear-gradient(180deg, #fcecef 0%, #fdf3f5 30%, #fefafb 55%, #ffffff 80%)";
-const MARK_GLOW =
-  "radial-gradient(60% 45% at 12% 14%, rgba(255, 138, 165, 0.22) 0%, rgba(255, 138, 165, 0) 100%)";
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，光同時被往上甩、放大散掉
 export const GRADIENT_EXIT_MS = 420;
@@ -41,7 +38,7 @@ export default function HomeGradient({
         <div
           className="absolute inset-0"
           style={{
-            background: `${MARK_GLOW}, ${WASH}`,
+            background: WASH,
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         />
