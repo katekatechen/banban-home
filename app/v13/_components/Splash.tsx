@@ -11,7 +11,6 @@ import { createPortal } from "react-dom";
 // 跟商品細節頁一樣用 portal 掛到 #v13-frame，才蓋得過 tabbar
 export const SPLASH_HOLD_MS = 2000;
 export const SPLASH_EXIT_MS = 1000;
-const FLY_EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
 
 // logo mark 的路徑（取自 AIFIAN 工作素材 logo_2.svg，原本是品牌紅，這裡填白色）
 export const MARK_PATH =
@@ -21,10 +20,10 @@ export const MARK_PATH =
 // 幾顆圓錯開擺、整團一起轉，紅色就會在 logo 後面流動
 export const BLOBS: [x: number, y: number, size: number, color: string][] = [
   [-12, -14, 78, "#ff3030"],
-  [16, -10, 66, "#ff7a45"],
-  [12, 16, 74, "#ff3d6e"],
-  [-16, 14, 64, "#e0204f"],
-  [2, -24, 48, "#ffa064"],
+  [16, -10, 66, "#7b5cf0"],
+  [12, 16, 74, "#4f6bff"],
+  [-16, 14, 64, "#ff3030"],
+  [2, -24, 48, "#8fd0ff"],
 ];
 
 // 光團跟 logo 的比例：光團整體縮到原本的 80%（位置跟大小一起縮），
@@ -87,27 +86,11 @@ export default function Splash({
   variant?: "plain" | "glow";
 }) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
-  // 光暈版：量好首頁那顆光團的位置後才開始移（先停一幀在起點，過場才看得到）
-  const [target, setTarget] = useState<{ dx: number; dy: number } | null>(null);
-  const [moving, setMoving] = useState(false);
 
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
   }, []);
 
-  useEffect(() => {
-    if (!leaving || !frame || variant !== "glow") return;
-    const f = frame.getBoundingClientRect();
-    const g = frame.querySelector("[data-warm-glow]")?.getBoundingClientRect();
-    setTarget({
-      dx: g ? g.left + g.width / 2 - (f.left + f.width / 2) : 0,
-      dy: g ? g.top + g.height / 2 - (f.top + f.height / 2) : 0,
-    });
-    const raf = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setMoving(true)),
-    );
-    return () => cancelAnimationFrame(raf);
-  }, [leaving, frame, variant]);
 
   if (!frame) return null;
 
@@ -138,27 +121,23 @@ export default function Splash({
     );
   }
 
-  // 光暈版：白底淡出，光團＋logo mark 整顆往上移到首頁深色 logo mark 的位置，
-// 一邊移一邊淡掉，散進首頁的漸層底色裡，由首頁那顆深色 mark 接手
-  const move = moving && target;
+  // 光暈版：不再把光團移到首頁（logo 不從中間跑到定位），
+  // 原地稍微放大、淡掉，白底跟著淡出，首頁的 logo mark 在自己的位置淡入接手
   return createPortal(
     <div aria-hidden className="absolute inset-0 z-[80]">
       <div
         className="absolute inset-0 bg-white"
         style={{
-          opacity: move ? 0 : 1,
-          transition: "opacity 520ms ease 80ms",
+          opacity: leaving ? 0 : 1,
+          transition: "opacity 600ms ease 150ms",
         }}
       />
-      <div className="absolute left-1/2 top-1/2">
+      <div className="absolute inset-0 flex items-center justify-center">
         <div
-          className="-ml-[75px] -mt-[75px]"
           style={{
-            transform: move
-              ? `translate(${target.dx}px, ${target.dy}px) scale(0.6)`
-              : "translate(0, 0)",
-            opacity: move ? 0 : 1,
-            transition: `transform ${SPLASH_EXIT_MS}ms ${FLY_EASE}, opacity ${SPLASH_EXIT_MS * 0.8}ms ease`,
+            opacity: leaving ? 0 : 1,
+            transform: leaving ? "scale(1.12)" : "scale(1)",
+            transition: "opacity 450ms ease, transform 600ms ease",
           }}
         >
           <BrandGlow className="splash-in" />
@@ -170,10 +149,17 @@ export default function Splash({
 }
 
 // 光暈版首頁招呼語上方的深色 logo mark（照 Figma 1068:26391，寬 60）。
-// 標上 data-warm-glow，開場畫面量它的位置把光團飛過來
-export function HomeMark({ style }: { style?: React.CSSProperties }) {
+// 進入對話時它會飛到左上角、縮成 header 的 logo mark（取代 AIFIAN 字樣），
+// 所以畫面上同一時間只會有一顆 mark
+export function HomeMark({
+  style,
+  ref,
+}: {
+  style?: React.CSSProperties;
+  ref?: React.Ref<HTMLDivElement>;
+}) {
   return (
-    <div data-warm-glow className="mb-[17px] w-[60px]" style={style}>
+    <div ref={ref} className="mb-[17px] w-[60px]" style={style}>
       <svg viewBox="0 0 21 18" className="block w-full">
         <path d={MARK_PATH} fill="#1e2939" />
       </svg>

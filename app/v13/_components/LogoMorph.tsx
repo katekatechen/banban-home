@@ -63,9 +63,13 @@ export default function LogoMorph({
   color = "#1E2939",
   className,
   style,
+  vanish = false,
 }: {
   // true：變成 logo mark（進入對話）；false：完整字樣
   mark: boolean;
+  // 光暈版：字母縮進 A 之後，A 不變形成 mark、直接淡掉——
+  // mark 由首頁那顆大的飛上來接手，避免畫面同時出現兩顆 mark
+  vanish?: boolean;
   color?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -85,9 +89,15 @@ export default function LogoMorph({
     let raf = 0;
     const from = pRef.current;
     const dist = Math.abs(target - from);
-    const duration = MS * dist;
-    const start = performance.now();
+    // 光暈版（vanish）：字樣要在大 mark 飛到之前就收乾淨，所以收得快；
+    // 回首頁時等大 mark 先離開左上角，字樣才從 A 展開回來
+    const duration = (vanish ? 480 : MS) * dist;
+    const start = performance.now() + (vanish && target === 0 ? 220 : 0);
     const tick = (now: number) => {
+      if (now < start) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       const t = duration > 0 ? clamp((now - start) / duration) : 1;
       const next = from + (target - from) * easeInOutQuart(t);
       pRef.current = next;
@@ -96,12 +106,14 @@ export default function LogoMorph({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
+    // vanish 只在掛載時決定，不需要跟著重跑
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mark]);
 
   // 時間軸：前 55% 字母依序縮進去（每個字母佔 25%，間隔 7.5%），後 55% A 變形成 mark
   const letterT = (i: number) => easeInOut(clamp((p - i * 0.075) / 0.25));
   const m = easeInOut(clamp((p - 0.45) / 0.55));
-  const holeScale = 1 - clamp(m * 2.2);
+  const holeScale = vanish ? 1 : 1 - clamp(m * 2.2);
 
   return (
     <svg
@@ -142,10 +154,18 @@ export default function LogoMorph({
             />
           )}
         </mask>
-        <path
-          d={m <= 0 ? A_OUTER : m >= 1 ? MARK : morph(m)}
-          mask="url(#aifian-a-hole)"
-        />
+        {vanish ? (
+          <path
+            d={A_OUTER}
+            mask="url(#aifian-a-hole)"
+            opacity={1 - easeInOut(clamp((p - 0.25) / 0.3))}
+          />
+        ) : (
+          <path
+            d={m <= 0 ? A_OUTER : m >= 1 ? MARK : morph(m)}
+            mask="url(#aifian-a-hole)"
+          />
+        )}
       </g>
     </svg>
   );

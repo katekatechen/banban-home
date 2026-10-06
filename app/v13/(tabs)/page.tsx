@@ -6,7 +6,7 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
-import HomeGradient from "../_components/HomeGradient";
+import HomeGradient, { GRADIENT_EXIT_MS } from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, {
@@ -199,6 +199,43 @@ export default function V13HomePage() {
     setVariant(resolveHomeVariant());
   }, []);
   const glowHome = variant === "glow";
+  // 光暈版：招呼語上方的大 logo mark 進入對話時飛到左上角 header 的 mark 位置。
+  // 量兩邊的位置（量的時候先拿掉 transform），算出位移跟縮放；
+  // 第一次量完才打開過場，重新整理時若已在對話中就直接停在左上角
+  const homeMarkRef = useRef<HTMLDivElement>(null);
+  const logoBtnRef = useRef<HTMLButtonElement>(null);
+  const [markFly, setMarkFly] = useState<{
+    dx: number;
+    dy: number;
+    s: number;
+    ready: boolean;
+  } | null>(null);
+  useLayoutEffect(() => {
+    if (!glowHome || splash === "show") return;
+    const measure = () => {
+      const el = homeMarkRef.current;
+      const svg = logoBtnRef.current?.querySelector("svg");
+      if (!el || !svg) return;
+      const prev = el.style.transform;
+      el.style.transform = "none";
+      const a = el.getBoundingClientRect();
+      el.style.transform = prev;
+      const b = svg.getBoundingClientRect();
+      // header 的 mark：LogoMorph 裡 mark 寬 28、離上緣 2（viewBox 跟 px 1:1）
+      setMarkFly((cur) => ({
+        dx: b.left - a.left,
+        dy: b.top + 2 - a.top,
+        s: 28 / a.width,
+        ready: cur?.ready ?? false,
+      }));
+      requestAnimationFrame(() =>
+        setMarkFly((cur) => (cur ? { ...cur, ready: true } : cur)),
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [glowHome, splash]);
   const skyTheme = SKY_THEMES[time.period];
   // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
   const lightHeader = !glowHome && skyTheme.lightHeader && !chatOpen;
@@ -853,13 +890,16 @@ export default function V13HomePage() {
         <StatusBar light={lightHeader} />
         <div className="relative flex h-11 items-center justify-between px-4">
           <button
+            ref={logoBtnRef}
             onClick={closeChat}
             aria-label="AIFIAN 首頁"
             className="relative"
           >
-            {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark */}
+            {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark。
+                光暈版：A 不變形，跟著字母一起收掉，由招呼語上方那顆大 mark 飛上來接手 */}
             <LogoMorph
               mark={chatOpen}
+              vanish={glowHome}
               className="block h-7 w-[95.44px]"
               // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色
               color={lightHeader ? "#ffffff" : "#1E2939"}
@@ -947,7 +987,8 @@ export default function V13HomePage() {
               glowHome ? "pt-[26px]" : ""
             }`}
             style={{
-              opacity: chatOpen ? 0 : 1,
+              // 光暈版：外層不淡出（裡面的 logo mark 要留著飛到左上角），只淡掉招呼語
+              opacity: chatOpen && !glowHome ? 0 : 1,
               // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
               transform: `translateY(${homeReveal * 52}px)`,
               transition:
@@ -960,12 +1001,26 @@ export default function V13HomePage() {
                 開場畫面的光團會飛到這裡淡掉，等它收掉才現身 */}
             {glowHome && (
               <HomeMark
+                ref={homeMarkRef}
                 style={{
                   opacity: splash === "done" ? 1 : 0,
-                  transition: "opacity 400ms ease",
+                  transformOrigin: "0 0",
+                  transform:
+                    chatOpen && markFly
+                      ? `translate(${markFly.dx}px, ${markFly.dy}px) scale(${markFly.s})`
+                      : "none",
+                  transition: markFly?.ready
+                    ? `opacity 400ms ease, transform 620ms cubic-bezier(0.65, 0, 0.35, 1) ${chatOpen ? 120 : 0}ms`
+                    : "opacity 400ms ease",
                 }}
               />
             )}
+            <div
+              style={{
+                opacity: glowHome && chatOpen ? 0 : 1,
+                transition: `opacity ${glowHome && chatOpen ? 160 : MODE_TRANSITION_MS}ms ease`,
+              }}
+            >
             <div
               className="flex flex-col gap-1"
               style={{
@@ -987,6 +1042,7 @@ export default function V13HomePage() {
                 賺回饋，買東西，我都很在行
               </p>
             </div>
+            </div>
           </div>
         )}
       </div>
@@ -996,8 +1052,10 @@ export default function V13HomePage() {
         style={{
           opacity: chatOpen ? 1 : 0,
           pointerEvents: chatOpen ? "auto" : "none",
-          // 送出後等雲朵把畫面蓋白了，對話內容才淡入
-          transition: chatOpen ? `${fade} ${CLOUD_MS * 0.6}ms` : fade,
+          // 送出後等雲朵（光暈版是白幕）把畫面蓋白了，對話內容才淡入
+          transition: chatOpen
+            ? `${fade} ${glowHome ? GRADIENT_EXIT_MS * 0.75 : CLOUD_MS * 0.6}ms`
+            : fade,
         }}
       >
         {/* 浮動的「載入上次對話」：放在捲動區外面，才不會被頂部的淡出遮罩吃掉 */}
