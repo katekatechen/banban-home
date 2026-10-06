@@ -3,25 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 
-// 光暈版首頁的底色：參考 MYOB 的色光帶，但倒過來放——鮮豔的顏色在畫面最上緣，
-// 往下退成白色，下半部留白（快捷問題、輸入框都在白底上）。
-// 左上亮藍、藍綠、天藍，右上主色紅 #ff3b3b 帶一點珊瑚。不用紫：藍跟紅中間隔著藍綠，避免疊出紫色。
+// 光暈版首頁的底色：參考「24 → 59%」那張的配色——左邊暖橘、杏色，
+// 中間珊瑚玫瑰、梅紫，右邊深靛藍。只壓在畫面上方，往下退成白色，下半部留白。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
 export const GLOW_TEXT_ON_COLOR = true;
 const BASE = "#ffffff";
-export const GLOW_TOP = "#1f7bff";
+export const GLOW_TOP = "#ff9a4d";
 export const GLOW_BG = BASE;
 const W = 375;
 const cq = (px: number) => `${(px / W) * 100}cqw`;
 
 // [顏色, x, 距頂部, 寬, 高, 模糊(px@375), 透明度]
 const BAND: [string, number, number, number, number, number, number][] = [
-  ["#1f7bff", -170, -110, 320, 340, 44, 0.95],
-  ["#14c8b4", 0, -80, 230, 250, 44, 0.9],
-  ["#3fb0ff", 60, -190, 200, 240, 44, 0.6],
-  ["#ff3b3b", 200, -160, 260, 300, 44, 0.9],
-  ["#ff8a6a", 300, -70, 160, 210, 42, 0.65],
+  ["#ff9a4d", -170, -110, 320, 340, 44, 0.95],
+  ["#ffc285", -90, -170, 220, 260, 44, 0.55],
+  ["#e0607a", 70, -180, 240, 300, 44, 0.9],
+  ["#8e3f86", 190, -140, 240, 320, 46, 0.9],
+  ["#1c1a86", 300, -110, 200, 340, 46, 0.95],
 ];
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
