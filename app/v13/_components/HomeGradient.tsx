@@ -13,18 +13,91 @@ export const GLOW_TEXT_ON_COLOR = true;
 const BASE = "#ffffff";
 export const GLOW_TOP = "#c8234f";
 export const GLOW_BG = BASE;
-const W = 375;
-const cq = (px: number) => `${(px / W) * 100}cqw`;
-
-// [顏色, x, 距頂部, 寬, 高, 模糊(px@375), 透明度]
-const BAND: [string, number, number, number, number, number, number][] = [
-  ["#2f6b8c", -190, -90, 300, 330, 48, 0.95],
-  ["#4c3c7e", -90, -170, 220, 300, 48, 0.75],
-  ["#b81f4b", 30, -150, 260, 330, 48, 0.95],
-  ["#e8385a", 140, -180, 250, 320, 48, 0.95],
-  ["#f27c96", 230, -130, 200, 260, 46, 0.75],
-  ["#f9c6d3", 300, -150, 200, 260, 46, 0.7],
+// 色光帶的下緣是一道起伏的波浪（參考藍色波浪那張）：同一條邊界有緊有鬆——
+// 中段用很小的模糊，邊界清楚、還壓一道深一點的陰影線；左右兩側換成大模糊，散開成霧。
+// 做法：同一個波浪形狀畫兩次（小模糊／大模糊），各自用左右方向的遮罩只留一段。
+// 座標系 375×420，寬度跟著畫面縮放。
+const WAVE_EDGE =
+  "C360,140 320,230 250,222 C180,214 150,160 95,180 C55,195 25,250 -80,262";
+const WAVE = `M-80,-60 H455 V150 L415,150 ${WAVE_EDGE} Z`;
+const EDGE_LINE = `M415,150 ${WAVE_EDGE}`;
+const STOPS: [number, string][] = [
+  [0, "#2f6b8c"],
+  [0.14, "#4c3c7e"],
+  [0.36, "#b81f4b"],
+  [0.6, "#e8385a"],
+  [0.82, "#f27c96"],
+  [1, "#f9c6d3"],
 ];
+
+function WaveBand() {
+  return (
+    <svg
+      viewBox="0 0 375 420"
+      className="absolute inset-x-0 top-0 h-auto w-full overflow-visible"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="glow-band" x1="0" y1="0" x2="1" y2="0.25">
+          {STOPS.map(([o, c]) => (
+            <stop key={o} offset={o} stopColor={c} />
+          ))}
+        </linearGradient>
+        <radialGradient id="glow-hi" cx="0.72" cy="0.1" r="0.45">
+          <stop offset="0" stopColor="#ff9fb4" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#ff9fb4" stopOpacity="0" />
+        </radialGradient>
+        <filter id="glow-tight" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" />
+        </filter>
+        <filter id="glow-loose" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="26" />
+        </filter>
+        <filter id="glow-edge" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="9" />
+        </filter>
+        {/* 緊：中段；鬆：左右兩側 */}
+        <linearGradient id="glow-mt" x1="0" x2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.6" />
+          <stop offset="0.3" stopColor="#fff" />
+          <stop offset="0.62" stopColor="#fff" />
+          <stop offset="0.85" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="glow-ml" x1="0" x2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.5" />
+          <stop offset="0.3" stopColor="#fff" stopOpacity="0" />
+          <stop offset="0.62" stopColor="#fff" stopOpacity="0" />
+          <stop offset="0.85" stopColor="#fff" />
+        </linearGradient>
+        <mask id="glow-mask-tight" maskUnits="userSpaceOnUse" x="-100" y="-100" width="575" height="560">
+          <rect x="-100" y="-100" width="575" height="560" fill="url(#glow-mt)" />
+        </mask>
+        <mask id="glow-mask-loose" maskUnits="userSpaceOnUse" x="-100" y="-100" width="575" height="560">
+          <rect x="-100" y="-100" width="575" height="560" fill="url(#glow-ml)" />
+        </mask>
+      </defs>
+      <g mask="url(#glow-mask-tight)">
+        <path d={WAVE} fill="url(#glow-band)" filter="url(#glow-tight)" />
+      </g>
+      <g mask="url(#glow-mask-loose)">
+        <path d={WAVE} fill="url(#glow-band)" filter="url(#glow-loose)" />
+      </g>
+      {/* 邊界內側一道深一點的陰影，讓緊的那段更有「邊」的感覺 */}
+      <g mask="url(#glow-mask-tight)">
+        <path
+          d={EDGE_LINE}
+          transform="translate(0,-10)"
+          fill="none"
+          stroke="#7a1638"
+          strokeWidth="16"
+          strokeOpacity="0.35"
+          filter="url(#glow-edge)"
+        />
+      </g>
+      <rect x="-80" y="-60" width="535" height="300" fill="url(#glow-hi)" />
+    </svg>
+  );
+}
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
 export const GRADIENT_EXIT_MS = 420;
@@ -92,25 +165,10 @@ export default function HomeGradient({
           className="absolute inset-0"
           style={{
             background: BASE,
-            containerType: "inline-size",
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         >
-          {BAND.map(([color, x, top, w, h, blur, op], i) => (
-            <span
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: cq(x),
-                top: cq(top),
-                width: cq(w),
-                height: cq(h),
-                background: color,
-                opacity: op,
-                filter: `blur(${cq(blur)})`,
-              }}
-            />
-          ))}
+          <WaveBand />
         </div>
       </div>
       {/* 白幕：上緣羽化，從畫面下方抽上來；回首頁時往下退 */}
