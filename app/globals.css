@@ -467,3 +467,28 @@ body {
   }
 }
 
+
+/* v13 光暈版首頁的漸層底色：載入時慢慢浮現 */
+@keyframes homeGradientIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* v13 帳號頁的 snackbar：從下面浮上來 */
+.corp-toast {
+  animation: corpToastIn 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+@keyframes corpToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

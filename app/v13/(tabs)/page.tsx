@@ -6,10 +6,11 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
+import HomeGradient from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, {
-  BrandGlow,
+  HomeMark,
   SPLASH_EXIT_MS,
   SPLASH_HOLD_MS,
 } from "../_components/Splash";
@@ -832,8 +833,11 @@ export default function V13HomePage() {
         />
       )}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
+      {/* 光暈版：米白底＋上方暖到冷的漸層光（照 Figma 1068:26391） */}
+      {splash !== "show" && glowHome && (
+        <HomeGradient covered={chatOpen} intro={playIntro} />
+      )}
       {splash !== "show" &&
-        // 光暈版沒有插圖背景（白底），光團＋logo 放在招呼語上面
         !glowHome && (
           <HomeSky
             covered={chatOpen}
@@ -851,17 +855,7 @@ export default function V13HomePage() {
           <button
             onClick={closeChat}
             aria-label="AIFIAN 首頁"
-            // 光暈版：首頁時 logo 置中（購物車還是在右邊）；進入對話後滑到左邊、換成 logo mark
-            className={glowHome ? "absolute top-1/2" : "relative"}
-            style={
-              glowHome
-                ? {
-                    left: chatOpen ? 16 : "50%",
-                    transform: `translate(${chatOpen ? "0" : "-50%"}, -50%)`,
-                    transition: `left ${MODE_TRANSITION_MS}ms ${EASING}, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
-                  }
-                : undefined
-            }
+            className="relative"
           >
             {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark */}
             <LogoMorph
@@ -871,7 +865,6 @@ export default function V13HomePage() {
               color={lightHeader ? "#ffffff" : "#1E2939"}
             />
           </button>
-          {glowHome && <span />}
           <button
             aria-label="購物車"
             tabIndex={showCart ? 0 : -1}
@@ -951,7 +944,7 @@ export default function V13HomePage() {
           <div
             aria-hidden={chatOpen}
             className={`pointer-events-none absolute inset-x-0 top-full z-10 p-4 ${
-              glowHome ? "flex flex-col items-center pt-20 text-center" : ""
+              glowHome ? "pt-[26px]" : ""
             }`}
             style={{
               opacity: chatOpen ? 0 : 1,
@@ -963,13 +956,14 @@ export default function V13HomePage() {
                   : `${fade}, transform 300ms ${EASING}`,
             }}
           >
-            {/* 光暈版：開場畫面那顆光團＋logo 停在這裡（開場畫面結束時整顆移過來接手，
-                移動的期間先藏著），標題置中排在下面 */}
+            {/* 光暈版：招呼語上方一顆深色 logo mark，靠左（照 Figma 1068:26391）。
+                開場畫面的光團會飛到這裡淡掉，等它收掉才現身 */}
             {glowHome && (
-              <BrandGlow
-                anchor
-                className="mb-3"
-                style={{ opacity: splash === "done" ? 1 : 0 }}
+              <HomeMark
+                style={{
+                  opacity: splash === "done" ? 1 : 0,
+                  transition: "opacity 400ms ease",
+                }}
               />
             )}
             <div
