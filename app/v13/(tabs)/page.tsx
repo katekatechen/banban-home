@@ -66,24 +66,29 @@ const FLY_TO_CART_MS = 650;
 let heroIntroPlayed = false;
 
 const SUGGESTION_POOL = [
-  { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
+  { key: "how-to-earn",
+    emoji: "🎁", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
   {
     key: "is-cash",
+    emoji: "💰",
     prompt: "AIFIAN 的回饋是現金嗎",
     label: "AIFIAN 的回饋是現金嗎",
   },
   {
     key: "restock-noodles",
+    emoji: "🍜",
     prompt: "推薦幾款好吃的乾拌麵給我",
     label: "上次買的乾拌麵吃完了嗎？要不要補貨",
   },
   {
     key: "mid-autumn",
+    emoji: "🍺",
     prompt: "推薦適合中秋烤肉喝的酒",
     label: "中秋烤肉想喝點什麼嗎？",
   },
   {
     key: "daily-reward",
+    emoji: "📈",
     prompt: "我想看智能選品",
     label: "你的每日回饋突破 100 元！再買點智能選品？",
   },
@@ -984,7 +989,7 @@ export default function V13HomePage() {
           <div
             aria-hidden={chatOpen}
             className={`pointer-events-none absolute inset-x-0 top-full z-10 p-4 ${
-              glowHome ? "pt-[26px]" : ""
+              glowHome ? "pt-6" : ""
             }`}
             style={{
               // 光暈版：外層不淡出（裡面的 logo mark 要留著飛到左上角），只淡掉招呼語
@@ -1030,7 +1035,11 @@ export default function V13HomePage() {
               }}
             >
               <p
-                className="text-[24px] font-bold leading-[1.4]"
+                className={
+                  glowHome
+                    ? "text-[26px] font-medium leading-[1.35] tracking-[-0.01em]"
+                    : "text-[24px] font-bold leading-[1.4]"
+                }
                 style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
               >
                 {greetingOf(time.greet, time.hour)}
@@ -1042,6 +1051,34 @@ export default function V13HomePage() {
                 賺回饋，買東西，我都很在行
               </p>
             </div>
+            {/* 光暈版：快捷問題直接排在招呼語底下（參考 Gemini Enterprise），
+                小膠囊、前面帶一個 emoji，不放「你可能也想知道」標題 */}
+            {glowHome && (
+              <div
+                className="flex flex-col items-start gap-2 pt-6"
+                style={{
+                  pointerEvents: chatOpen ? "none" : "auto",
+                  animation: playIntro
+                    ? `heroGreetIn 600ms ${EASING} 450ms both`
+                    : undefined,
+                }}
+              >
+                {suggestions.map((s) => (
+                  <button
+                    key={s.key}
+                    tabIndex={chatOpen ? -1 : 0}
+                    onClick={() => {
+                      setChipsOpen(false);
+                      handleSend(s.prompt);
+                    }}
+                    className="flex max-w-full items-center gap-1.5 rounded-full bg-white/75 px-3 py-[7px] text-left text-[13px] leading-[18px] text-[#364153] shadow-[0px_1px_2px_rgba(30,41,57,0.06)] backdrop-blur-sm active:bg-white"
+                  >
+                    <span className="text-[13px]">{s.emoji}</span>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
             </div>
           </div>
         )}
@@ -1228,7 +1265,20 @@ export default function V13HomePage() {
       {/* 底部留白要讓過 tabbar：55px 膠囊＋底部安全區（真手機 env()+12px、
           桌機預覽 34px），再加 Figma 上 8px 的間距 */}
       <div className="relative flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+75px)] sm:pb-[97px]">
-        <div className="flex flex-col py-2">
+        {/* 光暈版首頁的快捷問題已經排在招呼語底下，這裡只在對話中出現 */}
+        <div
+          className="flex flex-col py-2"
+          style={
+            glowHome
+              ? chatOpen
+                ? {
+                    // 等白幕蓋滿、對話內容出現時才一起淡入
+                    animation: `homeGradientFade ${MODE_TRANSITION_MS}ms ease ${GRADIENT_EXIT_MS * 0.75}ms both`,
+                  }
+                : { display: "none" }
+              : undefined
+          }
+        >
           <div className="flex h-5 items-center justify-between">
             <button
               onClick={() => setChipsOpen((v) => !v)}

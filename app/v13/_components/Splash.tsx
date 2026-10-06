@@ -148,9 +148,9 @@ export default function Splash({
   );
 }
 
-// 光暈版首頁招呼語上方的深色 logo mark（照 Figma 1068:26391，寬 60）。
-// 進入對話時它會飛到左上角、縮成 header 的 logo mark（取代 AIFIAN 字樣），
-// 所以畫面上同一時間只會有一顆 mark
+// 光暈版首頁招呼語上方的 logo mark：參考 Gemini 的小彩色星芒，
+// 改成 32px、品牌紅到粉紅的漸層。進入對話時它會飛到左上角、
+// 變成 header 的 logo mark（取代 AIFIAN 字樣），畫面上同一時間只會有一顆 mark
 export function HomeMark({
   style,
   ref,
@@ -159,9 +159,15 @@ export function HomeMark({
   ref?: React.Ref<HTMLDivElement>;
 }) {
   return (
-    <div ref={ref} className="mb-[17px] w-[60px]" style={style}>
+    <div ref={ref} className="mb-4 w-8" style={style}>
       <svg viewBox="0 0 21 18" className="block w-full">
-        <path d={MARK_PATH} fill="#1e2939" />
+        <defs>
+          <linearGradient id="home-mark-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ff3030" />
+            <stop offset="1" stopColor="#ff7a9a" />
+          </linearGradient>
+        </defs>
+        <path d={MARK_PATH} fill="url(#home-mark-grad)" />
       </svg>
     </div>
   );

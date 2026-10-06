@@ -468,15 +468,13 @@ body {
 }
 
 
-/* v13 光暈版首頁的漸層底色：載入時光從下緣升起來 */
-@keyframes homeGlowRise {
+/* v13 光暈版首頁的底色：載入時淡入 */
+@keyframes homeGradientFade {
   from {
     opacity: 0;
-    transform: translateY(18%);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
