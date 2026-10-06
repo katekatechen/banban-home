@@ -1,21 +1,23 @@
 "use client";
 
-// 光暈版首頁的底色：參考 MYOB——很淺的灰白底，顏色只壓在畫面最下緣，
-// 鮮豔、對比強：左邊主色紅 #ff3b3b（帶一點珊瑚），中間偏右洋紅，右邊紫，
-// 紅跟洋紅之間留一點淺色的凹口，像起伏的光帶。上方大片留給招呼語，字用深色。
+// 光暈版首頁的底色：參考 MYOB 的色光帶，但倒過來放——鮮豔的顏色在畫面最上緣，
+// 往下退成白色，下半部留白（快捷問題、輸入框都在白底上）。
+// 左邊主色紅 #ff3b3b（帶一點珊瑚），中間偏右洋紅，右邊紫。
+// 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
-const BASE = "#f1f1f2";
-export const GLOW_TOP = BASE;
+export const GLOW_TEXT_ON_COLOR = true;
+const BASE = "#ffffff";
+export const GLOW_TOP = "#ff3b3b";
 export const GLOW_BG = BASE;
 const W = 375;
 const cq = (px: number) => `${(px / W) * 100}cqw`;
 
-// [顏色, x, 距底部, 寬, 高, 模糊(px@375), 透明度]
+// [顏色, x, 距頂部, 寬, 高, 模糊(px@375), 透明度]
 const BAND: [string, number, number, number, number, number, number][] = [
-  ["#ff3b3b", -150, -80, 300, 240, 40, 0.95],
-  ["#ff6a4d", -60, -130, 220, 200, 40, 0.6],
-  ["#e0288a", 180, -90, 250, 230, 42, 0.9],
-  ["#9a35c8", 300, -70, 200, 240, 42, 0.9],
+  ["#ff3b3b", -150, -110, 320, 360, 44, 0.95],
+  ["#ff6a4d", -40, -150, 240, 280, 44, 0.55],
+  ["#e0288a", 160, -120, 280, 350, 46, 0.92],
+  ["#9a35c8", 290, -100, 220, 360, 46, 0.92],
 ];
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
@@ -56,13 +58,13 @@ export default function HomeGradient({
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         >
-          {BAND.map(([color, x, bottom, w, h, blur, op], i) => (
+          {BAND.map(([color, x, top, w, h, blur, op], i) => (
             <span
               key={i}
               className="absolute rounded-full"
               style={{
                 left: cq(x),
-                bottom: cq(bottom),
+                top: cq(top),
                 width: cq(w),
                 height: cq(h),
                 background: color,
