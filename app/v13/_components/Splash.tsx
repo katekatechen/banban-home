@@ -22,7 +22,7 @@ export const BLOBS: [x: number, y: number, size: number, color: string][] = [
   [-12, -14, 78, "#ff3030"],
   [16, -10, 66, "#ff7a5c"],
   [12, 16, 74, "#ff8aa5"],
-  [-16, 14, 64, "#ff3030"],
+  [-16, 14, 64, "#ffa3bd"],
   [2, -24, 48, "#ffb38f"],
 ];
 
