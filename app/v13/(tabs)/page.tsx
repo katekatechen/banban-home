@@ -873,8 +873,15 @@ export default function V13HomePage() {
             <LogoMorph
               mark={chatOpen}
               className="block h-7 w-[95.44px]"
-              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色
-              color={lightHeader ? "#ffffff" : "#1E2939"}
+              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色。
+              // 光暈版：進入對話後的 logo mark 用品牌紅
+              color={
+                lightHeader
+                  ? "#ffffff"
+                  : glowHome && chatOpen
+                    ? "#ff3030"
+                    : "#1E2939"
+              }
             />
           </button>
           <button
