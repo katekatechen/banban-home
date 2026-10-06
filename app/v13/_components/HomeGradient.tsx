@@ -2,22 +2,23 @@
 
 // 光暈版首頁的底色：參考 MYOB 的色光帶，但倒過來放——鮮豔的顏色在畫面最上緣，
 // 往下退成白色，下半部留白（快捷問題、輸入框都在白底上）。
-// 左邊主色紅 #ff3b3b（帶一點珊瑚），中間偏右洋紅，右邊紫。
+// 左上亮藍（帶一點天藍），往右接主色紅 #ff3b3b、洋紅，最右邊紫。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
 export const GLOW_TEXT_ON_COLOR = true;
 const BASE = "#ffffff";
-export const GLOW_TOP = "#ff3b3b";
+export const GLOW_TOP = "#1f7bff";
 export const GLOW_BG = BASE;
 const W = 375;
 const cq = (px: number) => `${(px / W) * 100}cqw`;
 
 // [顏色, x, 距頂部, 寬, 高, 模糊(px@375), 透明度]
 const BAND: [string, number, number, number, number, number, number][] = [
-  ["#ff3b3b", -150, -110, 320, 360, 44, 0.95],
-  ["#ff6a4d", -40, -150, 240, 280, 44, 0.55],
-  ["#e0288a", 160, -120, 280, 350, 46, 0.92],
-  ["#9a35c8", 290, -100, 220, 360, 46, 0.92],
+  ["#1f7bff", -170, -110, 330, 360, 44, 0.95],
+  ["#3fb0ff", -80, -170, 220, 260, 44, 0.6],
+  ["#ff3b3b", 70, -180, 230, 300, 44, 0.8],
+  ["#e0288a", 180, -120, 270, 350, 46, 0.9],
+  ["#9a35c8", 295, -100, 220, 360, 46, 0.92],
 ];
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
