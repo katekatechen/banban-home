@@ -1,21 +1,19 @@
 "use client";
 
-// 光暈版首頁的底色：以白色為主，只在兩個角落點上小面積的柔光，
-// 斜對角配置（參考 Leonard 那張的構圖）：右上是主色紅 #ff3030 帶一點粉紅，
-// 左下是蜜桃帶一點淡粉。總共三種顏色（紅、粉、蜜桃），中間大片留白給招呼語跟快捷問題。
-// 位置用 375 寬的座標換成 cqw（容器寬的百分比），不同手機寬度比例不變。
-const W = 375;
-const cq = (px: number) => `${(px / W) * 100}cqw`;
+// 光暈版首頁的底色：參考 GuestUp 海報——上方深靛藍，往下轉成寶藍、紫，
+// 右下角透出一團接近白的粉紫光；上面疊幾條很細的白色線條，
+// 線條畫成圓角的「Λ」，呼應 AIFIAN logo mark 的形狀。深底上的字一律白色。
+export const GLOW_TOP = "#120f4a";
+export const GLOW_BG =
+  "linear-gradient(168deg, #120f4a 0%, #1c1772 26%, #3a2db0 52%, #6e3cb8 74%, #a45bc4 90%, #c98bd6 100%)";
+const LIGHTS = [
+  // 右下角的亮光
+  "radial-gradient(55% 32% at 92% 98%, rgba(248, 222, 248, 0.95) 0%, rgba(232, 180, 236, 0.55) 35%, rgba(200, 140, 220, 0) 75%)",
+  // 左側中段一點寶藍，讓藍到紫的過渡有層次
+  "radial-gradient(45% 30% at 0% 52%, rgba(76, 70, 230, 0.55) 0%, rgba(76, 70, 230, 0) 100%)",
+].join(", ");
 
-// [貼齊上或下, 顏色, x, 距上／下, 寬, 高, 模糊(px@375), 透明度]
-const BLOBS: ["top" | "bottom", string, number, number, number, number, number, number][] = [
-  ["top", "#ff3030", 250, -150, 220, 200, 60, 0.5],
-  ["top", "#ff8aa5", 300, -60, 180, 180, 55, 0.5],
-  ["bottom", "#ffb38f", -130, -90, 260, 240, 60, 0.55],
-  ["bottom", "#ffc2d1", -20, -130, 200, 180, 55, 0.45],
-];
-
-// 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，光同時被往上甩、放大散掉
+// 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，深色底同時往上淡掉
 export const GRADIENT_EXIT_MS = 420;
 const IN = "cubic-bezier(0.7, 0, 0.84, 0)"; // 越抽越快
 const OUT = "cubic-bezier(0.16, 1, 0.3, 1)"; // 回首頁：白色快速落下、光慢慢回位
@@ -35,7 +33,7 @@ export default function HomeGradient({
       aria-hidden
       className="pointer-events-none absolute inset-0 overflow-hidden bg-white"
     >
-      {/* 角落柔光：外層管進出對話，內層管載入（避免 animation 蓋掉 transition） */}
+      {/* 深色漸層：外層管進出對話，內層管載入（避免 animation 蓋掉 transition） */}
       <div
         className="absolute inset-0"
         style={{
@@ -48,25 +46,30 @@ export default function HomeGradient({
         <div
           className="absolute inset-0"
           style={{
-            containerType: "inline-size",
+            background: `${LIGHTS}, ${GLOW_BG}`,
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         >
-          {BLOBS.map(([anchor, color, x, y, w, h, blur, op], i) => (
-            <span
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: cq(x),
-                [anchor]: cq(y),
-                width: cq(w),
-                height: cq(h),
-                background: color,
-                opacity: op,
-                filter: `blur(${cq(blur)})`,
-              }}
+          {/* 細白線：圓角的 Λ，像放大的 logo mark 輪廓 */}
+          <svg
+            viewBox="0 0 375 812"
+            preserveAspectRatio="xMidYMid slice"
+            className="absolute inset-0 size-full"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="1"
+            strokeLinecap="round"
+          >
+            <path
+              d="M-60 470 L118 168 Q140 130 162 168 L470 690"
+              strokeOpacity="0.28"
             />
-          ))}
+            <path
+              d="M150 900 L300 640 Q318 610 336 640 L480 880"
+              strokeOpacity="0.22"
+            />
+            <path d="M330 -40 Q300 120 420 250" strokeOpacity="0.16" />
+          </svg>
         </div>
       </div>
       {/* 白幕：上緣羽化，從畫面下方抽上來；回首頁時往下退 */}

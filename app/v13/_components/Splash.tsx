@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { GLOW_BG } from "./HomeGradient";
 
 // 開場畫面（launch screen），兩個版本，跟著首頁的版本走：
 // - 預設（天空版首頁）：白底中間放紅色的 AIFIAN 完整 logo，停 2 秒後淡出接首頁；
@@ -121,12 +122,14 @@ export default function Splash({
     );
   }
 
-  // 光暈版：光團不移到首頁（logo 不從中間跑到定位），原地稍微放大、淡掉，白底跟著淡出
+  // 光暈版：底色跟首頁同一片深靛藍到紫的漸層，光團不移到首頁（logo 不從中間跑到定位），
+  // 原地稍微放大、淡掉，底色跟著淡出接上首頁
   return createPortal(
     <div aria-hidden className="absolute inset-0 z-[80]">
       <div
-        className="absolute inset-0 bg-white"
+        className="absolute inset-0"
         style={{
+          background: GLOW_BG,
           opacity: leaving ? 0 : 1,
           transition: "opacity 600ms ease 150ms",
         }}

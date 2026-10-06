@@ -6,7 +6,10 @@ import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
 import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
-import HomeGradient, { GRADIENT_EXIT_MS } from "../_components/HomeGradient";
+import HomeGradient, {
+  GLOW_TOP,
+  GRADIENT_EXIT_MS,
+} from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, {
@@ -200,8 +203,10 @@ export default function V13HomePage() {
   const glowHome = variant === "glow";
   const skyTheme = SKY_THEMES[time.period];
   // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
-  const lightHeader = !glowHome && skyTheme.lightHeader && !chatOpen;
-  const darkGreeting = glowHome || skyTheme.darkGreeting;
+  // 光暈版是深靛藍到紫的底：logo、狀態列、招呼語、快捷問題都改白色；進入對話後是白底，換回深色
+  const lightHeader = glowHome ? !chatOpen : skyTheme.lightHeader && !chatOpen;
+  const darkGreeting = !glowHome && skyTheme.darkGreeting;
+  const glowDark = glowHome && !chatOpen;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
@@ -604,7 +609,7 @@ export default function V13HomePage() {
       return;
     }
     if (!chatOpen) {
-      setTopTint(glowHome ? null : skyTheme.top);
+      setTopTint(glowHome ? GLOW_TOP : skyTheme.top);
       return;
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
@@ -981,7 +986,13 @@ export default function V13HomePage() {
               </p>
               <p
                 className="text-[14px] leading-[18px]"
-                style={{ color: darkGreeting ? "#4a5565" : "#ffffff" }}
+                style={{
+                  color: darkGreeting
+                    ? "#4a5565"
+                    : glowHome
+                      ? "rgba(255,255,255,0.78)"
+                      : "#ffffff",
+                }}
               >
                 賺回饋，買東西，我都很在行
               </p>
@@ -1179,7 +1190,10 @@ export default function V13HomePage() {
               aria-expanded={chipsOpen}
               className="flex items-center gap-1"
             >
-              <span className="text-[16px] font-bold text-gray-800">
+              <span
+                className="text-[16px] font-bold transition-colors duration-300"
+                style={{ color: glowDark ? "#ffffff" : "#1e2939" }}
+              >
                 你可能也想知道
               </span>
               <img
@@ -1187,6 +1201,7 @@ export default function V13HomePage() {
                 alt=""
                 className="size-4"
                 style={{
+                  filter: glowDark ? "brightness(0) invert(1)" : undefined,
                   transform: chipsOpen
                     ? "rotate(0deg)"
                     : `rotate(${-90 + 90 * pull}deg)`,
@@ -1207,7 +1222,14 @@ export default function V13HomePage() {
                 transition: `opacity ${MODE_TRANSITION_MS}ms ease`,
               }}
             >
-              <img src="/figma/v13-refresh.svg" alt="" className="size-4" />
+              <img
+                src="/figma/v13-refresh.svg"
+                alt=""
+                className="size-4"
+                style={{
+                  filter: glowDark ? "brightness(0) invert(1)" : undefined,
+                }}
+              />
             </button>
           </div>
           {/* 收合／展開用 grid-template-rows 在 0fr 跟 1fr 之間過渡：高度不用
@@ -1252,7 +1274,13 @@ export default function V13HomePage() {
                           : "none",
                       }}
                       tabIndex={chipsOpen ? 0 : -1}
-                      className={glowHome ? CHIP_CLASS : CHIP_CLASS_SHADOW}
+                      className={
+                        glowDark
+                          ? CHIP_CLASS_DARK
+                          : glowHome
+                            ? CHIP_CLASS
+                            : CHIP_CLASS_SHADOW
+                      }
                     >
                       {s.label}
                     </button>
@@ -1338,6 +1366,9 @@ export default function V13HomePage() {
 
 const CHIP_CLASS =
   "max-w-full rounded-[999px] border border-[#d1d6db] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461]";
+// 光暈版首頁（深靛藍到紫的底）：半透明白的玻璃膠囊、白字
+const CHIP_CLASS_DARK =
+  "max-w-full rounded-[999px] border border-white/30 bg-white/10 px-[14px] py-2 text-left text-[13px] text-white backdrop-blur-[2px]";
 // 預設版（照 Figma 1017:3714）：不要邊框，改用淡淡的陰影浮在天空漸層上
 const CHIP_CLASS_SHADOW =
   "max-w-full rounded-[999px] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]";
