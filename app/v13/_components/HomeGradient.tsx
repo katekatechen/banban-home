@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import GliderSvg from "./GliderSvg";
 import { EASING } from "../_lib/page-transition";
 
 // 光暈版首頁的底色：參考 MYOB 的色光帶，但倒過來放——鮮豔的顏色在畫面最上緣，
@@ -155,10 +154,31 @@ export default function HomeGradient({
             </svg>
           </div>
           <div className="glider-float relative">
-            <GliderSvg frame={false} className="block h-auto w-full" />
+            <SimpleGlider className="block h-auto w-full" />
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// 光暈版首頁專用的簡化飛機：只留左翼、龍骨、右翼三塊，深淺兩個紅
+// （外形照 GliderSvg 的 600×488 座標，拿掉摺痕、厚度跟骨架；預設天空版的飛機不受影響）
+const NOSE = "595 3";
+function SimpleGlider({ className }: { className?: string }) {
+  const light = "#ff4a4a";
+  const dark = "#c4202b";
+  return (
+    <svg viewBox="0 0 600 488" className={className} aria-hidden>
+      <path
+        d={`M24 75 L${NOSE} L252 162 L198 236 Q186 243 172 233 L22 128 Q2 112 6 96 Q10 79 24 75 Z`}
+        fill={light}
+      />
+      <path d={`M${NOSE} L252 162 L291 288 L346 248 Z`} fill={dark} />
+      <path
+        d={`M${NOSE} L346 248 L354 344 Q360 362 376 376 L486 470 Q500 484 520 485 L548 486 Q572 486 574 460 Z`}
+        fill={light}
+      />
+    </svg>
   );
 }
