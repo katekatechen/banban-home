@@ -197,8 +197,8 @@ export default function V13HomePage() {
   useEffect(() => {
     setTime(resolveTime());
   }, []);
-  // 首頁插圖的版本（天空版／光暈版，?home=glow），跟時段一樣掛載後才讀網址
-  const [variant, setVariant] = useState(() => knownHomeVariant() ?? "sky");
+  // 首頁插圖的版本（光暈版預設，?home=sky 切天空版），跟時段一樣掛載後才讀網址
+  const [variant, setVariant] = useState(() => knownHomeVariant() ?? "glow");
   useEffect(() => {
     setVariant(resolveHomeVariant());
   }, []);

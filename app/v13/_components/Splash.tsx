@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import { GLOW_BG } from "./HomeGradient";
 
 // 開場畫面（launch screen），兩個版本，跟著首頁的版本走：
-// - 預設（天空版首頁）：白底中間放紅色的 AIFIAN 完整 logo，停 2 秒後淡出接首頁；
-// - 光暈版（?home=glow）：白底中間一團模糊、慢慢旋轉的品牌色光，上面一顆白色 logo mark。
+// - 天空版首頁（?home=sky）：白底中間放紅色的 AIFIAN 完整 logo，停 2 秒後淡出接首頁；
+// - 光暈版（預設）：白底中間一團模糊、慢慢旋轉的品牌色光，上面一顆白色 logo mark。
 //   首頁也是同一顆光團加 logo（標題置中排在下面），開場畫面結束時白底淡出、
 //   這顆整個往上移到首頁的位置，兩個畫面無縫接起來。
 // 跟商品細節頁一樣用 portal 掛到 #v13-frame，才蓋得過 tabbar
