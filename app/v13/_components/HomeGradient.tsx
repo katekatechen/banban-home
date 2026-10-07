@@ -3,26 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 
-// 光暈版首頁的底色：參考「24 → 59%」那張的配色——左邊暖橘、杏色，
-// 中間珊瑚玫瑰、梅紫，右上一小塊寶藍。只壓在畫面上方，往下退成白色，下半部留白。
+// 光暈版首頁的底色：照 Figma「Chat – 光暈版（網站同步 10/7）」（1083:25414）的 bg-gradient。
+// 左上杏色、左側粉紅、中間珊瑚玫瑰，上方中間疊一層藍（linear burn）壓出深紫靛，
+// 右上再一層斜放的藍（color burn）變成亮藍、往外退成淺藍，整片往下淡成白色。
+// Figma 的 linear burn 在 CSS 沒有對應的混合模式，所以照 Figma 的圖層參數
+// （位置、大小、旋轉、layer blur、混合模式）算成一張圖：public/v13/home-glow.webp，
+// 375 寬、高 360（以下全白），3 倍解析度。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
 export const GLOW_TEXT_ON_COLOR = true;
 const BASE = "#ffffff";
-export const GLOW_TOP = "#ff9a4d";
+// 手機狀態列的底色：取色光帶上緣的珊瑚粉
+export const GLOW_TOP = "#f66987";
 export const GLOW_BG = BASE;
-const W = 375;
-const cq = (px: number) => `${(px / W) * 100}cqw`;
-
-// [顏色, x, 距頂部, 寬, 高, 模糊(px@375), 透明度]
-const BAND: [string, number, number, number, number, number, number][] = [
-  ["#ff9a4d", -170, -110, 320, 340, 44, 0.95],
-  ["#ffc285", -90, -170, 220, 260, 44, 0.55],
-  ["#e0607a", 70, -180, 240, 300, 44, 0.9],
-  ["#8e3f86", 185, -150, 200, 270, 44, 0.85],
-  // 右上偏藍、面積收小
-  ["#2446c4", 315, -130, 170, 260, 42, 0.95],
-];
+const BAND_SRC = "/v13/home-glow.webp";
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
 export const GRADIENT_EXIT_MS = 420;
@@ -90,25 +84,16 @@ export default function HomeGradient({
           className="absolute inset-0"
           style={{
             background: BASE,
-            containerType: "inline-size",
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         >
-          {BAND.map(([color, x, top, w, h, blur, op], i) => (
-            <span
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: cq(x),
-                top: cq(top),
-                width: cq(w),
-                height: cq(h),
-                background: color,
-                opacity: op,
-                filter: `blur(${cq(blur)})`,
-              }}
-            />
-          ))}
+          <div
+            className="absolute inset-x-0 top-0 aspect-[375/360]"
+            style={{
+              backgroundImage: `url(${BAND_SRC})`,
+              backgroundSize: "100% 100%",
+            }}
+          />
         </div>
       </div>
       {/* 白幕：上緣羽化，從畫面下方抽上來；回首頁時往下退 */}
