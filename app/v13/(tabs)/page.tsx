@@ -997,7 +997,7 @@ export default function V13HomePage() {
                 }
                 style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
               >
-                {greetingOf(time.greet, time.hour)}
+                {greetingOf(time.hour)}
               </p>
               <p
                 className="text-[14px] leading-[18px]"
