@@ -101,9 +101,9 @@ const periodOfHour = (h: number): Period =>
 
 // 招呼語分三段：早上 5 到 11 點、下午 11 到 18 點、晚上 18 到隔天 5 點
 export function greetingOf(hour: number) {
-  if (hour >= 5 && hour < 11) return "早安！想聊點什麼？";
-  if (hour >= 11 && hour < 18) return "午安！想聊點什麼？";
-  return "晚上好！想聊點什麼？";
+  if (hour >= 5 && hour < 11) return "早安！今天想聊點什麼？";
+  if (hour >= 11 && hour < 18) return "午安！今天想聊點什麼？";
+  return "晚上好！想聊點什麼嗎？";
 }
 
 // 同一次開啟頁面只算一次：切去其他分頁再回來，網址上的 ?time= 已經不在了，
