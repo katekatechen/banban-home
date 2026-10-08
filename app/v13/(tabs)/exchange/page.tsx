@@ -19,6 +19,7 @@ import {
   REWARD_BALANCE,
   TRENDING_PRODUCTS,
   WISHES,
+  WISHES_SOON,
 } from "../../_lib/mock-data";
 
 // 導覽列浮在內容上面用漸層，不是佔自己一排空間的實色色塊，跟回饋分頁
@@ -49,7 +50,7 @@ const RECOMMENDED_CARDS = toCards(RECOMMENDED_PRODUCTS);
 
 export default function ExchangePage() {
   const router = useRouter();
-  // 「大家都在換」「猜你喜歡」點了打開跟對話裡同一個商品細節頁，
+  // 「大家都在買」「猜你喜歡」點了打開跟對話裡同一個商品細節頁，
   // 左右滑可以切換同一排的其他商品；購物車狀態跟聊天分頁共用同一份
   const [sheet, setSheet] = useState<{
     cards: RecCard[];
@@ -86,27 +87,36 @@ export default function ExchangePage() {
       >
         <div className="pointer-events-auto">
           <StatusBar />
-          <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-1">
-            <p className="text-[20px] font-bold text-gray-900">兌換</p>
+          {/* 頂列照 Figma 948:46058：24px 標題，右邊回饋膠囊＋購物車（跟聊天分頁同一顆） */}
+          <div className="flex h-11 shrink-0 items-center justify-between px-4">
+            <p className="text-[24px] font-semibold leading-8 text-gray-800">
+              兌換
+            </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => router.push("/v13/reward-history")}
-                className="flex items-center gap-1.5 rounded-full bg-white py-1.5 pl-1.5 pr-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
+                className="flex shrink-0 items-center gap-1.5 rounded-[22px] bg-white py-1.5 pl-1.5 pr-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
               >
-                <span className="flex size-6 items-center justify-center rounded-full bg-brand text-white">
-                  <svg viewBox="0 0 16 16" fill="none" className="size-3">
-                    <path
-                      d="M8 12.5V3.5M8 3.5L4 7.5M8 3.5l4 4"
-                      stroke="white"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-                <span className="text-[14px] font-medium text-gray-800">
+                <img
+                  src="/figma/reward-icon-hero.svg"
+                  alt=""
+                  className="size-7"
+                />
+                <span className="text-[16px] font-medium leading-6 text-gray-800">
                   {REWARD_BALANCE.toLocaleString()}
                 </span>
+              </button>
+              <button
+                aria-label="購物車"
+                onClick={() => setCheckoutOpen(true)}
+                className="relative flex h-11 items-center rounded-[22px] bg-white px-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
+              >
+                <img src="/figma/v13-cart.svg" alt="" className="size-5" />
+                {cart.length > 0 && (
+                  <span className="absolute -right-[3px] top-0 rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
+                    {cart.length}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -117,39 +127,69 @@ export default function ExchangePage() {
           標題各自內縮 16px；橫向卡片列的 16px 內距放在捲動列自己身上，
           卡片往右滑時才能一路滑到螢幕邊緣，不會在 16px 處被切掉 */}
       <div
-        className={`flex-1 overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-[110px] ${HEADER_PADDING_CLASS}`}
+        className={`flex-1 overflow-y-auto overscroll-contain bg-white ${HEADER_PADDING_CLASS}`}
       >
-        <div className="flex flex-col gap-6">
+        <ProductRow
+          title="大家都在買"
+          subtitle="用回饋折抵商品"
+          products={TRENDING_PRODUCTS}
+          onOpen={(i) => setSheet({ cards: TRENDING_CARDS, index: i })}
+        />
+        <ProductRow
+          title="猜你喜歡"
+          subtitle="根據你的對話"
+          products={RECOMMENDED_PRODUCTS}
+          onOpen={(i) => setSheet({ cards: RECOMMENDED_CARDS, index: i })}
+        />
+
+        {/* 許願池（照 Figma 948:45714）：跟上面用回饋折抵的商品邏輯不同（這裡是抽獎），
+            整區換成深色底做出區隔；底部多留一段讓深色延伸到 tabbar 底下 */}
+        <div className="flex flex-col gap-4 bg-[#364153] pb-[140px]">
           <div>
-            <div className="px-4">
-              <p className="text-[14px] font-bold text-gray-800">許願池</p>
-              <p className="mb-3 text-[12px] text-gray-400">
-                用回饋換喜歡的東西
+            <div className="p-4">
+              <div className="flex items-center gap-1">
+                <p className="text-[16px] font-semibold leading-6 text-white">
+                  許願池
+                </p>
+                <img
+                  src="/figma/v13-nav-arrow-right-white.svg"
+                  alt=""
+                  className="size-5"
+                />
+              </div>
+              <p className="text-[13px] leading-[18px] text-gray-400">
+                用回饋換一個機會
               </p>
             </div>
-            {/* 卡寬用容器的百分比（86%），不是佔滿整排——這樣兩張卡片之間
-                永遠留得出下一張的邊緣，看得出「還可以往右滑」，
-                跟線上藏酒那排卡片同一套做法 */}
-            <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
+            <div className="no-scrollbar flex gap-3 overflow-x-auto px-4">
               {WISHES.map((w) => (
                 <div
                   key={w.id}
-                  className="relative h-[168px] w-[86%] shrink-0 overflow-hidden rounded-2xl bg-gray-200"
+                  className="w-[calc(100%-32px)] shrink-0 overflow-hidden rounded-2xl bg-gray-800"
                 >
-                  <img
-                    src={w.image}
-                    alt={w.name}
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <p className="text-[13px] font-semibold">{w.name}</p>
-                    <p className="line-clamp-2 text-[12px] text-white/85">
+                  <div className="relative h-[180px]">
+                    <img
+                      src={w.image}
+                      alt={w.name}
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/10" />
+                    <p className="absolute inset-x-4 bottom-4 line-clamp-2 text-[20px] leading-6 text-white">
                       {w.subtitle}
                     </p>
-                    <p className="mt-1 text-[12.5px] font-semibold">
-                      中獎價 ${w.price}
-                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-bold leading-[22px] text-white">
+                        {w.name}
+                      </p>
+                      <p className="text-[16px] leading-6 text-white">
+                        中獎價 ＄{w.price.toLocaleString()}
+                      </p>
+                    </div>
+                    <button className="shrink-0 rounded-full bg-brand px-[18px] py-2 text-[14px] font-bold leading-5 text-white">
+                      許願
+                    </button>
                   </div>
                 </div>
               ))}
@@ -157,78 +197,53 @@ export default function ExchangePage() {
           </div>
 
           <div>
-            <div className="px-4">
-              <p className="text-[14px] font-bold text-gray-800">大家都在換</p>
-              <p className="mb-3 text-[12px] text-gray-400">用回饋折抵商品</p>
+            <div className="p-4">
+              <p className="text-[16px] font-bold leading-6 text-white">
+                即將開獎
+              </p>
+              <p className="text-[13px] leading-[18px] text-gray-400">
+                許願滿額就開獎
+              </p>
             </div>
-            {/* 卡寬用容器的百分比，不是寫死的 px，跟線上藏酒同一套做法：
-                商品數量變多時也能自然橫向捲動、露出下一張的邊緣 */}
-            <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
-              {TRENDING_PRODUCTS.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => setSheet({ cards: TRENDING_CARDS, index: i })}
-                  className="w-[44%] shrink-0 text-left"
+            <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-4">
+              {WISHES_SOON.map((w) => (
+                <div
+                  key={w.id}
+                  className="flex w-[168px] shrink-0 flex-col gap-2"
                 >
-                  {"image" in p ? (
+                  <div className="relative size-[168px] overflow-hidden rounded-2xl">
                     <img
-                      src={p.image}
-                      alt={p.name}
-                      className="mb-2 aspect-square w-full rounded-2xl object-cover"
+                      src={w.image}
+                      alt={w.name}
+                      className="absolute inset-0 size-full object-cover"
                     />
-                  ) : (
-                    <div
-                      className="mb-2 aspect-square overflow-hidden rounded-2xl"
-                      style={{ backgroundColor: p.color }}
-                    />
-                  )}
-                  <p className="text-[11px] text-gray-400">{p.subtitle}</p>
-                  <p className="line-clamp-1 text-[13px] font-semibold text-gray-800">
-                    {p.name}
+                    <div className="absolute inset-0 bg-black/20" />
+                    <span className="absolute left-0 top-0 rounded-br-2xl rounded-tl-2xl bg-brand px-2 py-1 text-[14px] font-semibold leading-[18px] text-white">
+                      差 {w.remaining.toLocaleString()}
+                    </span>
+                    {/* 底部進度條：目前累積到開獎門檻的比例 */}
+                    <div className="absolute inset-x-0 bottom-0 h-2 backdrop-blur-[2.5px]">
+                      <div
+                        className="h-full rounded-bl-2xl bg-brand"
+                        style={{ width: `${w.progress * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  <p className="truncate text-[16px] leading-6 text-gray-000">
+                    {w.name}
                   </p>
-                  <p className="text-[13px] text-gray-800">
-                    ${p.price.toLocaleString()}
-                  </p>
-                </button>
+                </div>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="px-4">
-              <p className="text-[14px] font-bold text-gray-800">猜你喜歡</p>
-              <p className="mb-3 text-[12px] text-gray-400">根據你的對話</p>
-            </div>
-            <div className="no-scrollbar flex gap-4 overflow-x-auto px-4">
-              {RECOMMENDED_PRODUCTS.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() =>
-                    setSheet({ cards: RECOMMENDED_CARDS, index: i })
-                  }
-                  className="w-[44%] shrink-0 text-left"
-                >
-                  {"image" in p ? (
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="mb-2 aspect-square w-full rounded-2xl object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="mb-2 aspect-square overflow-hidden rounded-2xl"
-                      style={{ backgroundColor: p.color }}
-                    />
-                  )}
-                  <p className="text-[11px] text-gray-400">{p.subtitle}</p>
-                  <p className="line-clamp-1 text-[13px] font-semibold text-gray-800">
-                    {p.name}
-                  </p>
-                  <p className="text-[13px] text-gray-800">
-                    ${p.price.toLocaleString()}
-                  </p>
-                </button>
-              ))}
+              <div className="flex h-[168px] w-[137px] shrink-0 items-center justify-center rounded-2xl bg-gray-100">
+                <p className="text-[14px] leading-[18px] text-gray-400">
+                  看全部
+                </p>
+                <img
+                  src="/figma/v13-nav-arrow-right-20.svg"
+                  alt=""
+                  className="size-5 opacity-40"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -282,6 +297,61 @@ export default function ExchangePage() {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// 「大家都在買」「猜你喜歡」：照 Figma 948:45874，卡寬 168、圖片 1:1 圓角 16，
+// 下面品名（最多兩行）跟價格，左右 8px 內縮；整排可以往右滑
+function ProductRow({
+  title,
+  subtitle,
+  products,
+  onOpen,
+}: {
+  title: string;
+  subtitle: string;
+  products: typeof TRENDING_PRODUCTS;
+  onOpen: (index: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4 py-4">
+      <div className="px-4">
+        <p className="text-[16px] font-semibold leading-6 text-gray-800">
+          {title}
+        </p>
+        <p className="text-[14px] leading-[18px] text-gray-400">{subtitle}</p>
+      </div>
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
+        {products.map((p, i) => (
+          <button
+            key={p.id}
+            onClick={() => onOpen(i)}
+            className="w-[168px] shrink-0 text-left"
+          >
+            {p.image ? (
+              <img
+                src={p.image}
+                alt={p.name}
+                className="aspect-square w-full rounded-2xl object-cover"
+              />
+            ) : (
+              <div
+                className="aspect-square rounded-2xl"
+                style={{ backgroundColor: p.color }}
+              />
+            )}
+            <div className="flex flex-col gap-1 px-2 py-3">
+              <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">
+                {p.name}
+              </p>
+              <p className="text-[14px] leading-[18px] text-gray-800">
+                ${p.price.toLocaleString()}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

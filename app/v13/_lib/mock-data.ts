@@ -23,16 +23,45 @@ export const REWARD_HISTORY: { month: string; items: RewardTxn[] }[] = [
   {
     month: "2025.01",
     items: [
-      { id: "t1", label: "買酒回饋扣回", time: "2025/01/30 10:23", amount: -12, icon: "undo" },
+      {
+        id: "t1",
+        label: "買酒回饋扣回",
+        time: "2025/01/30 10:23",
+        amount: -12,
+        icon: "undo",
+      },
       { id: "t2", label: "買酒回饋", time: "2025/01/19 11:23", amount: 12 },
-      { id: "t3", label: "回饋許願池", time: "2025/01/30 10:23", amount: -1, icon: "wallet" },
+      {
+        id: "t3",
+        label: "回饋許願池",
+        time: "2025/01/30 10:23",
+        amount: -1,
+        icon: "wallet",
+      },
       { id: "t4", label: "每日回饋", time: "2025/01/19 11:23", amount: 26 },
       { id: "t5", label: "轉售酒品", time: "2025/01/20 09:08", amount: 3626 },
       { id: "t6", label: "退款", time: "2025/01/22 23:59", amount: 300 },
-      { id: "t7", label: "折抵", time: "2025/01/03 23:11", amount: -5, icon: "wallet" },
+      {
+        id: "t7",
+        label: "折抵",
+        time: "2025/01/03 23:11",
+        amount: -5,
+        icon: "wallet",
+      },
       { id: "t8", label: "其他", time: "2025/01/03 08:30", amount: 5 },
-      { id: "t9", label: "轉出", time: "2025/01/03 07:31", amount: -500, icon: "exchange" },
-      { id: "t10", label: "轉讓智能雲等級", time: "2025/01/20 09:08", amount: 3000 },
+      {
+        id: "t9",
+        label: "轉出",
+        time: "2025/01/03 07:31",
+        amount: -500,
+        icon: "exchange",
+      },
+      {
+        id: "t10",
+        label: "轉讓智能雲等級",
+        time: "2025/01/20 09:08",
+        amount: 3000,
+      },
       { id: "t11", label: "推薦", time: "2025/01/16 20:57", amount: 100 },
     ],
   },
@@ -73,9 +102,9 @@ export const RATE_FORECAST_POOL = 52000;
 export const MEMBERSHIP_TIER = 1;
 export const MEMBERSHIP_LEVEL = 200;
 
-// 許願池可以往右滑看更多，卡片沿用同一套視覺（圖＋漸層＋疊字），
-// 每張都要有「中獎價」，跟熱門商品那種一次性折抵不同——許願池是
-// 投入回饋衝高好運，價格代表要衝到多高的池子才開獎
+// 許願池（照 Figma 948:45714）：上排是可以往右滑的大卡，圖上疊一句介紹，
+// 下面是品名、中獎價跟「許願」按鈕；跟上方用回饋折抵的商品不同，
+// 許願池是投入回饋換一個抽中的機會，中獎價代表要衝到多高的池子才開獎
 export const WISHES = [
   {
     id: "vision-pro",
@@ -85,18 +114,57 @@ export const WISHES = [
     image: "/figma/wish-visionpro.png",
   },
   {
+    id: "tesla-model-3",
+    name: "Tesla Model 3 煥新版",
+    subtitle: "馭電未來，駛向自由之境",
+    price: 2560,
+    image: "/figma/wish-tesla.png",
+  },
+  {
+    id: "hoshinoya-guguan",
+    name: "虹夕諾雅谷關 雙人房型住宿一晚",
+    subtitle: "彷彿置身日本山林的溫泉旅行",
+    price: 980,
+    image: "/figma/wish-onsen.png",
+  },
+];
+
+// 即將開獎：許願滿額就開獎，左上角標還差幾次、底部進度條是目前累積的比例
+export const WISHES_SOON = [
+  {
     id: "ricoh-gr3",
     name: "Ricoh GR III 相機",
-    subtitle: "經典復古機身，隨手街拍神器",
-    price: 400,
+    remaining: 400,
+    progress: 0.9,
     image: "/figma/wish-camera.png",
   },
   {
     id: "bambi-glamping",
     name: "斑比跳跳頂級豪華露營",
-    subtitle: "森林裡的豪華帳篷，兩天一夜",
-    price: 256,
+    remaining: 256,
+    progress: 0.94,
     image: "/figma/wish-camping.png",
+  },
+  {
+    id: "snowpeak-amenity",
+    name: "日本 SNOW PEAK Amenity",
+    remaining: 610,
+    progress: 0.85,
+    image: "/figma/wish-snowpeak.png",
+  },
+  {
+    id: "joy-dinner",
+    name: "饗 A Joy 晚餐乙客餐券",
+    remaining: 820,
+    progress: 0.78,
+    image: "/figma/wish-dinner.png",
+  },
+  {
+    id: "hoshinoya-suimei",
+    name: "虹夕諾雅 水明雙人房型住宿一晚",
+    remaining: 1200,
+    progress: 0.7,
+    image: "/figma/wish-onsen.png",
   },
 ];
 
@@ -122,6 +190,13 @@ type ExchangeProduct = {
 const PLACEHOLDER_COLOR = "#E5E7EB";
 
 export const TRENDING_PRODUCTS: ExchangeProduct[] = [
+  {
+    id: "airpods-pro-2",
+    name: "AirPods Pro 2",
+    subtitle: "3C 配件",
+    price: 12000,
+    image: "/figma/product-airpods-pro-2.jpg",
+  },
   {
     id: "power-bank-20w",
     name: "20W 行動電源",
@@ -273,13 +348,31 @@ export const ACCOUNT_PROFILE = {
 };
 
 export const ACCOUNT_ROWS = [
-  { key: "identity", icon: "/figma/icon-verified-user.svg", label: "身分驗證", trailing: "已驗證" },
-  { key: "security", icon: "/figma/icon-shield-check.svg", label: "帳號與安全性" },
+  {
+    key: "identity",
+    icon: "/figma/icon-verified-user.svg",
+    label: "身分驗證",
+    trailing: "已驗證",
+  },
+  {
+    key: "security",
+    icon: "/figma/icon-shield-check.svg",
+    label: "帳號與安全性",
+  },
   { key: "payment", icon: "/figma/icon-wallet.svg", label: "收款與付款" },
   // Figma 這幾張靜態稿沒有畫出「我的收藏」的入口位置，這裡加在帳號頁
   // 是我自己補的合理位置，不是照著哪個節點還原的
-  { key: "collection", icon: "/figma/icon-clipboard-check.svg", label: "我的收藏", href: "/v13/collection" },
-  { key: "history", icon: "/figma/icon-clipboard-check.svg", label: "歷史交易紀錄" },
+  {
+    key: "collection",
+    icon: "/figma/icon-clipboard-check.svg",
+    label: "我的收藏",
+    href: "/v13/collection",
+  },
+  {
+    key: "history",
+    icon: "/figma/icon-clipboard-check.svg",
+    label: "歷史交易紀錄",
+  },
   { key: "referral", icon: "/figma/icon-community.svg", label: "推薦好友" },
   { key: "gifts", icon: "/figma/icon-gift.svg", label: "我的禮物" },
   { key: "prefs", icon: "/figma/icon-settings.svg", label: "偏好設定" },
@@ -337,4 +430,6 @@ export const NOTIFICATIONS: Notification[] = [
 ];
 
 // 帳號頁鈴鐺上的紅點數字，跟通知頁實際的未讀則數一致
-export const UNREAD_NOTIFICATIONS = NOTIFICATIONS.filter((n) => n.unread).length;
+export const UNREAD_NOTIFICATIONS = NOTIFICATIONS.filter(
+  (n) => n.unread,
+).length;
