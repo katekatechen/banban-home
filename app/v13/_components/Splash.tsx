@@ -1,83 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GLOW_BG } from "./HomeGradient";
+import splashAnimation from "../_lib/launchscreen-splash.json";
 
 // 開場畫面（launch screen），兩個版本，跟著首頁的版本走：
 // - 天空版首頁（?home=sky）：白底中間放紅色的 AIFIAN 完整 logo，停 2 秒後淡出接首頁；
-// - 光暈版（預設）：白底中間一團模糊、慢慢旋轉的品牌色光，上面一顆白色 logo mark。
-//   首頁也是同一顆光團加 logo（標題置中排在下面），開場畫面結束時白底淡出、
-//   這顆整個往上移到首頁的位置，兩個畫面無縫接起來。
+// - 光暈版（預設）：白底中間一團慢慢旋轉的品牌色光加白色 logo mark，用 Lottie 播放；
+//   結束時光團原地放大淡出，白底跟著淡出接上首頁。
 // 跟商品細節頁一樣用 portal 掛到 #v13-frame，才蓋得過 tabbar
 export const SPLASH_HOLD_MS = 2000;
 export const SPLASH_EXIT_MS = 1000;
 
-// logo mark 的路徑（取自 AIFIAN 工作素材 logo_2.svg，原本是品牌紅，這裡填白色）
-export const MARK_PATH =
-  "M14,15c0.7,0.5,1.4,0.9,2.2,1.3c0.9,0.4,2,0.8,3.3,1.3c0.1,0,0.1,0,0.2,0.1c0.1,0,0.2,0.1,0.3,0.1c0.1,0,0.1,0,0.1,0c0.1,0,0.2-0.1,0.1-0.1L10.9,1.1c-0.1-0.3-0.4-0.4-0.7-0.4c-0.3,0-0.5,0.2-0.7,0.4L0.3,17.6c0,0.1,0,0.2,0.1,0.1c0,0,0.1,0,0.1,0c0.1,0,0.2-0.1,0.3-0.1c0.1,0,0.1,0,0.2-0.1c1.4-0.4,2.4-0.8,3.3-1.3c0.8-0.4,1.5-0.8,2.2-1.3c0.7-0.5,1.2-1.1,1.6-1.8c0.6-0.9,1-2.1,1.2-3.4c0,0,0,0,0,0l0.9-5l0.9,5c0,0,0,0,0,0c0.2,1.3,0.6,2.4,1.2,3.4C12.8,13.9,13.3,14.5,14,15L14,15z";
+// 光暈版的光團改用 Lottie（launchscreen-splash.json，600×600、60fps、5 秒一圈無限循環）：
+// 五顆品牌色光點整團旋轉、轉到一半放大到 1.08，中間一顆白色 logo mark。
+// 畫布 600 對應畫面 312px，logo mark 約 60px 寬，跟原本程式畫的光團同樣大小
+const LOTTIE_SIZE = 312;
 
-// 光團：以品牌紅 #ff3030 為主，搭配同色系的珊瑚橘、粉紅跟深一點的洋紅，
-// 幾顆圓錯開擺、整團一起轉，紅色就會在 logo 後面流動
-export const BLOBS: [x: number, y: number, size: number, color: string][] = [
-  // 照 Figma lunchscreen（1068:25979）的 glow-blobs：品牌紅為主，配珊瑚橘、玫瑰紅、深莓紅、杏橘。
-  // Figma 裡是縮放後的最終尺寸，這裡寫 ÷ GLOW_SCALE（0.8）的值
-  [-12.5, -13.75, 77.5, "#ff3030"],
-  [15, -10, 66, "#ff7a45"],
-  [11, 16, 74, "#ff3d6e"],
-  [-16, 14, 64, "#e0204f"],
-  [1, -24, 47.5, "#ffa064"],
-];
-
-// 光團跟 logo 的比例：光團整體縮到原本的 80%（位置跟大小一起縮），
-// logo mark 放大到 60px，讓光變成從 logo 後面暈開，而不是 logo 浮在一大團光上
-const GLOW_SCALE = 0.8;
-const MARK_W = 60;
-
-// 品牌光團＋白色 logo mark：開場畫面（光暈版）跟光暈版首頁共用同一顆，
-// 開場畫面結束時直接把這顆從畫面中間移到首頁的位置，兩邊無縫接起來
-export function BrandGlow({
-  className,
-  style,
-  anchor = false,
-}: {
-  className?: string;
-  style?: React.CSSProperties;
-  // 首頁那顆標上 data-warm-glow，開場畫面量它的位置飛過去
-  anchor?: boolean;
-}) {
+function SplashLottie({ className }: { className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let anim:
+      | { destroy: () => void; goToAndStop: (v: number, f: boolean) => void }
+      | undefined;
+    let cancelled = false;
+    // lottie-web 一 import 就會碰 document，放到 effect 裡動態載入，避免 SSR 出錯
+    import("lottie-web").then(({ default: lottie }) => {
+      if (cancelled || !ref.current) return;
+      const reduce = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      anim = lottie.loadAnimation({
+        container: ref.current,
+        renderer: "svg",
+        loop: true,
+        autoplay: !reduce,
+        animationData: splashAnimation,
+      });
+      // 系統開啟「減少動態效果」時停在第一格，不旋轉
+      if (reduce) anim.goToAndStop(0, true);
+    });
+    return () => {
+      cancelled = true;
+      anim?.destroy();
+    };
+  }, []);
   return (
     <div
-      data-warm-glow={anchor || undefined}
-      className={`relative size-[150px] shrink-0 ${className ?? ""}`}
-      style={style}
-    >
-      <div
-        className="splash-blob absolute inset-0"
-        style={{ filter: "blur(18px)" }}
-      >
-        {BLOBS.map(([x, y, size, color]) => (
-          <span
-            key={color}
-            className="absolute left-1/2 top-1/2 rounded-full"
-            style={{
-              width: size * GLOW_SCALE,
-              height: size * GLOW_SCALE,
-              background: color,
-              opacity: 0.9,
-              transform: `translate(calc(-50% + ${x * GLOW_SCALE}px), calc(-50% + ${y * GLOW_SCALE}px))`,
-            }}
-          />
-        ))}
-      </div>
-      <svg
-        viewBox="0 0 21 18"
-        className="absolute left-1/2 top-1/2"
-        style={{ width: MARK_W, transform: "translate(-50%, -50%)" }}
-      >
-        <path d={MARK_PATH} fill="#ffffff" />
-      </svg>
-    </div>
+      ref={ref}
+      aria-hidden
+      className={className}
+      style={{ width: LOTTIE_SIZE, height: LOTTIE_SIZE }}
+    />
   );
 }
 
@@ -93,7 +68,6 @@ export default function Splash({
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
   }, []);
-
 
   if (!frame) return null;
 
@@ -144,7 +118,7 @@ export default function Splash({
             transition: "opacity 450ms ease, transform 600ms ease",
           }}
         >
-          <BrandGlow className="splash-in" />
+          <SplashLottie className="splash-in" />
         </div>
       </div>
     </div>,
