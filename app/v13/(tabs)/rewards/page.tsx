@@ -41,6 +41,9 @@ function useCountUp(target: number, durationMs = 900) {
 // 膠囊等於是 v12 捲動時浮出的那顆：往下捲時大標捲走，膠囊改由上方的浮層
 // 接手、停在同一個位置，看起來像黏在頂端，不會跟著內容一起捲掉
 const PILL_TOP_PX = 8;
+// 往上滑到大標（今天拿到 X 的回饋！）大半捲走後，頂端浮層左邊換上「回饋」標題，
+// 跟兌換、帳號分頁的頂列一致；滑回頂端時再淡出、把位置還給大標
+const TITLE_SWAP_PX = 56;
 
 function BalancePill({ onClick }: { onClick: () => void }) {
   return (
@@ -60,11 +63,14 @@ export default function RewardsTabPage() {
   const router = useRouter();
   const todayIncrease = useCountUp(TODAY_REWARD_AMOUNT);
   const [pinned, setPinned] = useState(false);
+  const [titleShown, setTitleShown] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const goHistory = () => router.push("/v13/reward-history");
 
   const handleScroll = () => {
-    setPinned((scrollRef.current?.scrollTop ?? 0) > PILL_TOP_PX);
+    const top = scrollRef.current?.scrollTop ?? 0;
+    setPinned(top > PILL_TOP_PX);
+    setTitleShown(top > TITLE_SWAP_PX);
   };
 
   return (
@@ -72,12 +78,19 @@ export default function RewardsTabPage() {
       <StatusBar />
 
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {/* 捲動後才出現的浮層：白色漸層淡入，膠囊放在跟大標旁那顆完全相同的位置 */}
+        {/* 捲動後才出現的浮層：白色漸層淡入（加高到 72px，蓋住「回饋」標題後面的內容），膠囊放在跟大標旁那顆完全相同的位置 */}
         <div
-          className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-[64px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_70%,rgba(255,255,255,0)_100%)] transition-opacity duration-200 ${
+          className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-[72px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.97)_78%,rgba(255,255,255,0)_100%)] transition-opacity duration-200 ${
             pinned ? "opacity-100" : "opacity-0"
           }`}
         />
+        <p
+          aria-hidden={!titleShown}
+          className="pointer-events-none absolute left-4 z-10 flex h-10 items-center text-[24px] font-semibold leading-8 text-gray-800 transition-opacity duration-200"
+          style={{ top: PILL_TOP_PX, opacity: titleShown ? 1 : 0 }}
+        >
+          回饋
+        </p>
         {pinned && (
           <div className="absolute right-4 z-10" style={{ top: PILL_TOP_PX }}>
             <BalancePill onClick={goHistory} />
