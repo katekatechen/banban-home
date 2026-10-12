@@ -555,6 +555,32 @@ body {
     display: none;
   }
 }
+/* v13 光暈版：送出時紙飛機往右上飛走，路上左右擺動調整角度。
+   每段距離越來越短＝起步快、後段減速；最後縮小淡掉 */
+@keyframes planeExit {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(28px, -38px) rotate(-10deg) scale(0.97);
+  }
+  35% {
+    transform: translate(62px, -88px) rotate(7deg) scale(0.93);
+  }
+  55% {
+    transform: translate(95px, -136px) rotate(-6deg) scale(0.88);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(120px, -172px) rotate(4deg) scale(0.84);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(140px, -200px) rotate(-3deg) scale(0.8);
+    opacity: 0;
+  }
+}
 @keyframes homeGradientFade {
   from {
     opacity: 0;

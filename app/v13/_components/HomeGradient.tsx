@@ -27,7 +27,7 @@ const GLOW_LAYERS: [string, "normal" | "multiply"][] = [
 // 進入對話：色光往外擴散、變糊、淡掉，露出底下的白；回首頁時再收回來
 export const GRADIENT_EXIT_MS = 700;
 // 送出時紙飛機飛出畫面的時間；對話內容等它大致飛走才淡入，不然會被對話的白底蓋掉
-export const PLANE_EXIT_MS = 500;
+export const PLANE_EXIT_MS = 600;
 const IN = "cubic-bezier(0.22, 1, 0.36, 1)"; // 一開始擴散得快、最後慢慢散掉
 const OUT = "cubic-bezier(0.16, 1, 0.3, 1)"; // 回首頁：色光慢慢聚回來
 
@@ -65,9 +65,10 @@ export default function HomeGradient({
     // intro 只看掛載當下
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [covered]);
-  // 送出：按下去馬上往右上飛走（起步快、後段減速），邊飛邊微微抬頭、縮小，飛到一半淡掉
+  // 送出：按下去馬上往右上飛走，路上左右擺動調整角度（planeExit 動畫，globals.css），
+  // 邊飛邊縮小、最後淡掉；這裡的 transform 是動畫結束後停留的位置
   const planeTransform = covered
-    ? "translate(140px, -200px) rotate(-8deg) scale(0.8)"
+    ? "translate(140px, -200px) rotate(-3deg) scale(0.8)"
     : planeIn
       ? "translate(0, 0)"
       : "translate(-40px, 60px) scale(0.9)";
@@ -125,10 +126,12 @@ export default function HomeGradient({
           style={{
             opacity: covered || !planeIn ? 0 : 1,
             transform: planeTransform,
-            transition: jump
-              ? "none"
-              : covered
-                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 250ms ease 200ms`
+            animation: covered
+              ? `planeExit ${PLANE_EXIT_MS}ms ease-in-out forwards`
+              : undefined,
+            transition:
+              jump || covered
+                ? "none"
                 : `transform 1100ms ${EASING} 300ms, opacity 700ms ease 300ms`,
           }}
         >
