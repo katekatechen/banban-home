@@ -555,30 +555,20 @@ body {
     display: none;
   }
 }
-/* v13 光暈版：送出時紙飛機往右上飛走，機身像滑翔翼遇到氣流一樣往右側傾（3D 翻滾），
-   傾斜角度一路微微變化；每段距離越來越短＝起步快、後段減速，最後縮小淡掉 */
-@keyframes planeExit {
+/* v13 光暈版：送出時紙飛機的側傾（路線在元件裡用 transition 走）。
+   像滑翔翼遇到氣流：往右側傾、角度微微起伏，每段 ease-in-out 接得很順 */
+@keyframes planeBank {
   0% {
-    transform: translate(0, 0) perspective(320px) rotateY(0deg) rotateX(0deg) scale(1);
-    opacity: 1;
+    transform: perspective(320px) rotateY(0deg) rotateX(0deg);
   }
-  20% {
-    transform: translate(38px, -52px) perspective(320px) rotateY(24deg) rotateX(6deg) scale(0.96);
-  }
-  40% {
-    transform: translate(76px, -108px) perspective(320px) rotateY(14deg) rotateX(-4deg) scale(0.92);
+  30% {
+    transform: perspective(320px) rotateY(24deg) rotateX(5deg);
   }
   60% {
-    transform: translate(104px, -150px) perspective(320px) rotateY(30deg) rotateX(5deg) scale(0.88);
-    opacity: 1;
-  }
-  80% {
-    transform: translate(126px, -180px) perspective(320px) rotateY(20deg) rotateX(-3deg) scale(0.84);
-    opacity: 0.5;
+    transform: perspective(320px) rotateY(16deg) rotateX(-3deg);
   }
   100% {
-    transform: translate(140px, -200px) perspective(320px) rotateY(26deg) rotateX(2deg) scale(0.8);
-    opacity: 0;
+    transform: perspective(320px) rotateY(26deg) rotateX(2deg);
   }
 }
 @keyframes homeGradientFade {

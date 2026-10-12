@@ -65,10 +65,11 @@ export default function HomeGradient({
     // intro 只看掛載當下
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [covered]);
-  // 送出：按下去馬上往右上飛走，機身像滑翔翼遇到氣流一樣側傾、角度一路變化（planeExit 動畫，globals.css），
+  // 送出：按下去馬上往右上飛走（外層單一曲線，路線順暢），內層另外做側傾
+  // （像滑翔翼遇到氣流調整角度，planeBank 動畫，globals.css），
   // 邊飛邊縮小、最後淡掉；這裡的 transform 是動畫結束後停留的位置
   const planeTransform = covered
-    ? "translate(140px, -200px) perspective(320px) rotateY(26deg) rotateX(2deg) scale(0.8)"
+    ? "translate(140px, -200px) scale(0.8)"
     : planeIn
       ? "translate(0, 0)"
       : "translate(-40px, 60px) scale(0.9)";
@@ -87,8 +88,8 @@ export default function HomeGradient({
           transformOrigin: "35% 15%",
           opacity: covered ? 0 : 1,
           transform: covered ? "scale(1.45)" : "scale(1)",
-          filter: covered ? "blur(28px)" : "blur(0px)",
-          transition: `opacity ${ms}ms ${ease}, transform ${ms}ms ${ease}, filter ${ms}ms ${ease}`,
+          transition: `opacity ${ms}ms ${ease}, transform ${ms}ms ${ease}`,
+          willChange: "transform, opacity",
         }}
       >
         <div
@@ -126,33 +127,40 @@ export default function HomeGradient({
           style={{
             opacity: covered || !planeIn ? 0 : 1,
             transform: planeTransform,
-            animation: covered
-              ? `planeExit ${PLANE_EXIT_MS}ms ease-out forwards`
-              : undefined,
-            transition:
-              jump || covered
-                ? "none"
+            transition: jump
+              ? "none"
+              : covered
+                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 250ms ease ${PLANE_EXIT_MS - 280}ms`
                 : `transform 1100ms ${EASING} 300ms, opacity 700ms ease 300ms`,
           }}
         >
-          {/* 淡淡的影子落在白底上 */}
-          <div className="absolute inset-0" style={{ opacity: 0.5 }}>
-            <svg
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              className="glider-shadow absolute inset-0 size-full overflow-visible"
-            >
-              <polygon
-                points="7,21 94,7 90,92"
-                fill="#1e2939"
-                stroke="#1e2939"
-                strokeWidth={10}
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="glider-float relative">
-            <SimpleGlider className="block h-auto w-full" />
+          <div
+            className="relative"
+            style={{
+              animation: covered
+                ? `planeBank ${PLANE_EXIT_MS}ms ease-in-out forwards`
+                : undefined,
+            }}
+          >
+            {/* 淡淡的影子落在白底上 */}
+            <div className="absolute inset-0" style={{ opacity: 0.5 }}>
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="glider-shadow absolute inset-0 size-full overflow-visible"
+              >
+                <polygon
+                  points="7,21 94,7 90,92"
+                  fill="#1e2939"
+                  stroke="#1e2939"
+                  strokeWidth={10}
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="glider-float relative">
+              <SimpleGlider className="block h-auto w-full" />
+            </div>
           </div>
         </div>
       </div>
