@@ -11,6 +11,7 @@ import HomeGradient, {
   GLOW_TEXT_ON_COLOR,
   GLOW_TOP,
   GRADIENT_EXIT_MS,
+  PLANE_EXIT_MS,
 } from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
@@ -1022,9 +1023,9 @@ export default function V13HomePage() {
         style={{
           opacity: chatOpen ? 1 : 0,
           pointerEvents: chatOpen ? "auto" : "none",
-          // 送出後等雲朵（光暈版是白幕）把畫面蓋白了，對話內容才淡入
+          // 送出後等雲朵（光暈版是紙飛機飛走、色光散開）把畫面讓出來，對話內容才淡入
           transition: chatOpen
-            ? `${fade} ${glowHome ? GRADIENT_EXIT_MS * 0.5 : CLOUD_MS * 0.6}ms`
+            ? `${fade} ${glowHome ? PLANE_EXIT_MS * 0.75 : CLOUD_MS * 0.6}ms`
             : fade,
         }}
       >
