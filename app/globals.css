@@ -468,83 +468,91 @@ body {
 }
 
 /* v13 光暈版首頁的底色：載入時淡入 */
-/* v13 光暈版首頁：四顆色光各自用不同路徑、節奏慢慢漂移，像在流動交融 */
+/* v13 光暈版首頁：色光持續往右流。每顆兩份，從左淡入、往右漂、在右淡出，
+   兩份錯開半輪接力（透明度三角形曲線，兩份加起來一直是 1） */
 .glow-layer {
   transform-origin: 50% 50%;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  will-change: transform;
+  animation: glowDrift var(--d) linear infinite;
+  will-change: transform, opacity;
+}
+.glow-b {
+  animation-delay: calc(var(--d) / -2);
+}
+/* 一般混合的色光（粉紅、杏色）用平台型透明度：兩份重疊時顏色不會變淡，維持鮮明 */
+.glow-pink,
+.glow-peach {
+  animation-name: glowDriftSolid;
 }
 .glow-pink {
-  animation-name: glowPink;
-  animation-duration: 18s;
+  --d: 12s;
+  --fx: -12%;
+  --fy: 2%;
+  --fs: 0.98;
+  --tx: 12%;
+  --ty: -2%;
+  --ts: 1.06;
 }
 .glow-peach {
-  animation-name: glowPeach;
-  animation-duration: 14s;
-  animation-delay: -5s;
+  --d: 10s;
+  --fx: -14%;
+  --fy: -1%;
+  --fs: 1;
+  --tx: 14%;
+  --ty: 2%;
+  --ts: 1.08;
 }
 .glow-coral {
-  animation-name: glowCoral;
-  animation-duration: 21s;
-  animation-delay: -8s;
+  --d: 14s;
+  --fx: -10%;
+  --fy: 1%;
+  --fs: 0.97;
+  --tx: 10%;
+  --ty: -2%;
+  --ts: 1.05;
 }
 .glow-yellow {
-  animation-name: glowYellow;
-  animation-duration: 16s;
-  animation-delay: -3s;
+  --d: 11s;
+  --fx: -16%;
+  --fy: 3%;
+  --fs: 0.95;
+  --tx: 12%;
+  --ty: -2%;
+  --ts: 1.1;
 }
-@keyframes glowPink {
-  0%,
+@keyframes glowDrift {
+  0% {
+    transform: translate(var(--fx), var(--fy)) scale(var(--fs));
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
   100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(5%, -3%) scale(1.08);
-  }
-  66% {
-    transform: translate(-3%, 2%) scale(0.96);
-  }
-}
-@keyframes glowPeach {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(4%, 3%) scale(1.1);
-  }
-  66% {
-    transform: translate(-2%, -2%) scale(0.95);
+    transform: translate(var(--tx), var(--ty)) scale(var(--ts));
+    opacity: 0;
   }
 }
-@keyframes glowCoral {
-  0%,
+@keyframes glowDriftSolid {
+  0% {
+    transform: translate(var(--fx), var(--fy)) scale(var(--fs));
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
   100% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-  }
-  33% {
-    transform: translate(-4%, 2%) scale(1.05) rotate(4deg);
-  }
-  66% {
-    transform: translate(3%, -3%) scale(0.97) rotate(-3deg);
-  }
-}
-@keyframes glowYellow {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-5%, 4%) scale(1.12);
-  }
-  66% {
-    transform: translate(2%, -2%) scale(0.95);
+    transform: translate(var(--tx), var(--ty)) scale(var(--ts));
+    opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .glow-layer {
     animation: none;
+    opacity: 1;
+  }
+  .glow-b {
+    display: none;
   }
 }
 @keyframes homeGradientFade {

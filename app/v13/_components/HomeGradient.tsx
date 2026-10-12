@@ -6,8 +6,8 @@ import { EASING } from "../_lib/page-transition";
 // 光暈版首頁的底色：照 Figma「Chat-1」（1083:25414）的 bg-gradient（10/12 更新）。
 // 左側粉紅、左上杏色、中間大片珊瑚紅（multiply）、右上鵝黃（multiply），往下淡成白色。
 // 四顆色光從 Figma 各自輸出成透明圖（public/v13/glow-*.webp，含 layer blur），
-// 在這裡用同樣的混合模式疊回去，再讓每顆用不同的路徑、節奏慢慢漂移，
-// 看起來像色光在流動、互相交融。
+// 在這裡用同樣的混合模式疊回去，讓色光持續往右流：每顆有前後兩份，
+// 從左邊淡入、一路往右漂、在右邊淡出，兩份錯開半輪接力，看不到往回跑。
 // 圖的畫布比畫面大一圈（左右上下各多 80px），漂移時邊緣不會露出來。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
@@ -24,10 +24,10 @@ const GLOW_LAYERS: [string, "normal" | "multiply"][] = [
   ["yellow", "multiply"],
 ];
 
-// 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
-export const GRADIENT_EXIT_MS = 420;
-const IN = "cubic-bezier(0.7, 0, 0.84, 0)"; // 越抽越快
-const OUT = "cubic-bezier(0.16, 1, 0.3, 1)"; // 回首頁：白色快速落下、光慢慢回位
+// 進入對話：色光往外擴散、變糊、淡掉，露出底下的白；回首頁時再收回來
+export const GRADIENT_EXIT_MS = 700;
+const IN = "cubic-bezier(0.22, 1, 0.36, 1)"; // 一開始擴散得快、最後慢慢散掉
+const OUT = "cubic-bezier(0.16, 1, 0.3, 1)"; // 回首頁：色光慢慢聚回來
 
 export default function HomeGradient({
   covered,
@@ -80,10 +80,11 @@ export default function HomeGradient({
       <div
         className="absolute inset-0"
         style={{
-          transformOrigin: "50% 0%",
+          transformOrigin: "35% 15%",
           opacity: covered ? 0 : 1,
-          transform: covered ? "translateY(-12%)" : "translateY(0)",
-          transition: `opacity ${ms}ms ${ease}, transform ${ms}ms ${ease}`,
+          transform: covered ? "scale(1.45)" : "scale(1)",
+          filter: covered ? "blur(28px)" : "blur(0px)",
+          transition: `opacity ${ms}ms ${ease}, transform ${ms}ms ${ease}, filter ${ms}ms ${ease}`,
         }}
       >
         <div
@@ -94,36 +95,26 @@ export default function HomeGradient({
           }}
         >
           <div className="absolute inset-x-0 top-0 isolate aspect-[375/360]">
-            {GLOW_LAYERS.map(([name, blend]) => (
-              <div
-                key={name}
-                className={`glow-layer glow-${name} absolute`}
-                style={{
-                  left: "-21.333%",
-                  top: "-22.222%",
-                  width: "142.667%",
-                  height: "144.444%",
-                  backgroundImage: `url(/v13/glow-${name}.webp)`,
-                  backgroundSize: "100% 100%",
-                  mixBlendMode: blend,
-                }}
-              />
-            ))}
+            {GLOW_LAYERS.flatMap(([name, blend]) =>
+              ["a", "b"].map((copy) => (
+                <div
+                  key={`${name}-${copy}`}
+                  className={`glow-layer glow-${name} glow-${copy} absolute`}
+                  style={{
+                    left: "-21.333%",
+                    top: "-22.222%",
+                    width: "142.667%",
+                    height: "144.444%",
+                    backgroundImage: `url(/v13/glow-${name}.webp)`,
+                    backgroundSize: "100% 100%",
+                    mixBlendMode: blend,
+                  }}
+                />
+              )),
+            )}
           </div>
         </div>
       </div>
-      {/* 白幕：上緣羽化，從畫面下方抽上來；回首頁時往下退 */}
-      <div
-        className="absolute inset-x-0"
-        style={{
-          top: "-30%",
-          height: "130%",
-          background:
-            "linear-gradient(to bottom, rgba(255,255,255,0) 0%, #ffffff 22%)",
-          transform: covered ? "translateY(0)" : "translateY(100%)",
-          transition: `transform ${ms}ms ${ease}`,
-        }}
-      />
       {/* 小飛機：位置照天空版（Figma 948:44415，375 寬、往上偏 19px 的框） */}
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
         <div

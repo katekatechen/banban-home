@@ -1024,7 +1024,7 @@ export default function V13HomePage() {
           pointerEvents: chatOpen ? "auto" : "none",
           // 送出後等雲朵（光暈版是白幕）把畫面蓋白了，對話內容才淡入
           transition: chatOpen
-            ? `${fade} ${glowHome ? GRADIENT_EXIT_MS * 0.75 : CLOUD_MS * 0.6}ms`
+            ? `${fade} ${glowHome ? GRADIENT_EXIT_MS * 0.5 : CLOUD_MS * 0.6}ms`
             : fade,
         }}
       >
