@@ -19,6 +19,7 @@ import Splash, {
   SPLASH_EXIT_MS,
   SPLASH_HOLD_MS,
 } from "../_components/Splash";
+import Signup, { SIGNUP_EXIT_MS, SIGNUP_TOP } from "../_components/Signup";
 import {
   SKY_THEMES,
   greetingOf,
@@ -171,8 +172,19 @@ export default function V13HomePage() {
   const [splash, setSplash] = useState<"show" | "leaving" | "done">(() =>
     playIntro ? "show" : "done",
   );
+  // 網址加 ?signup：開場畫面換成註冊頁，停在那裡等使用者按「使用手機繼續」，
+  // 之後跟開場畫面一樣進入 leaving（首頁開始進場）→ done
+  const [signup, setSignup] = useState(false);
+  const continueFromSignup = () => {
+    setSplash("leaving");
+    window.setTimeout(() => setSplash("done"), SIGNUP_EXIT_MS + 60);
+  };
   useEffect(() => {
     if (splash !== "show") return;
+    if (new URLSearchParams(window.location.search).has("signup")) {
+      setSignup(true);
+      return;
+    }
     const t1 = window.setTimeout(() => setSplash("leaving"), SPLASH_HOLD_MS);
     const t2 = window.setTimeout(
       () => setSplash("done"),
@@ -628,9 +640,9 @@ export default function V13HomePage() {
   // 不然狀態列會比畫面先變白。回首頁時雲是從上面開始往下退，立刻換回藍色。
   // 離開聊天分頁時也還原成白色
   useEffect(() => {
-    // 開場畫面是白底，狀態列先維持白色
+    // 開場畫面是白底，狀態列先維持白色；註冊頁接漸層最上緣的顏色
     if (splash === "show") {
-      setTopTint(null);
+      setTopTint(signup ? SIGNUP_TOP : null);
       return;
     }
     if (!chatOpen) {
@@ -639,7 +651,7 @@ export default function V13HomePage() {
     }
     const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
     return () => window.clearTimeout(t);
-  }, [chatOpen, skyTheme.top, splash, glowHome]);
+  }, [chatOpen, skyTheme.top, splash, glowHome, signup]);
   useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
@@ -855,7 +867,13 @@ export default function V13HomePage() {
       onWheel={(e) => homeWheel(e.deltaY)}
       className="relative flex h-full flex-col overflow-hidden bg-white"
     >
-      {splash !== "done" && (
+      {splash !== "done" && signup && (
+        <Signup
+          leaving={splash === "leaving"}
+          onContinue={continueFromSignup}
+        />
+      )}
+      {splash !== "done" && !signup && (
         <Splash
           leaving={splash === "leaving"}
           variant={glowHome ? "glow" : "plain"}

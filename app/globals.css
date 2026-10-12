@@ -594,3 +594,117 @@ body {
     transform: translateY(0);
   }
 }
+
+/* v13 註冊頁（Signup.tsx）的進場微互動 */
+/* 光團整片：從稍大、透明收攏顯現 */
+.signup-bloom {
+  animation: signupBloom 1200ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+@keyframes signupBloom {
+  from {
+    opacity: 0;
+    filter: saturate(0.6);
+  }
+}
+/* 每一團光各自緩慢漂移，週期不同，看起來在流動 */
+.signup-band {
+  animation: signupDrift var(--d) ease-in-out infinite alternate;
+}
+@keyframes signupDrift {
+  from {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--dr))
+      scale(var(--ds));
+  }
+}
+/* 依序往上浮現，延遲由 --delay 控制 */
+.signup-rise {
+  animation: signupRise 600ms cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms)
+    backwards;
+}
+@keyframes signupRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+/* 白色面板從底部滑上來 */
+.signup-panel-in {
+  animation: signupPanelIn 700ms cubic-bezier(0.22, 1, 0.36, 1)
+    var(--delay, 0ms) backwards;
+}
+@keyframes signupPanelIn {
+  from {
+    transform: translateY(48px);
+    opacity: 0;
+  }
+}
+/* 紙飛機從下方浮上來，略帶一點回彈 */
+.signup-plane-in {
+  animation: signupPlaneIn 900ms cubic-bezier(0.34, 1.4, 0.64, 1) 200ms
+    backwards;
+}
+@keyframes signupPlaneIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.85) rotate(-6deg);
+  }
+}
+/* 就定位後上下漂浮；影子跟著同一個節奏淡一點、縮一點 */
+.signup-plane-float {
+  animation: signupPlaneFloat 4.5s ease-in-out 1100ms infinite;
+}
+.signup-plane-shadow {
+  transform-origin: 50% 30%;
+  animation: signupShadowIn 600ms ease 700ms backwards,
+    signupShadowFloat 4.5s ease-in-out 1100ms infinite;
+}
+@keyframes signupPlaneFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-1.5deg);
+  }
+}
+@keyframes signupShadowIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+@keyframes signupShadowFloat {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.94);
+    opacity: 0.8;
+  }
+}
+/* 號碼滿 9 碼、按鈕變紅時輕輕彈一下 */
+.signup-cta-ready {
+  animation: signupCtaReady 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes signupCtaReady {
+  40% {
+    transform: scale(1.03);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signup-bloom,
+  .signup-band,
+  .signup-rise,
+  .signup-panel-in,
+  .signup-plane-in,
+  .signup-plane-float,
+  .signup-plane-shadow,
+  .signup-cta-ready {
+    animation: none;
+  }
+}
