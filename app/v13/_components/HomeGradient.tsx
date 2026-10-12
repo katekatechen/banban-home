@@ -65,9 +65,9 @@ export default function HomeGradient({
     // intro 只看掛載當下
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [covered]);
-  // 送出：往右上一路加速飛出畫面，邊飛邊微微抬頭、縮小，最後才淡掉
+  // 送出：往右上加速飛走，邊飛邊微微抬頭、縮小，飛到一半淡掉
   const planeTransform = covered
-    ? "translate(240px, -340px) rotate(-10deg) scale(0.75)"
+    ? "translate(140px, -200px) rotate(-8deg) scale(0.8)"
     : planeIn
       ? "translate(0, 0)"
       : "translate(-40px, 60px) scale(0.9)";
@@ -128,7 +128,7 @@ export default function HomeGradient({
             transition: jump
               ? "none"
               : covered
-                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.45, 0, 0.75, 0.4), opacity 250ms ease 450ms`
+                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.45, 0, 0.75, 0.4), opacity 280ms ease 350ms`
                 : `transform 1100ms ${EASING} 300ms, opacity 700ms ease 300ms`,
           }}
         >
