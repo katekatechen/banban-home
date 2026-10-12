@@ -467,31 +467,84 @@ body {
   }
 }
 
-
 /* v13 光暈版首頁的底色：載入時淡入 */
-/* v13 光暈版首頁：色光緩緩流動 */
-.glow-flow {
-  animation: glowFlow 16s ease-in-out infinite;
+/* v13 光暈版首頁：四顆色光各自用不同路徑、節奏慢慢漂移，像在流動交融 */
+.glow-layer {
+  transform-origin: 50% 50%;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
 }
-@keyframes glowFlow {
+.glow-pink {
+  animation-name: glowPink;
+  animation-duration: 18s;
+}
+.glow-peach {
+  animation-name: glowPeach;
+  animation-duration: 14s;
+  animation-delay: -5s;
+}
+.glow-coral {
+  animation-name: glowCoral;
+  animation-duration: 21s;
+  animation-delay: -8s;
+}
+.glow-yellow {
+  animation-name: glowYellow;
+  animation-duration: 16s;
+  animation-delay: -3s;
+}
+@keyframes glowPink {
   0%,
   100% {
-    transform: translate(0, 0) scale(1.1);
+    transform: translate(0, 0) scale(1);
   }
-  25% {
-    transform: translate(-4%, -2%) scale(1.16);
+  33% {
+    transform: translate(5%, -3%) scale(1.08);
   }
-  50% {
-    transform: translate(2%, -4%) scale(1.12);
+  66% {
+    transform: translate(-3%, 2%) scale(0.96);
   }
-  75% {
-    transform: translate(4%, -1.5%) scale(1.18);
+}
+@keyframes glowPeach {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, 3%) scale(1.1);
+  }
+  66% {
+    transform: translate(-2%, -2%) scale(0.95);
+  }
+}
+@keyframes glowCoral {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(-4%, 2%) scale(1.05) rotate(4deg);
+  }
+  66% {
+    transform: translate(3%, -3%) scale(0.97) rotate(-3deg);
+  }
+}
+@keyframes glowYellow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-5%, 4%) scale(1.12);
+  }
+  66% {
+    transform: translate(2%, -2%) scale(0.95);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .glow-flow {
+  .glow-layer {
     animation: none;
-    transform: scale(1.1);
   }
 }
 @keyframes homeGradientFade {

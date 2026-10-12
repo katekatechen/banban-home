@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 
 // 光暈版首頁的底色：照 Figma「Chat-1」（1083:25414）的 bg-gradient（10/12 更新）。
-// 左側粉紅、中間大片珊瑚紅，右上角帶一點鵝黃，往下淡成白色。
-// Figma 用了 multiply、linear burn、color burn 等混合模式，CSS 沒有完全對應的做法，
-// 所以直接把那一層在 Figma 裡輸出成圖：public/v13/home-glow.webp，
-// 375 寬、高 360（以下全白），3 倍解析度。
+// 左側粉紅、左上杏色、中間大片珊瑚紅（multiply）、右上鵝黃（multiply），往下淡成白色。
+// 四顆色光從 Figma 各自輸出成透明圖（public/v13/glow-*.webp，含 layer blur），
+// 在這裡用同樣的混合模式疊回去，再讓每顆用不同的路徑、節奏慢慢漂移，
+// 看起來像色光在流動、互相交融。
+// 圖的畫布比畫面大一圈（左右上下各多 80px），漂移時邊緣不會露出來。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
 export const GLOW_TEXT_ON_COLOR = true;
@@ -15,7 +16,13 @@ const BASE = "#ffffff";
 // 手機狀態列的底色：取色光上緣（頂端 20px）的平均色
 export const GLOW_TOP = "#fc7970";
 export const GLOW_BG = BASE;
-const BAND_SRC = "/v13/home-glow.webp";
+// [檔名, 混合模式]，順序＝Figma 圖層由下到上
+const GLOW_LAYERS: [string, "normal" | "multiply"][] = [
+  ["pink", "normal"],
+  ["peach", "normal"],
+  ["coral", "multiply"],
+  ["yellow", "multiply"],
+];
 
 // 進入對話：白色從底部一口氣往上抽起來蓋滿畫面，彩色底同時往上淡掉
 export const GRADIENT_EXIT_MS = 420;
@@ -86,16 +93,23 @@ export default function HomeGradient({
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         >
-          {/* 色光緩緩流動：整張圖放大一點後，16 秒一輪慢慢漂移、微微縮放，
-              放大的量剛好蓋住漂移距離，邊緣不會露出白色 */}
-          <div
-            className="glow-flow absolute inset-x-0 top-0 aspect-[375/360]"
-            style={{
-              backgroundImage: `url(${BAND_SRC})`,
-              backgroundSize: "100% 100%",
-              transformOrigin: "50% 20%",
-            }}
-          />
+          <div className="absolute inset-x-0 top-0 isolate aspect-[375/360]">
+            {GLOW_LAYERS.map(([name, blend]) => (
+              <div
+                key={name}
+                className={`glow-layer glow-${name} absolute`}
+                style={{
+                  left: "-21.333%",
+                  top: "-22.222%",
+                  width: "142.667%",
+                  height: "144.444%",
+                  backgroundImage: `url(/v13/glow-${name}.webp)`,
+                  backgroundSize: "100% 100%",
+                  mixBlendMode: blend,
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
       {/* 白幕：上緣羽化，從畫面下方抽上來；回首頁時往下退 */}
