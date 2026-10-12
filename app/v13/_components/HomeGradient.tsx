@@ -130,7 +130,7 @@ export default function HomeGradient({
             transition: jump
               ? "none"
               : covered
-                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 200ms ease ${PLANE_EXIT_MS - 220}ms`
+                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 150ms ease-in 120ms`
                 : `transform 1100ms ${EASING} 300ms, opacity 700ms ease 300ms`,
           }}
         >
