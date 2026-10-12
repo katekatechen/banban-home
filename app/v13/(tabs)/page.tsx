@@ -204,6 +204,20 @@ export default function V13HomePage() {
     setVariant(resolveHomeVariant());
   }, []);
   const glowHome = variant === "glow";
+  // 光暈版：送出後等紙飛機飛走，左上的 AIFIAN 字樣才縮成 logo mark；
+  // 回首頁時直接展開。掛載當下若已在對話中（切分頁回來）就直接是 mark，不播動畫
+  const [logoMark, setLogoMark] = useState(chatOpen);
+  const logoMounted = useRef(false);
+  useEffect(() => {
+    const first = !logoMounted.current;
+    logoMounted.current = true;
+    if (!chatOpen || first || !glowHome) {
+      setLogoMark(chatOpen);
+      return;
+    }
+    const t = window.setTimeout(() => setLogoMark(true), PLANE_EXIT_MS);
+    return () => window.clearTimeout(t);
+  }, [chatOpen, glowHome]);
   const skyTheme = SKY_THEMES[time.period];
   // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
   // 光暈版底色是深色時（GLOW_IS_DARK）：logo、狀態列、招呼語、快捷問題改白色；
@@ -872,7 +886,7 @@ export default function V13HomePage() {
           >
             {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark */}
             <LogoMorph
-              mark={chatOpen}
+              mark={logoMark}
               className="block h-7 w-[95.44px]"
               // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色。
               // 光暈版：進入對話後的 logo mark 用品牌紅
