@@ -204,8 +204,10 @@ export default function V13HomePage() {
     setVariant(resolveHomeVariant());
   }, []);
   const glowHome = variant === "glow";
-  // 光暈版：送出後等紙飛機飛走，左上的 AIFIAN 字樣才縮成 logo mark；
+  // 光暈版：送出後 0.5 秒（紙飛機飛走時）左上的 AIFIAN 字樣才開始縮成 logo mark，
+  // 約 1.2 秒變成 mark；
   // 回首頁時直接展開。掛載當下若已在對話中（切分頁回來）就直接是 mark，不播動畫
+  const LOGO_MORPH_DELAY_MS = 500;
   const [logoMark, setLogoMark] = useState(chatOpen);
   const logoMounted = useRef(false);
   useEffect(() => {
@@ -215,7 +217,7 @@ export default function V13HomePage() {
       setLogoMark(chatOpen);
       return;
     }
-    const t = window.setTimeout(() => setLogoMark(true), PLANE_EXIT_MS);
+    const t = window.setTimeout(() => setLogoMark(true), LOGO_MORPH_DELAY_MS);
     return () => window.clearTimeout(t);
   }, [chatOpen, glowHome]);
   const skyTheme = SKY_THEMES[time.period];
