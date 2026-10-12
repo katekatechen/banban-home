@@ -65,10 +65,10 @@ export default function HomeGradient({
     // intro 只看掛載當下
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [covered]);
-  // 送出：按下去馬上往右上飛走，一起飛就往右傾斜（planeExit 動畫，globals.css），
+  // 送出：按下去馬上往右上飛走，機身像滑翔翼遇到氣流一樣側傾、角度一路變化（planeExit 動畫，globals.css），
   // 邊飛邊縮小、最後淡掉；這裡的 transform 是動畫結束後停留的位置
   const planeTransform = covered
-    ? "translate(140px, -200px) rotate(16deg) scale(0.8)"
+    ? "translate(140px, -200px) perspective(320px) rotateY(26deg) rotateX(2deg) scale(0.8)"
     : planeIn
       ? "translate(0, 0)"
       : "translate(-40px, 60px) scale(0.9)";

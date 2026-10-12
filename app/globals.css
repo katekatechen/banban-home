@@ -555,26 +555,29 @@ body {
     display: none;
   }
 }
-/* v13 光暈版：送出時紙飛機往右上飛走，一起飛就往右傾斜（順時針），越飛越斜。
-   每段距離越來越短＝起步快、後段減速；最後縮小淡掉 */
+/* v13 光暈版：送出時紙飛機往右上飛走，機身像滑翔翼遇到氣流一樣往右側傾（3D 翻滾），
+   傾斜角度一路微微變化；每段距離越來越短＝起步快、後段減速，最後縮小淡掉 */
 @keyframes planeExit {
   0% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
+    transform: translate(0, 0) perspective(320px) rotateY(0deg) rotateX(0deg) scale(1);
     opacity: 1;
   }
   20% {
-    transform: translate(38px, -52px) rotate(8deg) scale(0.96);
+    transform: translate(38px, -52px) perspective(320px) rotateY(24deg) rotateX(6deg) scale(0.96);
   }
-  50% {
-    transform: translate(88px, -126px) rotate(13deg) scale(0.9);
+  40% {
+    transform: translate(76px, -108px) perspective(320px) rotateY(14deg) rotateX(-4deg) scale(0.92);
+  }
+  60% {
+    transform: translate(104px, -150px) perspective(320px) rotateY(30deg) rotateX(5deg) scale(0.88);
     opacity: 1;
   }
-  75% {
-    transform: translate(120px, -172px) rotate(15deg) scale(0.84);
-    opacity: 0.6;
+  80% {
+    transform: translate(126px, -180px) perspective(320px) rotateY(20deg) rotateX(-3deg) scale(0.84);
+    opacity: 0.5;
   }
   100% {
-    transform: translate(140px, -200px) rotate(16deg) scale(0.8);
+    transform: translate(140px, -200px) perspective(320px) rotateY(26deg) rotateX(2deg) scale(0.8);
     opacity: 0;
   }
 }
