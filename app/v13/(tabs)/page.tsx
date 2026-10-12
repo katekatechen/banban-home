@@ -204,10 +204,10 @@ export default function V13HomePage() {
     setVariant(resolveHomeVariant());
   }, []);
   const glowHome = variant === "glow";
-  // 光暈版：送出後 0.5 秒（紙飛機飛走時）左上的 AIFIAN 字樣才開始縮成 logo mark，
-  // 約 1.2 秒變成 mark；
+  // 光暈版：送出後約 0.28 秒（紙飛機剛消失）左上的 AIFIAN 字樣開始縮成 logo mark，
+  // 約 0.8 秒變成 mark；
   // 回首頁時直接展開。掛載當下若已在對話中（切分頁回來）就直接是 mark，不播動畫
-  const LOGO_MORPH_DELAY_MS = 500;
+  const LOGO_MORPH_DELAY_MS = 280;
   const [logoMark, setLogoMark] = useState(chatOpen);
   const logoMounted = useRef(false);
   useEffect(() => {

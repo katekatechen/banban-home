@@ -12,8 +12,8 @@ import SvgPath from "svgpath";
 // mark 放大到 24px 高、貼齊左邊，跟對話裡原本 h-6 的 mark 一樣大
 const W = 95.4393;
 const H = 28;
-// 整段 0.7 秒：送出後 0.5 秒開始縮、約 1.2 秒變成 mark
-const MS = 700;
+// 整段 0.5 秒：送出後約 0.28 秒開始縮、約 0.8 秒變成 mark
+const MS = 500;
 
 // 第一個 A 以外的字母，依「先縮進去的」排序（從右到左），附上每個字母的中心 x
 const LETTERS: [d: string, cx: number][] = [
