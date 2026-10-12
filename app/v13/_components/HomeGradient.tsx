@@ -86,11 +86,14 @@ export default function HomeGradient({
             animation: intro ? "homeGradientFade 900ms ease both" : undefined,
           }}
         >
+          {/* 色光緩緩流動：整張圖放大一點後，16 秒一輪慢慢漂移、微微縮放，
+              放大的量剛好蓋住漂移距離，邊緣不會露出白色 */}
           <div
-            className="absolute inset-x-0 top-0 aspect-[375/360]"
+            className="glow-flow absolute inset-x-0 top-0 aspect-[375/360]"
             style={{
               backgroundImage: `url(${BAND_SRC})`,
               backgroundSize: "100% 100%",
+              transformOrigin: "50% 20%",
             }}
           />
         </div>

@@ -469,6 +469,31 @@ body {
 
 
 /* v13 光暈版首頁的底色：載入時淡入 */
+/* v13 光暈版首頁：色光緩緩流動 */
+.glow-flow {
+  animation: glowFlow 16s ease-in-out infinite;
+}
+@keyframes glowFlow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  25% {
+    transform: translate(-4%, -2%) scale(1.16);
+  }
+  50% {
+    transform: translate(2%, -4%) scale(1.12);
+  }
+  75% {
+    transform: translate(4%, -1.5%) scale(1.18);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glow-flow {
+    animation: none;
+    transform: scale(1.1);
+  }
+}
 @keyframes homeGradientFade {
   from {
     opacity: 0;
