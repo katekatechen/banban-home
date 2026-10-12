@@ -27,7 +27,7 @@ const GLOW_LAYERS: [string, "normal" | "multiply"][] = [
 // 進入對話：色光往外擴散、變糊、淡掉，露出底下的白；回首頁時再收回來
 export const GRADIENT_EXIT_MS = 700;
 // 送出時紙飛機飛出畫面的時間；對話內容等它大致飛走才淡入，不然會被對話的白底蓋掉
-export const PLANE_EXIT_MS = 600;
+export const PLANE_EXIT_MS = 420;
 const IN = "cubic-bezier(0.22, 1, 0.36, 1)"; // 一開始擴散得快、最後慢慢散掉
 const OUT = "cubic-bezier(0.16, 1, 0.3, 1)"; // 回首頁：色光慢慢聚回來
 
@@ -130,7 +130,7 @@ export default function HomeGradient({
             transition: jump
               ? "none"
               : covered
-                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 250ms ease ${PLANE_EXIT_MS - 280}ms`
+                ? `transform ${PLANE_EXIT_MS}ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 200ms ease ${PLANE_EXIT_MS - 220}ms`
                 : `transform 1100ms ${EASING} 300ms, opacity 700ms ease 300ms`,
           }}
         >
