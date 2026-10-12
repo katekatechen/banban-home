@@ -3,18 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 
-// 光暈版首頁的底色：照 Figma「Chat – 光暈版（網站同步 10/7）」（1083:25414）的 bg-gradient。
-// 左上杏色、左側粉紅、中間珊瑚玫瑰，上方中間疊一層藍（linear burn）壓出深紫靛，
-// 右上再一層斜放的藍（color burn）變成亮藍、往外退成淺藍，整片往下淡成白色。
-// Figma 的 linear burn 在 CSS 沒有對應的混合模式，所以照 Figma 的圖層參數
-// （位置、大小、旋轉、layer blur、混合模式）算成一張圖：public/v13/home-glow.webp，
+// 光暈版首頁的底色：照 Figma「Chat-1」（1083:25414）的 bg-gradient（10/12 更新）。
+// 左側粉紅、中間大片珊瑚紅，右上角帶一點鵝黃，往下淡成白色。
+// Figma 用了 multiply、linear burn、color burn 等混合模式，CSS 沒有完全對應的做法，
+// 所以直接把那一層在 Figma 裡輸出成圖：public/v13/home-glow.webp，
 // 375 寬、高 360（以下全白），3 倍解析度。
 // 上方的 logo、狀態列、招呼語壓在色光上，改用白字（GLOW_TEXT_ON_COLOR）。
 export const GLOW_IS_DARK = false;
 export const GLOW_TEXT_ON_COLOR = true;
 const BASE = "#ffffff";
-// 手機狀態列的底色：取色光帶上緣的珊瑚粉
-export const GLOW_TOP = "#f66987";
+// 手機狀態列的底色：取色光上緣（頂端 20px）的平均色
+export const GLOW_TOP = "#fc7970";
 export const GLOW_BG = BASE;
 const BAND_SRC = "/v13/home-glow.webp";
 
