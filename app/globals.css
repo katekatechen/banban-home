@@ -660,9 +660,16 @@ body {
 }
 /* 交接：固定在 54%–62%，也就是滾到側面那一格（58%）的前後 */
 .signup-takeoff-mark {
+  /* 停穩之後的常駐姿態：原地翻轉是繞 Y 軸，轉到背面時畫面必然左右鏡射，
+     朝右上的記號會因此變成朝左上。所以背面要「預先反過來畫」，
+     被鏡射之後才會讀成朝右上。scaleX(-1) rotate(48deg) 的順序不能顛倒，
+     顛倒的話兩次鏡射會互相抵銷、變成朝左上。
+     heading 動畫改用 backwards 而非 both，播完就交還給這個基準姿態，
+     交接點落在 2250ms、記號早已透明的時候，所以看不到切換 */
+  transform: scaleX(-1) rotate(48deg);
   animation:
     signupTakeoffMark 1600ms linear 650ms both,
-    signupMarkHeading 1600ms 650ms both,
+    signupMarkHeading 1600ms 650ms backwards,
     signupIdleFaceMark 15s linear 2250ms infinite;
 }
 /* 起飛的頭 35%：記號順勢把頭轉向右上（48 度），對齊航線方向，
@@ -791,11 +798,14 @@ body {
     transform: translate(0, 0) rotate(0deg) scale(1);
   }
   74% {
-    transform: translate(var(--px, 0px), var(--py, 0px)) rotate(var(--gust, 0deg))
-      scale(1.15);
+    transform: translate(var(--px, 0px), var(--py, 0px))
+      rotate(var(--gust, 0deg)) scale(1.15);
   }
   84% {
-    transform: translate(calc(var(--px, 0px) * -0.3), calc(var(--py, 0px) * -0.3))
+    transform: translate(
+        calc(var(--px, 0px) * -0.3),
+        calc(var(--py, 0px) * -0.3)
+      )
       rotate(calc(var(--gust, 0deg) * -0.4)) scale(1.04);
   }
   100% {
@@ -817,8 +827,8 @@ body {
     signupEchoGate 15s linear calc(2250ms + var(--lag)) infinite;
 }
 .signup-echo-mark {
-  /* 殘影只在翻轉時出現，那時主體的機頭早已轉定，直接給固定角度 */
-  transform: rotate(48deg);
+  /* 殘影只在翻轉時出現，姿態跟主體的背面一致（含預先鏡射） */
+  transform: scaleX(-1) rotate(48deg);
   animation: signupIdleFaceMark 15s linear calc(2250ms + var(--lag)) infinite;
 }
 .signup-echo-plane {
@@ -844,7 +854,26 @@ body {
    上下移動時跟著滑動——縱向漸層會讓每個字在落定前後顯示到不同的色段。
    background-clip 需要把字本身設成透明，文字陰影因此不能用（會畫在
    透明字的後面變成一團糊），所以這裡不加陰影 */
+/* 標題用一道軟邊遮罩由左而右掃出來，不是逐字淡入。
+   逐字再怎麼重疊，本質仍是七個離散事件；而且七個 span 同時在動時，
+   父層的 background-clip: text 每一幀都要重算一次被文字裁切的漸層，
+   既不順又不划算。改成整行只有一個元素在動、一道連續的遮罩掃過，
+   畫面上沒有任何一格是「某個字開始出現」的瞬間，才會真的連續。
+   遮罩寬 250%，從 100%（透明端蓋住整行）掃到 0%（黑端蓋住整行） */
 .signup-title {
+  -webkit-mask-image: linear-gradient(
+    100deg,
+    #000 0%,
+    #000 45%,
+    transparent 70%
+  );
+  mask-image: linear-gradient(100deg, #000 0%, #000 45%, transparent 70%);
+  -webkit-mask-size: 250% 100%;
+  mask-size: 250% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: signupTitleReveal 1450ms cubic-bezier(0.42, 0, 0.22, 1) 950ms
+    backwards;
   background-image: linear-gradient(
     100deg,
     #ffffff 0%,
@@ -857,28 +886,23 @@ body {
   color: transparent;
   -webkit-text-fill-color: transparent;
 }
-
-/* 標題逐字被氣流帶上來：由左而右，在起飛的那段時間內掃完。
-   關鍵是單字時長要遠大於字與字的間隔，這樣同時會有五六個字在動，
-   讀起來才是連續的一道波；間隔一旦接近單字時長（只剩兩三個字在動）
-   就會變成一個一個蹦出來的打字機感。間隔由字數回推（見 Signup.tsx） */
-.signup-title-word {
-  display: inline-block;
-  animation: signupTitleWord var(--w-dur, 700ms) cubic-bezier(0.22, 1, 0.36, 1)
-    var(--w-delay, 0ms) backwards;
-}
-/* 除了往上，也從左邊一點點飄進來，跟氣流與飛行的方向一致；
-   距離與時長每個字都差一點，氣流不會用一模一樣的方式托起每個字 */
-@keyframes signupTitleWord {
+@keyframes signupTitleReveal {
   from {
-    opacity: 0;
-    transform: translate(var(--w-dx, -4px), var(--w-dy, 10px));
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+    transform: translateY(7px);
+  }
+  to {
+    -webkit-mask-position: 0% 0;
+    mask-position: 0% 0;
+    transform: translateY(0);
   }
 }
+
 /* 航跡：隨著起飛畫出來，停穩之後淡掉，不留在畫面上 */
 .signup-trail {
-  animation: signupTrailDraw 1600ms cubic-bezier(0.42, 0, 0.22, 1) 650ms
-      backwards,
+  animation:
+    signupTrailDraw 1600ms cubic-bezier(0.42, 0, 0.22, 1) 650ms backwards,
     signupTrailFade 800ms ease 2350ms both;
 }
 @keyframes signupTrailDraw {
@@ -990,7 +1014,7 @@ body {
   .signup-band,
   .signup-takeoff,
   .signup-takeoff-roll,
-  .signup-title-word,
+  .signup-title,
   .signup-trail,
   .signup-air,
   .signup-air-tick,

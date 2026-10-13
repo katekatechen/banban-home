@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import StatusBar from "./StatusBar";
 
@@ -14,7 +14,7 @@ import StatusBar from "./StatusBar";
 // - 0 ~ 0.65 秒：∧ 記號靜止停在漸層區的左下角（Figma 分鏡第一格）；
 // - 0.65 ~ 2.05 秒：記號沿 45° 飛到中央，途中繞行進軸滾一圈，
 //         滾到只剩側面一條線時（整段 58%）換成紙飛機，接縫藏在裡面；
-//         標題同時由左而右逐字被帶上來，最後一個字落定接上飛機停穩；
+//         標題同時由左而右被一道遮罩掃出來，收在飛機停穩之後；
 // - 2.05 秒：交棒給常駐的上下漂浮，航跡淡掉；之後每 15 秒會在原地轉一圈（轉法同 scene-8）。
 // 背景另有一層氣流刻度，沿 45° 飄動，風向會以 16 秒為週期緩慢來回轉。
 // 輸入：號碼自動分成 3-3-3，focus 時底線加粗；開始輸入就展開按鈕（灰色不可按），
@@ -383,24 +383,6 @@ const MARK_ABOVE_PANEL = 21.58;
 
 // 英文標語照 Figma 用 SF Pro Display：專案字體堆疊第一順位的 PingFang TC
 // 自己也帶一套拉丁字母，不指定的話英文會被它接走，字形跟字面大小都會不一樣
-// 標題逐字進場：起飛開始（650ms）時由左而右依序被帶上來，
-// 最後一個字落定正好接上紙飛機停穩的 1.8 秒。
-// 間隔是回推出來的，所以之後改文案、字數變了也會自動對齊同一個收尾點
-const TITLE_WORDS = "Invest in Yourself with an AI Agent".split(" ");
-const TITLE_WORD_START = 950;
-const TITLE_WORD_END = 2400;
-// 單字時長刻意遠大於間隔（見下方計算），同時在動的字才夠多
-const TITLE_WORD_DUR = 700;
-// 每個字的時長、距離各差一點，避免整排用一模一樣的方式動
-const TITLE_WORD_VARY = TITLE_WORDS.map((_, i) => ({
-  dur: `${640 + ((i * 7) % 4) * 45}ms`,
-  dy: `${(8 + ((i * 5) % 4) * 1.6).toFixed(1)}px`,
-  dx: `${-(2 + ((i * 3) % 3) * 1.8).toFixed(1)}px`,
-}));
-const TITLE_WORD_STEP =
-  (TITLE_WORD_END - TITLE_WORD_START - TITLE_WORD_DUR) /
-  Math.max(1, TITLE_WORDS.length - 1);
-
 const SF_PRO =
   '"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
@@ -590,24 +572,7 @@ export default function Signup({
               transition: "opacity 250ms ease",
             }}
           >
-            {TITLE_WORDS.map((w, i) => (
-              <Fragment key={i}>
-                <span
-                  className="signup-title-word"
-                  style={
-                    {
-                      "--w-delay": `${Math.round(TITLE_WORD_START + i * TITLE_WORD_STEP)}ms`,
-                      "--w-dur": TITLE_WORD_VARY[i].dur,
-                      "--w-dy": TITLE_WORD_VARY[i].dy,
-                      "--w-dx": TITLE_WORD_VARY[i].dx,
-                    } as React.CSSProperties
-                  }
-                >
-                  {w}
-                </span>
-                {i < TITLE_WORDS.length - 1 && " "}
-              </Fragment>
-            ))}
+            Invest in Yourself with an AI Agent
           </p>
         </div>
       </div>
