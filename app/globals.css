@@ -637,7 +637,9 @@ body {
 /* 刻意用兩段：270 度落在整段的 58%（側面只剩一條線的那一格），
    剩下的 90 度用掉最後 42% 的時間，收尾因此是滑進定位而不是停死 */
 .signup-takeoff-roll {
-  animation: signupTakeoffRoll 1400ms 650ms backwards;
+  animation:
+    signupTakeoffRoll 1400ms 650ms backwards,
+    signupIdleSpin 15s linear 2050ms infinite;
 }
 @keyframes signupTakeoffRoll {
   0% {
@@ -654,7 +656,26 @@ body {
 }
 /* 交接：固定在 54%–62%，也就是滾到側面那一格（58%）的前後 */
 .signup-takeoff-mark {
-  animation: signupTakeoffMark 1400ms linear 650ms both;
+  animation:
+    signupTakeoffMark 1400ms linear 650ms both,
+    signupIdleFaceMark 15s linear 2050ms infinite;
+}
+/* 背面：只在 75%~91.667% 之間現身，也就是 Y 軸 92° 到 268° 之間。
+   用硬切不做淡入淡出——兩面同時半透明疊在一起會穿幫，
+   而切換點本來就在側面只剩一條線的那一格，看不到接縫 */
+@keyframes signupIdleFaceMark {
+  0%,
+  74.99% {
+    opacity: 0;
+  }
+  75%,
+  91.66% {
+    opacity: 1;
+  }
+  91.67%,
+  100% {
+    opacity: 0;
+  }
 }
 @keyframes signupTakeoffMark {
   0%,
@@ -666,8 +687,11 @@ body {
     opacity: 0;
   }
 }
-/* 停穩之後每 15 秒在原地轉一圈，轉法取自 aifian-logo-intro/scene-8 的 Lottie：
-   繞 Y 軸轉整圈，並在兩個四分點各點一次頭（X 軸約 20 度）。
+/* 停穩之後每 15 秒在原地翻一圈，做法取自 aifian-logo-intro/scene-8：
+   把紙飛機與 ∧ 記號當成「同一張卡的兩面」。繞 Y 軸轉整圈，
+   轉到側面只剩一條線的那兩格（92°、268°）互換正反面，
+   所以看不到切換，讀起來就是同一個物件翻過來給你看另一面。
+   另在兩個四分點各點一次頭（X 軸約 20 度）。
    scene-8 原本還有一段 Z 軸側傾到 -47.6 度，這裡刻意不沿用——
    那個值是為「平放的 ∧ 記號」校準的，而紙飛機素材本身已經自帶
    約 50 度的機頭朝向，兩者相加會讓機頭越過垂直、偏到左上。
@@ -675,7 +699,22 @@ body {
 .signup-takeoff-plane {
   animation:
     signupTakeoffPlane 1400ms linear 650ms both,
-    signupIdleSpin 15s linear 2050ms infinite;
+    signupIdleFacePlane 15s linear 2050ms infinite;
+}
+/* 正面：跟背面互補 */
+@keyframes signupIdleFacePlane {
+  0%,
+  74.99% {
+    opacity: 1;
+  }
+  75%,
+  91.66% {
+    opacity: 0;
+  }
+  91.67%,
+  100% {
+    opacity: 1;
+  }
 }
 @keyframes signupTakeoffPlane {
   0%,
