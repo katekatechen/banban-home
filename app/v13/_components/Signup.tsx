@@ -389,8 +389,14 @@ const MARK_ABOVE_PANEL = 21.58;
 const TITLE_WORDS = "Invest in Yourself with an AI Agent".split(" ");
 const TITLE_WORD_START = 950;
 const TITLE_WORD_END = 2400;
-// 要跟 globals.css 的 .signup-title-word 時長一致
-const TITLE_WORD_DUR = 440;
+// 單字時長刻意遠大於間隔（見下方計算），同時在動的字才夠多
+const TITLE_WORD_DUR = 700;
+// 每個字的時長、距離各差一點，避免整排用一模一樣的方式動
+const TITLE_WORD_VARY = TITLE_WORDS.map((_, i) => ({
+  dur: `${640 + ((i * 7) % 4) * 45}ms`,
+  dy: `${(8 + ((i * 5) % 4) * 1.6).toFixed(1)}px`,
+  dx: `${-(2 + ((i * 3) % 3) * 1.8).toFixed(1)}px`,
+}));
 const TITLE_WORD_STEP =
   (TITLE_WORD_END - TITLE_WORD_START - TITLE_WORD_DUR) /
   Math.max(1, TITLE_WORDS.length - 1);
@@ -591,6 +597,9 @@ export default function Signup({
                   style={
                     {
                       "--w-delay": `${Math.round(TITLE_WORD_START + i * TITLE_WORD_STEP)}ms`,
+                      "--w-dur": TITLE_WORD_VARY[i].dur,
+                      "--w-dy": TITLE_WORD_VARY[i].dy,
+                      "--w-dx": TITLE_WORD_VARY[i].dx,
                     } as React.CSSProperties
                   }
                 >

@@ -838,19 +838,21 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-/* 標題逐字被氣流帶上來：由左而右，在起飛的那段時間內掃完，
-   最後一個字落定的時間剛好對上紙飛機停穩。每個字自己走 440ms，
-   間隔由字數回推（見 Signup.tsx）——間隔比單字時長短很多，
-   所以是連續的一道波，不是一個一個蹦出來的打字機感 */
+/* 標題逐字被氣流帶上來：由左而右，在起飛的那段時間內掃完。
+   關鍵是單字時長要遠大於字與字的間隔，這樣同時會有五六個字在動，
+   讀起來才是連續的一道波；間隔一旦接近單字時長（只剩兩三個字在動）
+   就會變成一個一個蹦出來的打字機感。間隔由字數回推（見 Signup.tsx） */
 .signup-title-word {
   display: inline-block;
-  animation: signupTitleWord 440ms cubic-bezier(0.22, 1, 0.36, 1)
+  animation: signupTitleWord var(--w-dur, 700ms) cubic-bezier(0.22, 1, 0.36, 1)
     var(--w-delay, 0ms) backwards;
 }
+/* 除了往上，也從左邊一點點飄進來，跟氣流與飛行的方向一致；
+   距離與時長每個字都差一點，氣流不會用一模一樣的方式托起每個字 */
 @keyframes signupTitleWord {
   from {
     opacity: 0;
-    transform: translateY(9px);
+    transform: translate(var(--w-dx, -4px), var(--w-dy, 10px));
   }
 }
 /* 航跡：隨著起飛畫出來，停穩之後淡掉，不留在畫面上 */
