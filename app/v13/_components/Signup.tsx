@@ -176,9 +176,7 @@ function Bands({ leaving }: { leaving: boolean }) {
     const el = ref.current;
     if (!el) return;
     const fit = () =>
-      setScale(
-        Math.max(el.clientWidth / DESIGN_W, el.clientHeight / DESIGN_H),
-      );
+      setScale(Math.max(el.clientWidth / DESIGN_W, el.clientHeight / DESIGN_H));
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
@@ -235,6 +233,23 @@ const AIR_TICKS = Array.from({ length: 36 }, (_, i) => {
   };
 });
 
+// 飛機停在漸層區的中央偏上；翻轉時以它為中心擾動氣流。
+// 每一格的強度與起始延遲都看「離飛機多遠」：近的轉得兇、也先被吹到
+const PLANE_AT = { x: 50, y: 47 };
+const AIR_GUSTS = AIR_TICKS.map((t) => {
+  const dx = parseFloat(t.left) - PLANE_AT.x;
+  const dy = parseFloat(t.top) - PLANE_AT.y;
+  const d = Math.hypot(dx, dy);
+  const n = Math.min(1, d / 70);
+  const len = d || 1;
+  return {
+    gust: `${(32 - 26 * n).toFixed(1)}deg`,
+    lag: `${Math.round(n * 550)}ms`,
+    px: `${((dx / len) * (6 - 4 * n)).toFixed(1)}px`,
+    py: `${((dy / len) * (6 - 4 * n)).toFixed(1)}px`,
+  };
+});
+
 function AirFlow() {
   return (
     <div aria-hidden className="signup-air absolute inset-0 overflow-hidden">
@@ -251,23 +266,35 @@ function AirFlow() {
             } as React.CSSProperties
           }
         >
-          <svg
-            className="signup-air-sway"
-            width={t.size}
-            height={t.size}
-            viewBox="-5 -5 10 10"
-            fill="none"
-            style={{ "--sway-delay": t.swayDelay } as React.CSSProperties}
+          <span
+            className="signup-air-gust"
+            style={
+              {
+                "--gust": AIR_GUSTS[i].gust,
+                "--gust-lag": AIR_GUSTS[i].lag,
+                "--px": AIR_GUSTS[i].px,
+                "--py": AIR_GUSTS[i].py,
+              } as React.CSSProperties
+            }
           >
-            <path
-              d="M -4,3 L 0,-4 L 4,3"
-              stroke="#fff"
-              strokeWidth={t.stroke}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              transform="rotate(45)"
-            />
-          </svg>
+            <svg
+              className="signup-air-sway"
+              width={t.size}
+              height={t.size}
+              viewBox="-5 -5 10 10"
+              fill="none"
+              style={{ "--sway-delay": t.swayDelay } as React.CSSProperties}
+            >
+              <path
+                d="M -4,3 L 0,-4 L 4,3"
+                stroke="#fff"
+                strokeWidth={t.stroke}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                transform="rotate(45)"
+              />
+            </svg>
+          </span>
         </span>
       ))}
     </div>
@@ -566,19 +593,13 @@ export default function Signup({
             "transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 250ms ease",
         }}
       >
-        <div
-          className="flex flex-col items-center gap-6 bg-[#fefefe] p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]"
-        >
+        <div className="flex flex-col items-center gap-6 bg-[#fefefe] p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]">
           <div className="flex w-full flex-col items-center gap-6">
-            <p
-              className="w-full text-center text-[16px] leading-6 text-gray-800"
-            >
+            <p className="w-full text-center text-[16px] leading-6 text-gray-800">
               Create an account or log in
             </p>
             <div className="flex w-full flex-col">
-              <div
-                className="flex w-full items-start gap-2"
-              >
+              <div className="flex w-full items-start gap-2">
                 <div className="flex w-[83px] shrink-0 items-center gap-1 border-b border-gray-800 py-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -619,7 +640,8 @@ export default function Signup({
                     className="absolute inset-x-0 -bottom-px h-[2px] bg-gray-800"
                     style={{
                       transform: focused ? "scaleX(1)" : "scaleX(0)",
-                      transition: "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)",
+                      transition:
+                        "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)",
                     }}
                   />
                 </label>
@@ -630,7 +652,8 @@ export default function Signup({
                 className="grid"
                 style={{
                   gridTemplateRows: ctaOpen ? "1fr" : "0fr",
-                  transition: "grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  transition:
+                    "grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
               >
                 <div className="min-h-0 overflow-hidden">
@@ -639,7 +662,8 @@ export default function Signup({
                     style={{
                       opacity: ctaOpen ? 1 : 0,
                       transform: ctaOpen ? "translateY(0)" : "translateY(-8px)",
-                      transition: "opacity 260ms ease 80ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1)",
+                      transition:
+                        "opacity 260ms ease 80ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1)",
                     }}
                   >
                     <button
@@ -659,21 +683,22 @@ export default function Signup({
                 </div>
               </div>
 
-              <div
-                className="mt-2 flex w-full justify-center py-2"
-              >
+              <div className="mt-2 flex w-full justify-center py-2">
                 <p className="text-[14px] leading-[18px] text-gray-800">或</p>
               </div>
-              <div
-                className="mt-2 flex w-full gap-2"
-              >
+              <div className="mt-2 flex w-full gap-2">
                 <button
                   type="button"
                   aria-label="使用 Apple 繼續"
                   className="flex h-12 flex-1 items-center justify-center rounded-2xl border border-gray-800 bg-gray-800 transition-transform active:scale-[0.97]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/v13/signup-apple.svg" alt="" width={20} height={24} />
+                  <img
+                    src="/v13/signup-apple.svg"
+                    alt=""
+                    width={20}
+                    height={24}
+                  />
                 </button>
                 <button
                   type="button"
@@ -681,18 +706,22 @@ export default function Signup({
                   className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-gray-100 transition-transform active:scale-[0.97]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/v13/signup-google.svg" alt="" width={24} height={24} />
+                  <img
+                    src="/v13/signup-google.svg"
+                    alt=""
+                    width={24}
+                    height={24}
+                  />
                 </button>
               </div>
             </div>
           </div>
-          <p
-            className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-gray-800"
-          >
+          <p className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-gray-800">
             繼續建立帳號或登入代表你已閱讀並同意 AIFIAN 的{" "}
             <span className="font-bold whitespace-nowrap">服務條款</span>
             {/* 照設計稿固定在「服務條款」後面換行，避免寬螢幕斷在「隱私權政｜策」 */}
-            <br />與 <span className="font-bold whitespace-nowrap">隱私權政策</span>。
+            <br />與{" "}
+            <span className="font-bold whitespace-nowrap">隱私權政策</span>。
           </p>
         </div>
       </div>

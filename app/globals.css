@@ -757,6 +757,32 @@ body {
   }
 }
 
+/* 翻轉時擾動氣流：每一格的強度與起始延遲都由「離飛機多遠」決定，
+   近的轉得兇、也先被吹到，遠的弱而且晚，擾動因此是從飛機往外擴散的一圈，
+   而不是整片同時抖動。週期與延遲都對齊翻轉（15 秒 / 2050ms） */
+.signup-air-gust {
+  display: block;
+  animation: signupAirGust 15s linear calc(2050ms + var(--gust-lag, 0ms))
+    infinite;
+}
+@keyframes signupAirGust {
+  0%,
+  68% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  74% {
+    transform: translate(var(--px, 0px), var(--py, 0px)) rotate(var(--gust, 0deg))
+      scale(1.15);
+  }
+  84% {
+    transform: translate(calc(var(--px, 0px) * -0.3), calc(var(--py, 0px) * -0.3))
+      rotate(calc(var(--gust, 0deg) * -0.4)) scale(1.04);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
 /* 旋轉的殘影：照 scene-8 的做法疊 5 層延遲副本，每層落後 67ms、
    不透明度 55/44/34/25/17 遞減，轉動時就會拖出一條漸層軌跡。
    跟 scene-8 不同的是那支是一直在轉、殘影可以常駐，這裡的飛機
@@ -928,6 +954,7 @@ body {
   .signup-air,
   .signup-air-tick,
   .signup-air-sway,
+  .signup-air-gust,
   .signup-echo,
   .signup-echo-mark,
   .signup-echo-plane,
