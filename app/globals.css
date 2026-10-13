@@ -866,12 +866,27 @@ body {
   }
 }
 /* 氣流：沿 45° 往右上飄的小翼形刻度 */
+/* 整片氣流一起緩慢起伏：每一格本來是各飄各的，看起來像散落的粒子；
+   再疊一層整層的上下位移之後，它們才會被綁成同一團空氣在呼吸。
+   先下沉再浮起，週期 9 秒、幅度 16px，比個別刻度的飄移慢得多，
+   所以是底下那層大的律動，不會跟個別的飄移打架 */
 .signup-air {
-  animation: signupAirIn 900ms ease 500ms backwards;
+  animation:
+    signupAirIn 900ms ease 500ms backwards,
+    signupAirBreath 9s ease-in-out 1s infinite;
 }
 @keyframes signupAirIn {
   from {
     opacity: 0;
+  }
+}
+@keyframes signupAirBreath {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(16px);
   }
 }
 .signup-air-tick {
