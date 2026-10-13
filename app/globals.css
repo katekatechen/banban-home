@@ -979,8 +979,8 @@ body {
 .signup-trail {
   animation:
     signupTrailDraw 1600ms cubic-bezier(0.42, 0, 0.22, 1) 650ms backwards,
-    signupTrailRetract 900ms cubic-bezier(0.4, 0, 0.25, 1) 2350ms forwards,
-    signupTrailFade 380ms ease-in 2950ms forwards;
+    signupTrailRetract 520ms cubic-bezier(0.5, 0, 0.3, 1) 2300ms forwards,
+    signupTrailFade 220ms ease-in 2660ms forwards;
 }
 @keyframes signupTrailDraw {
   from {

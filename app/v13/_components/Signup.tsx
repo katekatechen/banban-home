@@ -400,10 +400,17 @@ const EDGE_OUT = 13750;
 const TAIL_PLANE = "an AI Agent";
 const TAIL_MARK = "AIFIAN";
 
-// 單獨切出來的小元件：一輪只重畫兩次，不要牽動整頁。
-// 用 rAF 從掛載時間推算，不用一串 setTimeout 接力，才不會愈跑愈偏
-function TitleTail() {
+// 第二行單獨切出來：一輪只重畫兩次，不要牽動整頁。
+// 用 rAF 從掛載時間推算，不用一串 setTimeout 接力，才不會愈跑愈偏。
+//
+// with 用 FLIP 接住換字造成的位移：句子長度一變，整行重新置中，
+// with 的位置會瞬間跳過去。換字前先記下它在哪，換完先把它拉回舊位置，
+// 再滑到新位置，看起來就是被後面那個字推（或拉）過去的
+function TitleLine2() {
   const [tail, setTail] = useState(TAIL_PLANE);
+  const withRef = useRef<HTMLSpanElement>(null);
+  const beforeX = useRef<number | null>(null);
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t0 = performance.now();
@@ -416,14 +423,36 @@ function TitleTail() {
       const next = p >= EDGE_IN && p < EDGE_OUT ? TAIL_MARK : TAIL_PLANE;
       if (next === last) return;
       last = next;
+      beforeX.current = withRef.current?.getBoundingClientRect().left ?? null;
       setTail(next);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useLayoutEffect(() => {
+    const el = withRef.current;
+    const from = beforeX.current;
+    beforeX.current = null;
+    if (!el || from == null) return;
+    const dx = from - el.getBoundingClientRect().left;
+    if (!dx) return;
+    el.style.transition = "none";
+    el.style.transform = `translateX(${dx.toFixed(2)}px)`;
+    // 讀一次佈局，逼瀏覽器把上面那行先算進去，否則兩次設定會被合併掉
+    void el.offsetWidth;
+    el.style.transition = "transform 560ms cubic-bezier(0.22, 1, 0.36, 1)";
+    el.style.transform = "translateX(0)";
+  }, [tail]);
+
   return (
-    <span className="signup-title-tail">
-      <span className="signup-title-ink">{tail}</span>
+    <span className="signup-title-line">
+      <span ref={withRef} className="signup-title-with signup-title-ink">
+        with&nbsp;
+      </span>
+      <span className="signup-title-tail">
+        <span className="signup-title-ink">{tail}</span>
+      </span>
     </span>
   );
 }
@@ -619,12 +648,7 @@ export default function Signup({
             <span className="signup-title-line signup-title-ink">
               Invest in Yourself
             </span>
-            <span className="signup-title-line">
-              <span className="signup-title-with signup-title-ink">
-                with&nbsp;
-              </span>
-              <TitleTail />
-            </span>
+            <TitleLine2 />
           </p>
         </div>
       </div>
