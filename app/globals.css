@@ -788,6 +788,26 @@ body {
   }
 }
 
+/* 標題的色彩漸層：由左而右從純白轉到暖調的米金，呼應右上角那團黃光，
+   讀起來像右上方的光打在字上。
+   刻意用「橫向」漸層：逐字進場的位移是垂直的，橫向漸層才不會在字
+   上下移動時跟著滑動——縱向漸層會讓每個字在落定前後顯示到不同的色段。
+   background-clip 需要把字本身設成透明，文字陰影因此不能用（會畫在
+   透明字的後面變成一團糊），所以這裡不加陰影 */
+.signup-title {
+  background-image: linear-gradient(
+    100deg,
+    #ffffff 0%,
+    #ffffff 38%,
+    #ffeacf 72%,
+    #ffd9b8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
 /* 標題逐字被氣流帶上來：由左而右，在起飛的那段時間內掃完，
    最後一個字落定的時間剛好對上紙飛機停穩。每個字自己走 440ms，
    間隔由字數回推（見 Signup.tsx）——間隔比單字時長短很多，

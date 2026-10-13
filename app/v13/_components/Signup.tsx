@@ -530,7 +530,7 @@ export default function Signup({
               （Figma landing::title 1343:5612，SF Pro Display Medium 24/32，
               與紙飛機下緣相距 12.18） */}
           <p
-            className="relative mt-[12.18px] w-[232.4px] text-center text-[24px] leading-8 font-medium text-white"
+            className="signup-title relative mt-[12.18px] w-[232.4px] text-center text-[24px] leading-8 font-medium"
             style={{
               fontFamily: SF_PRO,
               opacity: leaving ? 0 : 1,
