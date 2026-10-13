@@ -660,7 +660,23 @@ body {
 .signup-takeoff-mark {
   animation:
     signupTakeoffMark 1400ms linear 650ms both,
+    signupMarkHeading 1400ms 650ms both,
     signupIdleFaceMark 15s linear 2050ms infinite;
+}
+/* 起飛的頭 35%：記號順勢把頭轉向右上（48 度），對齊航線方向，
+   之後才交給滾轉去傾斜。48 度是為了接上紙飛機素材本身的機頭角度
+   （約 50 度），換形那一瞬間兩者的朝向才不會錯開。
+   只轉記號、不轉紙飛機——紙飛機的朝向已經畫在素材裡，再轉會疊加變歪。
+   保持到最後不回正，所以之後翻到背面時兩面的朝向也是一致的 */
+@keyframes signupMarkHeading {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.32, 0, 0.28, 1);
+  }
+  35%,
+  100% {
+    transform: rotate(48deg);
+  }
 }
 /* 背面：只在 75%~91.667% 之間現身，也就是 Y 軸 92° 到 268° 之間。
    用硬切不做淡入淡出——兩面同時半透明疊在一起會穿幫，
@@ -799,6 +815,8 @@ body {
     signupEchoGate 15s linear calc(2050ms + var(--lag)) infinite;
 }
 .signup-echo-mark {
+  /* 殘影只在翻轉時出現，那時主體的機頭早已轉定，直接給固定角度 */
+  transform: rotate(48deg);
   animation: signupIdleFaceMark 15s linear calc(2050ms + var(--lag)) infinite;
 }
 .signup-echo-plane {
