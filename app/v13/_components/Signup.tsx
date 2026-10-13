@@ -329,8 +329,8 @@ function SpinEchoes() {
           <img
             src="/v13/signup-mark.svg"
             alt=""
-            className="signup-echo-mark absolute top-[10.85px] h-[58px] w-[66.63px] max-w-none"
-            style={{ left: 0.635 }}
+            className="signup-echo-mark absolute top-[-1.8px] h-[58px] w-[66.63px] max-w-none"
+            style={{ left: 1.135 }}
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -359,6 +359,17 @@ const formatPhone = (digits: string) =>
 const MARK_W = 66.63;
 const MARK_H = 58;
 const MARK_START_SCALE = 0.6897;
+
+// 翻面的共用重心：取白色紙飛機圖形的中心（紅影子算投影，不計入量體）。
+// 記號必須對齊這個點、旋轉也以它為軸，兩面才會疊在同一個位置上翻，
+// 否則翻過去會整個偏移——外框中心 (33.95, 39.85) 比機身中心低了 12.6px
+const CRAFT_W = 67.9;
+const CRAFT_H = 79.696;
+const FACE_CX = 34.45;
+const FACE_CY = 27.2;
+// 記號中心相對外框中心的偏移，量測起點時要扣掉
+const FACE_OFF_X = (FACE_CX - CRAFT_W / 2) * MARK_START_SCALE;
+const FACE_OFF_Y = (FACE_CY - CRAFT_H / 2) * MARK_START_SCALE;
 const MARK_LEFT = 16;
 const MARK_ABOVE_PANEL = 21.58;
 
@@ -411,8 +422,9 @@ export default function Signup({
       const w = (MARK_W * MARK_START_SCALE) / 2;
       const h = (MARK_H * MARK_START_SCALE) / 2;
       setStart({
-        dx: s.left + MARK_LEFT + w - (c.left + c.width / 2),
-        dy: s.bottom - MARK_ABOVE_PANEL - h - (c.top + c.height / 2),
+        dx: s.left + MARK_LEFT + w - (c.left + c.width / 2) - FACE_OFF_X,
+        dy:
+          s.bottom - MARK_ABOVE_PANEL - h - (c.top + c.height / 2) - FACE_OFF_Y,
       });
     };
     measure();
@@ -532,8 +544,8 @@ export default function Signup({
                   <img
                     src="/v13/signup-mark.svg"
                     alt=""
-                    className="signup-takeoff-mark absolute top-[10.85px] h-[58px] w-[66.63px] max-w-none"
-                    style={{ left: 0.635 }}
+                    className="signup-takeoff-mark absolute top-[-1.8px] h-[58px] w-[66.63px] max-w-none"
+                    style={{ left: 1.135 }}
                   />
                   <div className="signup-takeoff-plane absolute inset-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

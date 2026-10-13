@@ -637,6 +637,8 @@ body {
 /* 刻意用兩段：270 度落在整段的 58%（側面只剩一條線的那一格），
    剩下的 90 度用掉最後 42% 的時間，收尾因此是滑進定位而不是停死 */
 .signup-takeoff-roll {
+  /* 以機身中心為軸，不是外框中心，兩面翻轉才會疊在同一個位置 */
+  transform-origin: 34.45px 27.2px;
   animation:
     signupTakeoffRoll 1400ms 650ms backwards,
     signupIdleSpin 15s linear 2050ms infinite;
@@ -790,6 +792,7 @@ body {
    所以多加一層開關只在轉動那段現身 */
 .signup-echo {
   opacity: 0;
+  transform-origin: 34.45px 27.2px;
   animation:
     signupIdleSpin 15s linear calc(2050ms + var(--lag)) infinite,
     signupEchoGate 15s linear calc(2050ms + var(--lag)) infinite;
