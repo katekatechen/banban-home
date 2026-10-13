@@ -386,6 +386,48 @@ const MARK_ABOVE_PANEL = 21.58;
 const SF_PRO =
   '"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
+// 翻面時標題跟著換句：轉到背面時畫面上的東西就是 ∧ 記號本身，
+// 句尾從 an AI Agent 換成 AIFIAN，字面跟圖形講的是同一件事。
+// 換字的時機壓在紙飛機轉到「只剩側面一條線」的那一格（週期 15 秒、
+// 從 2250ms 起算：10000 起轉、11250 側面、12500 正對背面、13750 再轉回側面），
+// 跟記號換成紙飛機用的是同一招——趁看不見的時候換，接縫藏在裡面。
+// 進出場是由下往上：舊的字往上滑出行高之外被遮罩切掉，新的從下面升上來。
+// 動作交給 CSS（.signup-title-tail），這裡只負責在看不見的那一格換字串
+const IDLE_START = 2250;
+const FLIP_CYCLE = 15000;
+const EDGE_IN = 11250;
+const EDGE_OUT = 13750;
+const TAIL_PLANE = "an AI Agent";
+const TAIL_MARK = "AIFIAN";
+
+// 單獨切出來的小元件：一輪只重畫兩次，不要牽動整頁。
+// 用 rAF 從掛載時間推算，不用一串 setTimeout 接力，才不會愈跑愈偏
+function TitleTail() {
+  const [tail, setTail] = useState(TAIL_PLANE);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t0 = performance.now();
+    let raf = 0;
+    let last = TAIL_PLANE;
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const e = now - t0 - IDLE_START;
+      const p = e < 0 ? 0 : e % FLIP_CYCLE;
+      const next = p >= EDGE_IN && p < EDGE_OUT ? TAIL_MARK : TAIL_PLANE;
+      if (next === last) return;
+      last = next;
+      setTail(next);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return (
+    <span className="signup-title-tail">
+      <span className="signup-title-ink">{tail}</span>
+    </span>
+  );
+}
+
 export default function Signup({
   leaving,
   onContinue,
@@ -572,7 +614,17 @@ export default function Signup({
               transition: "opacity 250ms ease",
             }}
           >
-            Invest in Yourself with an AI Agent
+            {/* 兩行各自成塊（斷行處跟自然斷行同一個地方）：句尾換字時
+                字寬會變，交給自動斷行會在某幾格跳成一行或三行 */}
+            <span className="signup-title-line signup-title-ink">
+              Invest in Yourself
+            </span>
+            <span className="signup-title-line">
+              <span className="signup-title-with signup-title-ink">
+                with&nbsp;
+              </span>
+              <TitleTail />
+            </span>
           </p>
         </div>
       </div>
