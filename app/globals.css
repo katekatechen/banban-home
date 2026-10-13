@@ -662,11 +662,12 @@ body {
 .signup-takeoff-mark {
   /* 停穩之後的常駐姿態：原地翻轉是繞 Y 軸，轉到背面時畫面必然左右鏡射，
      朝右上的記號會因此變成朝左上。所以背面要「預先反過來畫」，
-     被鏡射之後才會讀成朝右上。scaleX(-1) rotate(48deg) 的順序不能顛倒，
-     顛倒的話兩次鏡射會互相抵銷、變成朝左上。
+     被鏡射之後才會讀成正確的方向。
+     48 度是「飛行姿態」，只用在起飛那段；翻到背面是當 logo 在看，
+     要正立（同 scene-8），所以這裡不帶角度，只留抵銷鏡射用的 scaleX(-1)。
      heading 動畫改用 backwards 而非 both，播完就交還給這個基準姿態，
      交接點落在 2250ms、記號早已透明的時候，所以看不到切換 */
-  transform: scaleX(-1) rotate(48deg);
+  transform: scaleX(-1);
   animation:
     signupTakeoffMark 1600ms linear 650ms both,
     signupMarkHeading 1600ms 650ms backwards,
@@ -827,8 +828,8 @@ body {
     signupEchoGate 15s linear calc(2250ms + var(--lag)) infinite;
 }
 .signup-echo-mark {
-  /* 殘影只在翻轉時出現，姿態跟主體的背面一致（含預先鏡射） */
-  transform: scaleX(-1) rotate(48deg);
+  /* 殘影只在翻轉時出現，姿態跟主體的背面一致：正立 + 抵銷鏡射 */
+  transform: scaleX(-1);
   animation: signupIdleFaceMark 15s linear calc(2250ms + var(--lag)) infinite;
 }
 .signup-echo-plane {
@@ -859,17 +860,21 @@ body {
    父層的 background-clip: text 每一幀都要重算一次被文字裁切的漸層，
    既不順又不划算。改成整行只有一個元素在動、一道連續的遮罩掃過，
    畫面上沒有任何一格是「某個字開始出現」的瞬間，才會真的連續。
-   遮罩寬 250%，從 100%（透明端蓋住整行）掃到 0%（黑端蓋住整行） */
+   遮罩寬 300%，所以元素只佔遮罩的 1/3：位置 0% 時元素落在遮罩的
+   0~33%（全黑、全顯示），位置 100% 時落在 67~100%（全透明、全隱藏）。
+   黑端設到 38%、透明端從 62% 起，兩邊都比 33/67 多留餘裕，
+   元素才不會壓到漸層的過渡帶而透出半截字（漸層還帶 10 度傾斜，
+   上下緣的有效位置會再差幾個百分點，餘裕要夠才吃得下） */
 .signup-title {
   -webkit-mask-image: linear-gradient(
     100deg,
     #000 0%,
-    #000 45%,
-    transparent 70%
+    #000 38%,
+    transparent 62%
   );
-  mask-image: linear-gradient(100deg, #000 0%, #000 45%, transparent 70%);
-  -webkit-mask-size: 250% 100%;
-  mask-size: 250% 100%;
+  mask-image: linear-gradient(100deg, #000 0%, #000 38%, transparent 62%);
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   animation: signupTitleReveal 1450ms cubic-bezier(0.42, 0, 0.22, 1) 950ms
