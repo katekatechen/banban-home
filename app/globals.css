@@ -675,6 +675,16 @@ body {
     signupTakeoffPlane 1400ms linear 650ms both,
     signupIdleSpin 15s linear 2050ms infinite;
 }
+@keyframes signupTakeoffPlane {
+  0%,
+  54% {
+    opacity: 0;
+  }
+  62%,
+  100% {
+    opacity: 1;
+  }
+}
 @keyframes signupIdleSpin {
   0%,
   66.667% {
