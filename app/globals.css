@@ -757,6 +757,37 @@ body {
   }
 }
 
+/* 旋轉的殘影：照 scene-8 的做法疊 5 層延遲副本，每層落後 67ms、
+   不透明度 55/44/34/25/17 遞減，轉動時就會拖出一條漸層軌跡。
+   跟 scene-8 不同的是那支是一直在轉、殘影可以常駐，這裡的飛機
+   15 秒裡有 10 秒是靜止的，殘影若常駐會變成一直疊著兩架飛機，
+   所以多加一層開關只在轉動那段現身 */
+.signup-echo {
+  opacity: 0;
+  animation:
+    signupIdleSpin 15s linear calc(2050ms + var(--lag)) infinite,
+    signupEchoGate 15s linear calc(2050ms + var(--lag)) infinite;
+}
+.signup-echo-mark {
+  animation: signupIdleFaceMark 15s linear calc(2050ms + var(--lag)) infinite;
+}
+.signup-echo-plane {
+  animation: signupIdleFacePlane 15s linear calc(2050ms + var(--lag)) infinite;
+}
+@keyframes signupEchoGate {
+  0%,
+  67% {
+    opacity: 0;
+  }
+  71%,
+  96% {
+    opacity: var(--echo-op, 0.3);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* 標題逐字被氣流帶上來：由左而右，在起飛的那段時間內掃完，
    最後一個字落定的時間剛好對上紙飛機停穩。每個字自己走 440ms，
    間隔由字數回推（見 Signup.tsx）——間隔比單字時長短很多，
@@ -877,6 +908,9 @@ body {
   .signup-air,
   .signup-air-tick,
   .signup-air-sway,
+  .signup-echo,
+  .signup-echo-mark,
+  .signup-echo-plane,
   .signup-plane-float,
   .signup-plane-shadow,
   .signup-cta-ready {

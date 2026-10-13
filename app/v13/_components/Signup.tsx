@@ -274,6 +274,49 @@ function AirFlow() {
   );
 }
 
+// 旋轉殘影：照 scene-8 疊 5 層延遲副本，落後 67ms 一層、不透明度遞減
+const ECHOES = [
+  { lag: 67, op: 0.55 },
+  { lag: 133, op: 0.44 },
+  { lag: 200, op: 0.34 },
+  { lag: 267, op: 0.25 },
+  { lag: 333, op: 0.17 },
+];
+
+function SpinEchoes() {
+  return (
+    <>
+      {ECHOES.map((e) => (
+        <div
+          key={e.lag}
+          aria-hidden
+          className="signup-echo absolute inset-0"
+          style={
+            {
+              "--lag": `${e.lag}ms`,
+              "--echo-op": e.op,
+            } as React.CSSProperties
+          }
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/v13/signup-mark.svg"
+            alt=""
+            className="signup-echo-mark absolute top-[10.85px] h-[58px] w-[66.63px] max-w-none"
+            style={{ left: 0.635 }}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/v13/signup-plane.svg"
+            alt=""
+            className="signup-echo-plane absolute top-0 left-px h-[54.4px] w-[66.9px]"
+          />
+        </div>
+      ))}
+    </>
+  );
+}
+
 // 號碼分成 3-3-3：912 345 678
 const formatPhone = (digits: string) =>
   [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)]
@@ -283,10 +326,12 @@ const formatPhone = (digits: string) =>
 // 記號圖檔在起飛層裡的尺寸（跟紙飛機同高、置中疊著），
 // 起點縮到 0.5 倍 ≈ Figma 分鏡第一格的 46×40。
 // 標題改置中之後，記號不再跟標題對齊，改錨在漸層區的左下角：
-// Figma 裡它在 x16（跟面板同一條 16px 邊界），下緣距離白色面板上緣 21.58
-const MARK_W = 91.556;
-const MARK_H = 79.696;
-const MARK_START_SCALE = 0.5;
+// Figma 裡它在 x16（跟面板同一條 16px 邊界），下緣距離白色面板上緣 21.58。
+// 記號的尺寸取 66.63×58，讓它翻到背面時的量體跟紙飛機（66.9 寬）一致；
+// 起點再縮到 0.69 倍 ≈ Figma 分鏡第一格的 46×40
+const MARK_W = 66.63;
+const MARK_H = 58;
+const MARK_START_SCALE = 0.6897;
 const MARK_LEFT = 16;
 const MARK_ABOVE_PANEL = 21.58;
 
@@ -296,8 +341,8 @@ const MARK_ABOVE_PANEL = 21.58;
 // 最後一個字落定正好接上紙飛機停穩的 1.8 秒。
 // 間隔是回推出來的，所以之後改文案、字數變了也會自動對齊同一個收尾點
 const TITLE_WORDS = "Invest in Yourself with an AI Agent".split(" ");
-const TITLE_WORD_START = 650;
-const TITLE_WORD_END = 2050;
+const TITLE_WORD_START = 950;
+const TITLE_WORD_END = 2400;
 // 要跟 globals.css 的 .signup-title-word 時長一致
 const TITLE_WORD_DUR = 440;
 const TITLE_WORD_STEP =
@@ -454,13 +499,14 @@ export default function Signup({
                   } as React.CSSProperties
                 }
               >
+                <SpinEchoes />
                 <div className="signup-takeoff-roll absolute inset-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/v13/signup-mark.svg"
                     alt=""
-                    className="signup-takeoff-mark absolute top-0 h-[79.696px] w-[91.556px] max-w-none"
-                    style={{ left: -11.83 }}
+                    className="signup-takeoff-mark absolute top-[10.85px] h-[58px] w-[66.63px] max-w-none"
+                    style={{ left: 0.635 }}
                   />
                   <div className="signup-takeoff-plane absolute inset-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
