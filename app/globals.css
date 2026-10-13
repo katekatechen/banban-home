@@ -666,10 +666,12 @@ body {
     opacity: 0;
   }
 }
-/* 停穩之後每 15 秒在原地轉一圈，轉法照 aifian-logo-intro/scene-8 的 Lottie：
-   不是繞行進軸的翻滾，而是「繞 Y 軸轉整圈 + 側傾到 -47.6 度 + 在兩個四分點各點一次頭」。
-   數值是從那支 Lottie 的 keyframe 每 1/8 取樣出來的，緩動已經含在取樣值裡，
-   所以這裡用 linear 讓它照著原曲線走。整圈 5 秒，前 10 秒完全靜止 */
+/* 停穩之後每 15 秒在原地轉一圈，轉法取自 aifian-logo-intro/scene-8 的 Lottie：
+   繞 Y 軸轉整圈，並在兩個四分點各點一次頭（X 軸約 20 度）。
+   scene-8 原本還有一段 Z 軸側傾到 -47.6 度，這裡刻意不沿用——
+   那個值是為「平放的 ∧ 記號」校準的，而紙飛機素材本身已經自帶
+   約 50 度的機頭朝向，兩者相加會讓機頭越過垂直、偏到左上。
+   整圈 5 秒，前 10 秒完全靜止 */
 .signup-takeoff-plane {
   animation:
     signupTakeoffPlane 1400ms linear 650ms both,
@@ -688,31 +690,31 @@ body {
 @keyframes signupIdleSpin {
   0%,
   66.667% {
-    transform: rotateZ(0deg) rotateY(0deg) rotateX(0deg);
+    transform: rotateY(0deg) rotateX(0deg);
   }
   70.833% {
-    transform: rotateZ(-1.2deg) rotateY(18deg) rotateX(1.9deg);
+    transform: rotateY(18deg) rotateX(1.9deg);
   }
   75% {
-    transform: rotateZ(-24.7deg) rotateY(92deg) rotateX(20deg);
+    transform: rotateY(92deg) rotateX(20deg);
   }
   79.167% {
-    transform: rotateZ(-46.1deg) rotateY(160deg) rotateX(2.4deg);
+    transform: rotateY(160deg) rotateX(2.4deg);
   }
   83.333% {
-    transform: rotateZ(-47.6deg) rotateY(180deg) rotateX(0deg);
+    transform: rotateY(180deg) rotateX(0deg);
   }
   87.5% {
-    transform: rotateZ(-46.1deg) rotateY(200deg) rotateX(2.4deg);
+    transform: rotateY(200deg) rotateX(2.4deg);
   }
   91.667% {
-    transform: rotateZ(-24.7deg) rotateY(268deg) rotateX(20deg);
+    transform: rotateY(268deg) rotateX(20deg);
   }
   95.833% {
-    transform: rotateZ(-1.2deg) rotateY(342deg) rotateX(1.9deg);
+    transform: rotateY(342deg) rotateX(1.9deg);
   }
   100% {
-    transform: rotateZ(0deg) rotateY(360deg) rotateX(0deg);
+    transform: rotateY(360deg) rotateX(0deg);
   }
 }
 
