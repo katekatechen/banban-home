@@ -1,31 +1,38 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import StatusBar from "./StatusBar";
 
-// 註冊／登入頁（照 Figma 1322:3538 signup-1）。網址加 ?signup 才會出現，
+// 註冊／登入頁（照 Figma 1343:5111 signup-1）。網址加 ?signup 才會出現，
 // 取代開場畫面：從這頁開始，輸入手機號碼後出現「使用手機繼續」，點下去進首頁。
 // 跟開場畫面一樣用 portal 掛到 #v13-frame，蓋過 tabbar。
 //
-// 進場微互動（總長約 1.2 秒）：
+// 進場（總長約 2 秒）：畫面上只有一件事在動，就是記號起飛。
 // - 0 秒：品牌色光從稍大、透明慢慢收攏顯現，之後每一團各自緩慢漂移；
-// - 0.2 秒：紙飛機從下方浮上來，就定位後開始上下漂浮，影子跟著呼吸；
-// - 0.4 秒起：AIFIAN 字樣、標語依序往上浮現；
-// - 0.15 秒起：下方白色面板從底部滑上來，裡面的標題、輸入框、或、登入按鈕、條款依序淡入。
+//         AIFIAN 字樣、標語、面板內的文字與輸入框直接出現，不做逐項淡入；
+// - 0 ~ 0.65 秒：∧ 記號靜止停在漸層區的左下角（Figma 分鏡第一格）；
+// - 0.65 ~ 2.05 秒：記號沿 45° 飛到中央，途中繞行進軸滾一圈，
+//         滾到只剩側面一條線時（整段 58%）換成紙飛機，接縫藏在裡面；
+//         標題同時由左而右逐字被帶上來，最後一個字落定接上飛機停穩；
+// - 2.05 秒：交棒給常駐的上下漂浮，航跡淡掉；之後每 15 秒會在原地轉一圈（轉法同 scene-8）。
+// 背景另有一層氣流刻度，沿 45° 飄動，風向會以 16 秒為週期緩慢來回轉。
 // 輸入：號碼自動分成 3-3-3，focus 時底線加粗；開始輸入就展開按鈕（灰色不可按），
 // 滿 9 碼變成品牌紅可以按，Enter 也能送出。
-// 離場：面板往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場。
+// 離場：面板往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場（進場不做淡入，只有離場有）。
 export const SIGNUP_EXIT_MS = 650;
 
 // 手機瀏覽器狀態列的底色，接漸層最上緣
 export const SIGNUP_TOP = "#ff5a8c";
 
-// 光團：位置、大小照 Figma（以 375 寬、漸層區 484 高為準），
-// img 是含模糊外擴的 SVG，inset 是外擴的比例。
-// 最右上那團淡黃在 Figma 是 linear burn，瀏覽器沒有，改用 multiply（疊在白底上看起來一樣）
+// 光團：位置、大小、疊色、素材全部照 Figma signup-1 的 Group 2220（1343:5114），
+// 以 375 寬、漸層區 484 高為準。檔名用 Figma 的 node id，因為圖層名稱（band #2446c4
+// 之類）是舊的、跟實際填色對不上，用 node id 之後每次重新同步才不會配錯。
+// img 是含模糊外擴的 SVG，inset 是外擴的比例。陣列順序就是疊放順序（第一個在最底下）。
 type Band = {
-  src: string;
+  node: string;
+  // 實際填色，寫在這裡純粹為了看程式時好認
+  tint: string;
   left: number;
   top: number;
   w: number;
@@ -39,9 +46,21 @@ type Band = {
 
 const BANDS: Band[] = [
   {
-    src: "/v13/signup-band-blue.svg",
+    node: "5118",
+    tint: "#FE1215",
+    left: -317.39,
+    top: -97.52,
+    w: 572.391,
+    h: 522.062,
+    inset: "-9.96% -9.08%",
+    blend: "normal",
+    drift: { x: 20, y: 18, r: -4, s: 1.05, d: 12 },
+  },
+  {
+    node: "5115",
+    tint: "#FF3B3B",
     left: -160.2,
-    top: 178.29,
+    top: 178.28,
     w: 454.839,
     h: 409.833,
     inset: "-21.12% -18.71%",
@@ -50,19 +69,33 @@ const BANDS: Band[] = [
     drift: { x: 22, y: -14, r: 6, s: 1.06, d: 11 },
   },
   {
-    src: "/v13/signup-band-orange.svg",
+    node: "5121",
+    tint: "#FBD044",
+    left: 199.01,
+    top: -65.99,
+    w: 451.274,
+    h: 451.474,
+    inset: "-15.44% -15.89%",
+    blend: "normal",
+    rotate: { deg: 44.11, w: 314.681, h: 323.735 },
+    drift: { x: -16, y: 14, r: 10, s: 1.07, d: 10 },
+  },
+  {
+    node: "5116",
+    tint: "#FF3B3B",
     left: -79.28,
     top: 66,
     w: 528.493,
     h: 526.912,
     inset: "-9.87% -9.84%",
-    blend: "darken",
+    blend: "normal",
     drift: { x: -18, y: 16, r: -5, s: 1.04, d: 13 },
   },
   {
-    src: "/v13/signup-band-yellow.svg",
-    left: -131.45,
-    top: -47.8,
+    node: "5117",
+    tint: "#FFBED8",
+    left: -133.9,
+    top: -54.87,
     w: 434.645,
     h: 354.183,
     inset: "-15.25% -12.42%",
@@ -70,25 +103,16 @@ const BANDS: Band[] = [
     drift: { x: 26, y: 12, r: 8, s: 1.08, d: 9 },
   },
   {
-    src: "/v13/signup-band-pink.svg",
-    left: -317.39,
-    top: -97.52,
-    w: 572.391,
-    h: 522.062,
-    inset: "-9.96% -9.08%",
-    blend: "multiply",
-    drift: { x: 20, y: 18, r: -4, s: 1.05, d: 12 },
-  },
-  {
-    src: "/v13/signup-band-blue2.svg",
-    left: 233,
-    top: -165.02,
-    w: 451.274,
-    h: 451.474,
-    inset: "-15.44% -15.89%",
-    blend: "multiply",
-    rotate: { deg: 44.11, w: 314.681, h: 323.735 },
-    drift: { x: -16, y: 14, r: 10, s: 1.07, d: 10 },
+    node: "5120",
+    tint: "#FF171B",
+    left: -81.07,
+    top: 81.89,
+    w: 862.137,
+    h: 863.959,
+    inset: "-7.21% -8.26%",
+    blend: "normal",
+    rotate: { deg: 44.11, w: 568.993, h: 651.689 },
+    drift: { x: -14, y: 10, r: 5, s: 1.04, d: 15 },
   },
 ];
 
@@ -99,7 +123,11 @@ function BandImg({ b }: { b: Band }) {
   const img = (
     <div className="absolute" style={{ inset: b.inset }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img alt="" src={b.src} className="block size-full max-w-none" />
+      <img
+        alt=""
+        src={`/v13/signup-band-${b.node}.svg`}
+        className="block size-full max-w-none"
+      />
     </div>
   );
   return (
@@ -185,15 +213,99 @@ function Bands({ leaving }: { leaving: boolean }) {
   );
 }
 
+// 氣流：一格一格沿 45° 往右上飄的小翼形刻度，疊在漸層上，
+// 位置用固定算式產生（不用隨機，避免 SSR 跟 client 對不起來）
+// 6 欄 6 列，列距 17% 從 6% 排到 91%，整個漸層區（含標題、記號起點那一帶）
+// 都要鋪到，不然下半部會空一塊
+const AIR_COLS = 6;
+const AIR_TICKS = Array.from({ length: 36 }, (_, i) => {
+  const col = i % AIR_COLS;
+  const row = Math.floor(i / AIR_COLS);
+  return {
+    left: `${5 + col * 17 + (row % 2 ? 8 : 0)}%`,
+    top: `${6 + row * 17}%`,
+    delay: `${-(((i * 7) % 9) * 0.6).toFixed(1)}s`,
+    dur: `${(5 + ((i * 3) % 5) * 0.8).toFixed(1)}s`,
+    // 轉向的相位依「位置」給，不是各自亂轉——相鄰的刻度先後差一點點，
+    // 整片看起來就是一陣風斜斜吹過去，而不是一堆箭頭各自抖動
+    swayDelay: `${-((col + row) * 0.9).toFixed(1)}s`,
+    // 大小與線粗微微不同，拉出遠近層次，不然整片會讀成規律的圖樣
+    size: 9 + ((i * 5) % 3) * 1.5,
+    stroke: 1.1 + ((i * 2) % 3) * 0.2,
+  };
+});
+
+function AirFlow() {
+  return (
+    <div aria-hidden className="signup-air absolute inset-0 overflow-hidden">
+      {AIR_TICKS.map((t, i) => (
+        <span
+          key={i}
+          className="signup-air-tick absolute block"
+          style={
+            {
+              left: t.left,
+              top: t.top,
+              "--delay": t.delay,
+              "--d": t.dur,
+            } as React.CSSProperties
+          }
+        >
+          <svg
+            className="signup-air-sway"
+            width={t.size}
+            height={t.size}
+            viewBox="-5 -5 10 10"
+            fill="none"
+            style={{ "--sway-delay": t.swayDelay } as React.CSSProperties}
+          >
+            <path
+              d="M -4,3 L 0,-4 L 4,3"
+              stroke="#fff"
+              strokeWidth={t.stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              transform="rotate(45)"
+            />
+          </svg>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // 號碼分成 3-3-3：912 345 678
 const formatPhone = (digits: string) =>
   [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9)]
     .filter(Boolean)
     .join(" ");
 
-// 進場時依序浮上來的一層，delay 單位 ms
-const rise = (delay: number): React.CSSProperties =>
-  ({ "--delay": `${delay}ms` }) as React.CSSProperties;
+// 記號圖檔在起飛層裡的尺寸（跟紙飛機同高、置中疊著），
+// 起點縮到 0.5 倍 ≈ Figma 分鏡第一格的 46×40。
+// 標題改置中之後，記號不再跟標題對齊，改錨在漸層區的左下角：
+// Figma 裡它在 x16（跟面板同一條 16px 邊界），下緣距離白色面板上緣 21.58
+const MARK_W = 91.556;
+const MARK_H = 79.696;
+const MARK_START_SCALE = 0.5;
+const MARK_LEFT = 16;
+const MARK_ABOVE_PANEL = 21.58;
+
+// 英文標語照 Figma 用 SF Pro Display：專案字體堆疊第一順位的 PingFang TC
+// 自己也帶一套拉丁字母，不指定的話英文會被它接走，字形跟字面大小都會不一樣
+// 標題逐字進場：起飛開始（650ms）時由左而右依序被帶上來，
+// 最後一個字落定正好接上紙飛機停穩的 1.8 秒。
+// 間隔是回推出來的，所以之後改文案、字數變了也會自動對齊同一個收尾點
+const TITLE_WORDS = "Invest in Yourself with an AI Agent".split(" ");
+const TITLE_WORD_START = 650;
+const TITLE_WORD_END = 2050;
+// 要跟 globals.css 的 .signup-title-word 時長一致
+const TITLE_WORD_DUR = 440;
+const TITLE_WORD_STEP =
+  (TITLE_WORD_END - TITLE_WORD_START - TITLE_WORD_DUR) /
+  Math.max(1, TITLE_WORDS.length - 1);
+
+const SF_PRO =
+  '"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 export default function Signup({
   leaving,
@@ -206,10 +318,37 @@ export default function Signup({
   const [digits, setDigits] = useState("");
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const craftRef = useRef<HTMLDivElement>(null);
+  const skyRef = useRef<HTMLDivElement>(null);
+  // 記號的起點：漸層區的左下角（Figma 分鏡第一格）。
+  // 用量的不用寫死，手機框從 375 到 430 都會落在對的位置
+  const [start, setStart] = useState({ dx: -134, dy: 120 });
 
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
   }, []);
+
+  useLayoutEffect(() => {
+    const craft = craftRef.current;
+    const sky = skyRef.current;
+    if (!craft || !sky) return;
+    const measure = () => {
+      const c = craft.getBoundingClientRect();
+      const s = sky.getBoundingClientRect();
+      // 起點縮到 MARK_START_SCALE，記號實際會是 45.8×39.9（≈Figma 的 46×40）
+      const w = (MARK_W * MARK_START_SCALE) / 2;
+      const h = (MARK_H * MARK_START_SCALE) / 2;
+      setStart({
+        dx: s.left + MARK_LEFT + w - (c.left + c.width / 2),
+        dy: s.bottom - MARK_ABOVE_PANEL - h - (c.top + c.height / 2),
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(craft);
+    ro.observe(sky);
+    return () => ro.disconnect();
+  }, [frame]);
 
   if (!frame) return null;
 
@@ -232,24 +371,34 @@ export default function Signup({
       }}
     >
       {/* 上半部：漸層、紙飛機、logo、標語 */}
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div
+        ref={skyRef}
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
         <Bands leaving={leaving} />
+        <AirFlow />
         <div className="relative">
           <StatusBar />
         </div>
-        <div className="relative flex h-11 shrink-0 items-center justify-end pr-4">
+        {/* 導覽列：AIFIAN 字樣置中、客服在右（Figma logo 1343:5613 x137 y54 102×30） */}
+        <div className="relative flex h-11 shrink-0 items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/v13/signup-logo.svg"
+            alt="AIFIAN"
+            className="h-[30px] w-[102px]"
+          />
           <button
             type="button"
             aria-label="客服"
-            className="signup-rise flex size-10 items-center justify-center rounded-full active:bg-black/5"
-            style={rise(600)}
+            className="absolute right-4 flex size-10 items-center justify-center rounded-full active:bg-black/5"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/v13/signup-headset.svg" alt="" width={24} height={24} />
           </button>
         </div>
-        <div className="relative flex flex-1 flex-col items-center justify-center pb-6">
-          {/* 紙飛機：外層管進場、離場，內層管常駐漂浮 */}
+        <div className="relative flex flex-1 flex-col items-center justify-center">
+          {/* 紙飛機：外層管離場，內層是起飛動畫，最內層管常駐漂浮 */}
           <div
             style={{
               transform: leaving
@@ -261,44 +410,103 @@ export default function Signup({
                 : undefined,
             }}
           >
-            <div className="signup-plane-in relative h-[79.696px] w-[67.9px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/v13/signup-plane-shadow.svg"
-                alt=""
-                className="signup-plane-shadow absolute top-[34px] left-0 h-[45.696px] w-[62.217px]"
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/v13/signup-plane.svg"
-                alt=""
-                className="signup-plane-float absolute top-0 left-px h-[54.4px] w-[66.9px]"
-              />
+            <div ref={craftRef} className="relative h-[79.696px] w-[67.9px]">
+              {/* 航跡：座標原點對齊紙飛機的中心，所以從量到的起點畫到 (0,0) 就好 */}
+              <svg
+                aria-hidden
+                className="signup-trail pointer-events-none absolute"
+                style={{ left: 33.95 - 200, top: 39.85 - 200 }}
+                width={400}
+                height={400}
+                viewBox="-200 -200 400 400"
+                fill="none"
+              >
+                <defs>
+                  <linearGradient
+                    id="signup-trail-fade"
+                    x1="0"
+                    y1="1"
+                    x2="1"
+                    y2="0"
+                  >
+                    <stop offset="0%" stopColor="#fff" stopOpacity="0" />
+                    <stop offset="55%" stopColor="#fff" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#fff" stopOpacity="0.9" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d={`M${start.dx},${start.dy} Q${(start.dx * 0.46).toFixed(1)},${(start.dy * 0.38).toFixed(1)} 0,0`}
+                  pathLength={1}
+                  stroke="url(#signup-trail-fade)"
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                  strokeDasharray={1}
+                />
+              </svg>
+
+              {/* 起飛：位移＋放大 → 繞航行軸滾一圈 → 記號與紙飛機交接 */}
+              <div
+                className="signup-takeoff absolute inset-0"
+                style={
+                  {
+                    "--tx": `${start.dx.toFixed(1)}px`,
+                    "--ty": `${start.dy.toFixed(1)}px`,
+                  } as React.CSSProperties
+                }
+              >
+                <div className="signup-takeoff-roll absolute inset-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/v13/signup-mark.svg"
+                    alt=""
+                    className="signup-takeoff-mark absolute top-0 h-[79.696px] w-[91.556px] max-w-none"
+                    style={{ left: -11.83 }}
+                  />
+                  <div className="signup-takeoff-plane absolute inset-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/v13/signup-plane-shadow.svg"
+                      alt=""
+                      className="signup-plane-shadow absolute top-[34px] left-0 h-[45.696px] w-[62.217px]"
+                    />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/v13/signup-plane.svg"
+                      alt=""
+                      className="signup-plane-float absolute top-0 left-px h-[54.4px] w-[66.9px]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div
-            className="mt-[32px] flex flex-col items-center"
+          {/* 標題：置中、寬度 232.4 自然斷行，跟紙飛機當成同一組一起置中
+              （Figma landing::title 1343:5612，SF Pro Display Medium 24/32，
+              與紙飛機下緣相距 12.18） */}
+          <p
+            className="relative mt-[12.18px] w-[232.4px] text-center text-[24px] leading-8 font-medium text-white"
             style={{
+              fontFamily: SF_PRO,
               opacity: leaving ? 0 : 1,
               transition: "opacity 250ms ease",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/v13/signup-logo.svg"
-              alt="AIFIAN"
-              className="signup-rise h-[30px] w-[102px]"
-              style={rise(420)}
-            />
-            <p
-              className="signup-rise mt-[6.8px] text-center text-[16px] leading-6 font-semibold text-white"
-              style={rise(520)}
-            >
-              Investment Yourself
-              <br />
-              with AIFIAN
-            </p>
-          </div>
+            {TITLE_WORDS.map((w, i) => (
+              <Fragment key={i}>
+                <span
+                  className="signup-title-word"
+                  style={
+                    {
+                      "--w-delay": `${Math.round(TITLE_WORD_START + i * TITLE_WORD_STEP)}ms`,
+                    } as React.CSSProperties
+                  }
+                >
+                  {w}
+                </span>
+                {i < TITLE_WORDS.length - 1 && " "}
+              </Fragment>
+            ))}
+          </p>
         </div>
       </div>
 
@@ -313,20 +521,17 @@ export default function Signup({
         }}
       >
         <div
-          className="signup-panel-in flex flex-col items-center gap-6 bg-[#fefefe] p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]"
-          style={rise(150)}
+          className="flex flex-col items-center gap-6 bg-[#fefefe] p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]"
         >
           <div className="flex w-full flex-col items-center gap-6">
             <p
-              className="signup-rise w-full text-center text-[16px] leading-6 text-gray-800"
-              style={rise(260)}
+              className="w-full text-center text-[16px] leading-6 text-gray-800"
             >
               Create an account or log in
             </p>
             <div className="flex w-full flex-col">
               <div
-                className="signup-rise flex w-full items-start gap-2"
-                style={rise(320)}
+                className="flex w-full items-start gap-2"
               >
                 <div className="flex w-[83px] shrink-0 items-center gap-1 border-b border-gray-800 py-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -409,14 +614,12 @@ export default function Signup({
               </div>
 
               <div
-                className="signup-rise mt-2 flex w-full justify-center py-2"
-                style={rise(380)}
+                className="mt-2 flex w-full justify-center py-2"
               >
                 <p className="text-[14px] leading-[18px] text-gray-800">或</p>
               </div>
               <div
-                className="signup-rise mt-2 flex w-full gap-2"
-                style={rise(440)}
+                className="mt-2 flex w-full gap-2"
               >
                 <button
                   type="button"
@@ -438,8 +641,7 @@ export default function Signup({
             </div>
           </div>
           <p
-            className="signup-rise min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-gray-800"
-            style={rise(500)}
+            className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-gray-800"
           >
             繼續建立帳號或登入代表你已閱讀並同意 AIFIAN 的{" "}
             <span className="font-bold whitespace-nowrap">服務條款</span>

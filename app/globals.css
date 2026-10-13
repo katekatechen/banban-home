@@ -619,47 +619,156 @@ body {
       scale(var(--ds));
   }
 }
-/* 依序往上浮現，延遲由 --delay 控制 */
-.signup-rise {
-  animation: signupRise 600ms cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms)
-    backwards;
+/* 開場起飛（照 Figma signup-1 的分鏡）：
+   ∧ 記號從左下沿 45° 飛到中央，途中繞著「行進軸」滾一圈，
+   滾到只剩側面一條線的那一格換成紙飛機，所以看不到接縫。
+   三層各管一件事：外層位移＋放大、中層滾轉、內層兩個形體的交接。 */
+/* 記號先在左下靜止 650ms（分鏡第一格），之後才起飛 */
+.signup-takeoff {
+  perspective: 700px;
+  animation: signupTakeoff 1400ms cubic-bezier(0.22, 1, 0.36, 1) 650ms backwards;
 }
-@keyframes signupRise {
+@keyframes signupTakeoff {
   from {
-    opacity: 0;
-    transform: translateY(12px);
+    /* 起點由 Signup.tsx 量出來：貼在標語正上方、跟標語切齊左邊 */
+    transform: translate(var(--tx, -134px), var(--ty, 120px)) scale(0.5);
   }
 }
-/* 白色面板從底部滑上來 */
-.signup-panel-in {
-  animation: signupPanelIn 700ms cubic-bezier(0.22, 1, 0.36, 1)
-    var(--delay, 0ms) backwards;
+/* 刻意用兩段：270 度落在整段的 58%（側面只剩一條線的那一格），
+   剩下的 90 度用掉最後 42% 的時間，收尾因此是滑進定位而不是停死 */
+.signup-takeoff-roll {
+  animation: signupTakeoffRoll 1400ms 650ms backwards;
 }
-@keyframes signupPanelIn {
-  from {
-    transform: translateY(48px);
+@keyframes signupTakeoffRoll {
+  0% {
+    transform: rotate3d(1, -1, 0, 0deg);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.45, 1);
+  }
+  58% {
+    transform: rotate3d(1, -1, 0, 270deg);
+    animation-timing-function: cubic-bezier(0.25, 0, 0.1, 1);
+  }
+  100% {
+    transform: rotate3d(1, -1, 0, 360deg);
+  }
+}
+/* 交接：固定在 54%–62%，也就是滾到側面那一格（58%）的前後 */
+.signup-takeoff-mark {
+  animation: signupTakeoffMark 1400ms linear 650ms both;
+}
+@keyframes signupTakeoffMark {
+  0%,
+  54% {
+    opacity: 1;
+  }
+  62%,
+  100% {
     opacity: 0;
   }
 }
-/* 紙飛機從下方浮上來，略帶一點回彈 */
-.signup-plane-in {
-  animation: signupPlaneIn 900ms cubic-bezier(0.34, 1.4, 0.64, 1) 200ms
-    backwards;
+/* 停穩之後每 15 秒在原地轉一圈，轉法照 aifian-logo-intro/scene-8 的 Lottie：
+   不是繞行進軸的翻滾，而是「繞 Y 軸轉整圈 + 側傾到 -47.6 度 + 在兩個四分點各點一次頭」。
+   數值是從那支 Lottie 的 keyframe 每 1/8 取樣出來的，緩動已經含在取樣值裡，
+   所以這裡用 linear 讓它照著原曲線走。整圈 5 秒，前 10 秒完全靜止 */
+.signup-takeoff-plane {
+  animation:
+    signupTakeoffPlane 1400ms linear 650ms both,
+    signupIdleSpin 15s linear 2050ms infinite;
 }
-@keyframes signupPlaneIn {
+@keyframes signupIdleSpin {
+  0%,
+  66.667% {
+    transform: rotateZ(0deg) rotateY(0deg) rotateX(0deg);
+  }
+  70.833% {
+    transform: rotateZ(-1.2deg) rotateY(18deg) rotateX(1.9deg);
+  }
+  75% {
+    transform: rotateZ(-24.7deg) rotateY(92deg) rotateX(20deg);
+  }
+  79.167% {
+    transform: rotateZ(-46.1deg) rotateY(160deg) rotateX(2.4deg);
+  }
+  83.333% {
+    transform: rotateZ(-47.6deg) rotateY(180deg) rotateX(0deg);
+  }
+  87.5% {
+    transform: rotateZ(-46.1deg) rotateY(200deg) rotateX(2.4deg);
+  }
+  91.667% {
+    transform: rotateZ(-24.7deg) rotateY(268deg) rotateX(20deg);
+  }
+  95.833% {
+    transform: rotateZ(-1.2deg) rotateY(342deg) rotateX(1.9deg);
+  }
+  100% {
+    transform: rotateZ(0deg) rotateY(360deg) rotateX(0deg);
+  }
+}
+
+/* 航跡：隨著起飛畫出來，停穩之後淡掉，不留在畫面上 */
+.signup-trail {
+  animation: signupTrailDraw 1400ms cubic-bezier(0.22, 1, 0.36, 1) 650ms
+      backwards,
+    signupTrailFade 800ms ease 2150ms both;
+}
+@keyframes signupTrailDraw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes signupTrailFade {
+  to {
+    opacity: 0;
+  }
+}
+/* 氣流：沿 45° 往右上飄的小翼形刻度 */
+.signup-air {
+  animation: signupAirIn 900ms ease 500ms backwards;
+}
+@keyframes signupAirIn {
   from {
     opacity: 0;
-    transform: translateY(28px) scale(0.85) rotate(-6deg);
+  }
+}
+.signup-air-tick {
+  animation: signupAirDrift var(--d) linear var(--delay) infinite;
+}
+/* 風向會慢慢換：每一格在 ±15 度之間來回擺。相位依位置排開（--sway-delay），
+   轉向因此是斜斜掃過整片，像一陣風經過，而不是每個箭頭各自抖 */
+.signup-air-sway {
+  display: block;
+  animation: signupAirSway 16s ease-in-out var(--sway-delay, 0s) infinite
+    alternate;
+}
+@keyframes signupAirSway {
+  from {
+    transform: rotate(-15deg);
+  }
+  to {
+    transform: rotate(15deg);
+  }
+}
+@keyframes signupAirDrift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(26px, -26px);
+    opacity: 0;
   }
 }
 /* 就定位後上下漂浮；影子跟著同一個節奏淡一點、縮一點 */
 .signup-plane-float {
-  animation: signupPlaneFloat 4.5s ease-in-out 1100ms infinite;
+  animation: signupPlaneFloat 4.5s ease-in-out 2050ms infinite;
 }
 .signup-plane-shadow {
   transform-origin: 50% 30%;
-  animation: signupShadowIn 600ms ease 700ms backwards,
-    signupShadowFloat 4.5s ease-in-out 1100ms infinite;
+  animation: signupShadowFloat 4.5s ease-in-out 2050ms infinite;
 }
 @keyframes signupPlaneFloat {
   0%,
@@ -670,21 +779,17 @@ body {
     transform: translateY(-6px) rotate(-1.5deg);
   }
 }
-@keyframes signupShadowIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-}
+/* 飛機浮高時影子要跟著退：離遠一點、縮小、明顯變淡；
+   回到低點再收回來。飛機本身上浮 6px、影子不動，兩者的間距也會跟著拉開 */
 @keyframes signupShadowFloat {
   0%,
   100% {
-    transform: scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
   50% {
-    transform: scale(0.94);
-    opacity: 0.8;
+    transform: translateY(3px) scale(0.88);
+    opacity: 0.55;
   }
 }
 /* 號碼滿 9 碼、按鈕變紅時輕輕彈一下 */
@@ -699,12 +804,26 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .signup-bloom,
   .signup-band,
-  .signup-rise,
-  .signup-panel-in,
-  .signup-plane-in,
+  .signup-takeoff,
+  .signup-takeoff-roll,
+  .signup-title-word,
+  .signup-trail,
+  .signup-air,
+  .signup-air-tick,
+  .signup-air-sway,
   .signup-plane-float,
   .signup-plane-shadow,
   .signup-cta-ready {
+    animation: none;
+  }
+  /* 不播起飛時直接定在終點：只留紙飛機，記號與航跡不出現 */
+  .signup-takeoff-mark,
+  .signup-trail {
+    opacity: 0;
+    animation: none;
+  }
+  .signup-takeoff-plane {
+    opacity: 1;
     animation: none;
   }
 }
