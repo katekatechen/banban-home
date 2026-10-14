@@ -1213,3 +1213,47 @@ body {
     animation: none;
   }
 }
+
+/* 中文版標語換句（TitleZh）：第二句「買得更好、花得更少」比英文版早一點出現、停久一點。
+   英文版在紙飛機轉到側面（75%）才換、轉回側面（91.667%）就換回，停 2.5 秒；
+   中文版提早到 70%（紙飛機剛開始轉、10.5 秒），換回延到 95.5%（14.3 秒），停約 3.8 秒。
+   TitleZh 換字串的時間（ZH_IN／ZH_OUT）要跟這兩個百分比對齊 */
+.signup-title-tail-zh > span {
+  animation-name: signupTailSwapZh;
+}
+@keyframes signupTailSwapZh {
+  0%,
+  68.6% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.3);
+  }
+  69.8% {
+    transform: translateY(-34px);
+    animation-timing-function: steps(1, end);
+  }
+  70.3% {
+    transform: translateY(34px);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  74.5%,
+  94.1% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.3);
+  }
+  95.3% {
+    transform: translateY(-34px);
+    animation-timing-function: steps(1, end);
+  }
+  95.8% {
+    transform: translateY(34px);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signup-title-tail-zh > span {
+    animation: none;
+  }
+}

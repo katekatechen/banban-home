@@ -694,9 +694,13 @@ function PasswordField({
 
 // 中文版（Figma 1422:7526／1428:9688）：標語是一整句，翻面時整句互換——
 // 紙飛機那面「跟 AIFIAN 一起升級你的日常」，轉到背面 ∧ 記號時「買得更好、花得更少」。
-// 換句的時機、由下往上的遮罩動作都跟英文版句尾換字共用（.signup-title-tail）
+// 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），
+// 但第二句比英文版早一點出現、停久一點：紙飛機剛開始轉（10.5 秒）就換上，
+// 停到 14.3 秒才換回（英文版是 11.25～13.75 秒）。要跟 globals.css 的 signupTailSwapZh 對齊
 const ZH_PLANE = "跟 AIFIAN 一起升級你的日常";
 const ZH_MARK = "買得更好、花得更少";
+const ZH_IN = FLIP_CYCLE * 0.7;
+const ZH_OUT = FLIP_CYCLE * 0.955;
 
 function TitleZh() {
   const [line, setLine] = useState(ZH_PLANE);
@@ -709,7 +713,7 @@ function TitleZh() {
       raf = requestAnimationFrame(tick);
       const e = now - t0 - IDLE_START;
       const p = e < 0 ? 0 : e % FLIP_CYCLE;
-      const next = p >= EDGE_IN && p < EDGE_OUT ? ZH_MARK : ZH_PLANE;
+      const next = p >= ZH_IN && p < ZH_OUT ? ZH_MARK : ZH_PLANE;
       if (next === last) return;
       last = next;
       setLine(next);
@@ -719,7 +723,7 @@ function TitleZh() {
   }, []);
   return (
     <span className="signup-title-line">
-      <span className="signup-title-tail">
+      <span className="signup-title-tail signup-title-tail-zh">
         <span className="signup-title-ink">{line}</span>
       </span>
     </span>
