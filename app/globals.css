@@ -979,8 +979,20 @@ body {
 .signup-trail {
   animation:
     signupTrailDraw 1600ms cubic-bezier(0.42, 0, 0.22, 1) 650ms backwards,
-    signupTrailRetract 520ms cubic-bezier(0.5, 0, 0.3, 1) 2300ms forwards,
-    signupTrailFade 220ms ease-in 2660ms forwards;
+    signupTrailRetract 640ms cubic-bezier(0.3, 0, 0.25, 1) 2300ms forwards,
+    signupTrailFade 620ms cubic-bezier(0.7, 0, 0.84, 0) 2320ms forwards;
+}
+/* 收起的同時把線也收細：只靠虛線位移的話，尾端是一顆等寬的圓頭
+   一路滑過去再忽然不見，看起來很硬。邊收邊變細、邊淡掉，
+   三件事同一時間結束，才像是化掉而不是被切掉 */
+.signup-trail-line {
+  stroke-width: 2.2;
+  animation: signupTrailThin 640ms cubic-bezier(0.4, 0, 0.4, 1) 2300ms forwards;
+}
+@keyframes signupTrailThin {
+  to {
+    stroke-width: 0.6;
+  }
 }
 @keyframes signupTrailDraw {
   from {
@@ -1058,6 +1070,8 @@ body {
 }
 .signup-plane-shadow {
   transform-origin: 50% 30%;
+  /* 糊一點，影子才不會看起來像第二個貼在背景上的圖形 */
+  filter: blur(2.5px);
   animation: signupShadowFloat 4.5s ease-in-out 2250ms infinite;
 }
 @keyframes signupPlaneFloat {

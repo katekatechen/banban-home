@@ -375,11 +375,19 @@ const CRAFT_W = 67.9;
 const CRAFT_H = 79.696;
 const FACE_CX = 34.45;
 const FACE_CY = 27.2;
-// 記號中心相對外框中心的偏移，量測起點時要扣掉
-const FACE_OFF_X = (FACE_CX - CRAFT_W / 2) * MARK_START_SCALE;
-const FACE_OFF_Y = (FACE_CY - CRAFT_H / 2) * MARK_START_SCALE;
+// 機身中心相對外框中心的偏移。航跡的終點要用這個，不能用外框中心，
+// 不然線會多往下跑 12.6px，看起來像是插進影子裡
+const FACE_DX = FACE_CX - CRAFT_W / 2;
+const FACE_DY = FACE_CY - CRAFT_H / 2;
+// 起點縮到 MARK_START_SCALE 時，同一個偏移也跟著縮
+const FACE_OFF_X = FACE_DX * MARK_START_SCALE;
+const FACE_OFF_Y = FACE_DY * MARK_START_SCALE;
 const MARK_LEFT = 16;
 const MARK_ABOVE_PANEL = 21.58;
+
+// 航跡只畫到整條的這個比例就停：尾巴不接到紙飛機身上，也不要壓到它的影子，
+// 三個東西各自分開，畫面才不會糊成一塊
+const TRAIL_END = 0.73;
 
 // 英文標語照 Figma 用 SF Pro Display：專案字體堆疊第一順位的 PingFang TC
 // 自己也帶一套拉丁字母，不指定的話英文會被它接走，字形跟字面大小都會不一樣
@@ -562,11 +570,12 @@ export default function Signup({
             }}
           >
             <div ref={craftRef} className="relative h-[79.696px] w-[67.9px]">
-              {/* 航跡：座標原點對齊紙飛機的中心，所以從量到的起點畫到 (0,0) 就好 */}
+              {/* 航跡：座標原點放在機身中心（不是外框中心），
+                  線才會接在紙飛機身上，而不是往下插進影子 */}
               <svg
                 aria-hidden
                 className="signup-trail pointer-events-none absolute"
-                style={{ left: 33.95 - 200, top: 39.85 - 200 }}
+                style={{ left: FACE_CX - 200, top: FACE_CY - 200 }}
                 width={400}
                 height={400}
                 viewBox="-200 -200 400 400"
@@ -580,16 +589,33 @@ export default function Signup({
                     x2="1"
                     y2="0"
                   >
+                    {/* 兩端都收掉：航跡不再接到紙飛機身上，
+                        前端要是停在最亮的地方會像被切斷 */}
                     <stop offset="0%" stopColor="#fff" stopOpacity="0" />
                     <stop offset="55%" stopColor="#fff" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#fff" stopOpacity="0.9" />
+                    <stop offset="86%" stopColor="#fff" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#fff" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 <path
-                  d={`M${start.dx},${start.dy} Q${(start.dx * 0.46).toFixed(1)},${(start.dy * 0.38).toFixed(1)} 0,0`}
+                  d={(() => {
+                    // 起點同樣換算到機身中心這個原點上
+                    const x0 = start.dx + FACE_OFF_X - FACE_DX;
+                    const y0 = start.dy + FACE_OFF_Y - FACE_DY;
+                    const cx = x0 * 0.46;
+                    const cy = y0 * 0.38;
+                    // 用 de Casteljau 從同一條二次曲線切前段出來，
+                    // 這樣縮短之後的弧度跟原本那條完全一致
+                    const t = TRAIL_END;
+                    const ax = x0 + (cx - x0) * t;
+                    const ay = y0 + (cy - y0) * t;
+                    const ex = ax + (cx * (1 - t) - ax) * t;
+                    const ey = ay + (cy * (1 - t) - ay) * t;
+                    return `M${x0.toFixed(1)},${y0.toFixed(1)} Q${ax.toFixed(1)},${ay.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+                  })()}
+                  className="signup-trail-line"
                   pathLength={1}
                   stroke="url(#signup-trail-fade)"
-                  strokeWidth={2.2}
                   strokeLinecap="round"
                   strokeDasharray={1}
                 />
@@ -616,10 +642,16 @@ export default function Signup({
                   />
                   <div className="signup-takeoff-plane absolute inset-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {/* 影子不是紙飛機的輪廓，是 ∧ 記號：飛的是紙飛機，
+                        落在地上的影子卻還是 AIFIAN。記號先轉到跟機頭同一個
+                        航向（48 度，跟起飛時那段轉向同一個角度），再做地面的
+                        縱向壓縮，不然會變成畫面上第二個貼著的 logo。
+                        形狀另外用 8px 的同色描邊往外撐厚：影子要是一團量體，
+                        細細一條 ∧ 看起來只像畫上去的線 */}
                     <img
-                      src="/v13/signup-plane-shadow.svg"
+                      src="/v13/signup-mark-shadow.svg"
                       alt=""
-                      className="signup-plane-shadow absolute top-[34px] left-0 h-[45.696px] w-[62.217px]"
+                      className="signup-plane-shadow absolute top-[46px] left-[4px] h-[45.965px] w-[59.279px]"
                     />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
