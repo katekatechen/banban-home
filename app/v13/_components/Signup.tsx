@@ -7,7 +7,8 @@ import StatusBar from "./StatusBar";
 // 註冊／登入頁（1-1 照 Figma 1343:5111 signup-1；之後的步驟照 1413:5505 註冊／登入完整流程）。
 // 網址加 ?signup 才會出現，取代開場畫面；?signup 走新用戶（手機 → 驗證碼 → 設定密碼），
 // ?signup=member 走已註冊（手機 → 輸入密碼）。最後一步完成才進首頁。
-// 再加 &lang=zh 是中文版（Figma 1422:7526／1428:9688），標語在紙飛機與 ∧ 記號翻面時整句互換。
+// 再加 &lang=zh 是中文版（Figma 1422:7526／1428:9688），標語在紙飛機與 ∧ 記號翻面時整句互換
+// （「AIFIAN 幫你買得更好、花得更少」↔「回饋自己的生活」）。
 // 跟開場畫面一樣用 portal 掛到 #v13-frame，蓋過 tabbar。
 //
 // 進場（總長約 2 秒）：畫面上只有一件事在動，就是記號起飛。
@@ -693,13 +694,13 @@ function PasswordField({
 }
 
 // 中文版（Figma 1422:7526／1428:9688）：標語是一整句，翻面時整句互換——
-// 紙飛機那面「跟 AIFIAN 一起升級你的日常」，轉到背面 ∧ 記號時「買得更好、花得更少」。
+// 紙飛機那面「AIFIAN 幫你買得更好、花得更少」，轉到背面 ∧ 記號時「回饋自己的生活」。
 // 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），時間另外訂：
 // 第二句在開頁後第 8 秒出現、停 6 秒到第 14 秒換回，之後每 15 秒重複。
 // 中文版的翻面也跟著提早、在背面停住（globals.css 的 .signup-zh），
 // 兩次換句都壓在紙飛機轉到側面的那一格；要跟 signupTailSwapZh、signupIdleSpinZh 對齊
-const ZH_PLANE = "跟 AIFIAN 一起升級你的日常";
-const ZH_MARK = "買得更好、花得更少";
+const ZH_PLANE = "AIFIAN 幫你買得更好、花得更少";
+const ZH_MARK = "回饋自己的生活";
 const ZH_IN = 8000 - IDLE_START;
 const ZH_OUT = 14000 - IDLE_START;
 
@@ -1319,7 +1320,12 @@ export default function Signup({
             <img src="/v13/signup-headset.svg" alt="" width={20} height={20} />
           </button>
         </div>
-        <div className="relative flex flex-1 flex-col items-center justify-center pb-6">
+        {/* 中文版（Figma 1422:7526）紙飛機＋標語整組比置中再高 38px：底部多墊 76px */}
+        <div
+          className={`relative flex flex-1 flex-col items-center justify-center ${
+            zh ? "pb-[100px]" : "pb-6"
+          }`}
+        >
           {/* 紙飛機：最外層管收合／離場的位置，下一層是小動作（送簡訊、晃、上揚），
               再往內是起飛動畫，最內層管常駐漂浮 */}
           <div
@@ -1434,12 +1440,12 @@ export default function Signup({
           {/* 標題：置中、寬度 232.4 自然斷行，跟紙飛機當成同一組一起置中
               （Figma landing::title，SF Pro Display Medium 24/32，
               與紙飛機下緣相距 12.18）。收合時往上淡出 */}
-          {/* 中文版（Figma 1422:7526）：一行、Noto Sans TC Medium 20/32，與紙飛機下緣相距約 7 */}
+          {/* 中文版（Figma 1422:7526）：一行、Noto Sans TC Bold 20/32，與紙飛機下緣相距約 7 */}
           <p
-            className={`signup-title relative text-center font-medium ${
+            className={`signup-title relative text-center ${
               zh
-                ? "mt-[7px] w-[300px] text-[20px] leading-8"
-                : "mt-[12.18px] w-[232.4px] text-[24px] leading-8"
+                ? "mt-[7px] w-[300px] text-[20px] leading-8 font-bold"
+                : "mt-[12.18px] w-[232.4px] text-[24px] leading-8 font-medium"
             }`}
             style={{
               fontFamily: zh ? undefined : SF_PRO,

@@ -1214,7 +1214,7 @@ body {
   }
 }
 
-/* 中文版標語換句（TitleZh）：第二句「買得更好、花得更少」在開頁後第 8 秒出現、停 6 秒，
+/* 中文版標語換句（TitleZh）：第二句「回饋自己的生活」在開頁後第 8 秒出現、停 6 秒，
    第 14 秒換回第一句；之後跟著 15 秒的翻面週期重複（23 秒、38 秒…）。
    週期從 2.25 秒起算，所以換上在 38.333%（5.75 秒）、換回在 78.333%（11.75 秒），
    跟紙飛機翻面的時間不再對齊。TitleZh 換字串的時間（ZH_IN／ZH_OUT）要跟這兩個百分比對齊 */
@@ -1328,12 +1328,32 @@ body {
     transform: rotateY(360deg) rotateX(0deg);
   }
 }
+/* 記號停在背面的 3.5 秒（46.667%～70%）裡，顏色淺淺地深淺變換兩次：
+   白色記號的不透明度在 1 跟 0.72 之間緩慢來回，透出底下的紅，看起來像在呼吸。
+   轉動的兩段維持全白，換面那一格仍然是硬切 */
 @keyframes signupIdleFaceMarkZh {
   0%,
   38.32% {
     opacity: 0;
   }
   38.333%,
+  46.667% {
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+  52.5% {
+    opacity: 0.72;
+    animation-timing-function: ease-in-out;
+  }
+  58.333% {
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+  64.167% {
+    opacity: 0.72;
+    animation-timing-function: ease-in-out;
+  }
+  70%,
   78.32% {
     opacity: 1;
   }
