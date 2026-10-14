@@ -694,9 +694,10 @@ function PasswordField({
 
 // 中文版（Figma 1422:7526／1428:9688）：標語是一整句，翻面時整句互換——
 // 紙飛機那面「跟 AIFIAN 一起升級你的日常」，轉到背面 ∧ 記號時「買得更好、花得更少」。
-// 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），但時間另外訂：
-// 第二句在開頁後第 8 秒出現、停 6 秒到第 14 秒換回，之後每 15 秒重複，
-// 不跟紙飛機翻面對齊。要跟 globals.css 的 signupTailSwapZh 對齊
+// 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），時間另外訂：
+// 第二句在開頁後第 8 秒出現、停 6 秒到第 14 秒換回，之後每 15 秒重複。
+// 中文版的翻面也跟著提早、在背面停住（globals.css 的 .signup-zh），
+// 兩次換句都壓在紙飛機轉到側面的那一格；要跟 signupTailSwapZh、signupIdleSpinZh 對齊
 const ZH_PLANE = "跟 AIFIAN 一起升級你的日常";
 const ZH_MARK = "買得更好、花得更少";
 const ZH_IN = 8000 - IDLE_START;
@@ -1254,7 +1255,9 @@ export default function Signup({
   return createPortal(
     <div
       ref={rootRef}
-      className={`absolute inset-0 z-[80] overflow-hidden bg-white ${form ? "signup-form" : ""}`}
+      className={`absolute inset-0 z-[80] overflow-hidden bg-white ${form ? "signup-form" : ""} ${
+        zh ? "signup-zh" : ""
+      }`}
       style={{
         opacity: leaving ? 0 : 1,
         transition: `opacity 450ms ease ${leaving ? 200 : 0}ms`,
