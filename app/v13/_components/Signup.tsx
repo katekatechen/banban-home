@@ -694,13 +694,13 @@ function PasswordField({
 
 // 中文版（Figma 1422:7526／1428:9688）：標語是一整句，翻面時整句互換——
 // 紙飛機那面「跟 AIFIAN 一起升級你的日常」，轉到背面 ∧ 記號時「買得更好、花得更少」。
-// 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），
-// 但第二句比英文版早一點出現、停久一點：紙飛機剛開始轉（10.5 秒）就換上，
-// 停到 14.3 秒才換回（英文版是 11.25～13.75 秒）。要跟 globals.css 的 signupTailSwapZh 對齊
+// 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），但時間另外訂：
+// 第二句在開頁後第 8 秒出現、停 6 秒到第 14 秒換回，之後每 15 秒重複，
+// 不跟紙飛機翻面對齊。要跟 globals.css 的 signupTailSwapZh 對齊
 const ZH_PLANE = "跟 AIFIAN 一起升級你的日常";
 const ZH_MARK = "買得更好、花得更少";
-const ZH_IN = FLIP_CYCLE * 0.7;
-const ZH_OUT = FLIP_CYCLE * 0.955;
+const ZH_IN = 8000 - IDLE_START;
+const ZH_OUT = 14000 - IDLE_START;
 
 function TitleZh() {
   const [line, setLine] = useState(ZH_PLANE);
