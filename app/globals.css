@@ -1136,3 +1136,79 @@ body {
     animation: none;
   }
 }
+
+/* v13 註冊流程（Signup.tsx）：sheet 裡的步驟左右換頁 */
+.signup-pane-in-fwd {
+  animation: signupPaneIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --pane-from: 48px;
+}
+.signup-pane-in-bwd {
+  animation: signupPaneIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --pane-from: -48px;
+}
+.signup-pane-out-fwd {
+  animation: signupPaneOut 240ms ease-in both;
+  --pane-to: -48px;
+}
+.signup-pane-out-bwd {
+  animation: signupPaneOut 240ms ease-in both;
+  --pane-to: 48px;
+}
+@keyframes signupPaneIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--pane-from));
+  }
+}
+@keyframes signupPaneOut {
+  to {
+    opacity: 0;
+    transform: translateX(var(--pane-to));
+  }
+}
+/* 驗證碼／密碼錯誤：左右輕晃 */
+.signup-shake {
+  animation: signupShake 420ms ease-out;
+}
+@keyframes signupShake {
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+/* 驗證碼目前這一格的游標 */
+.signup-caret {
+  animation: signupCaret 1s steps(1) infinite;
+}
+@keyframes signupCaret {
+  50% {
+    opacity: 0;
+  }
+}
+/* 驗證中：數字格輕微脈動 */
+.signup-otp-pulse {
+  animation: signupOtpPulse 800ms ease-in-out infinite;
+}
+@keyframes signupOtpPulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signup-pane-in-fwd,
+  .signup-pane-in-bwd,
+  .signup-pane-out-fwd,
+  .signup-pane-out-bwd,
+  .signup-shake,
+  .signup-otp-pulse {
+    animation: none;
+  }
+}

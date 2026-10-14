@@ -4,8 +4,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import StatusBar from "./StatusBar";
 
-// 註冊／登入頁（照 Figma 1343:5111 signup-1）。網址加 ?signup 才會出現，
-// 取代開場畫面：從這頁開始，輸入手機號碼後出現「使用手機繼續」，點下去進首頁。
+// 註冊／登入頁（1-1 照 Figma 1343:5111 signup-1；之後的步驟照 1413:5505 註冊／登入完整流程）。
+// 網址加 ?signup 才會出現，取代開場畫面；?signup 走新用戶（手機 → 驗證碼 → 設定密碼），
+// ?signup=member 走已註冊（手機 → 輸入密碼）。最後一步完成才進首頁。
 // 跟開場畫面一樣用 portal 掛到 #v13-frame，蓋過 tabbar。
 //
 // 進場（總長約 2 秒）：畫面上只有一件事在動，就是記號起飛。
@@ -19,7 +20,14 @@ import StatusBar from "./StatusBar";
 // 背景另有一層氣流刻度，沿 45° 飄動，風向會以 16 秒為週期緩慢來回轉。
 // 輸入：號碼自動分成 3-3-3，focus 時底線加粗；開始輸入就展開按鈕（灰色不可按），
 // 滿 9 碼變成品牌紅可以按，Enter 也能送出。
-// 離場：面板往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場（進場不做淡入，只有離場有）。
+// 按下「使用手機繼續」分兩拍：
+// - 第 1 拍（0.38 秒）：bottom sheet 往上展開到導覽列下方，標語、AIFIAN 字樣淡掉，
+//   紙飛機縮到 0.6 倍移到漸層帶中央，sheet 裡的內容先不換；
+// - 第 2 拍：手機那一步往左滑出、下一步從右邊滑入；進驗證碼時紙飛機往右上飛出去「送簡訊」再飛回來。
+// 之後紙飛機只回應動作、不顯示進度：輸入時上浮、驗證中盤旋、錯誤時晃一下（色光偏暖）、
+// 成功或規則打勾時上揚、換頁時往右飛出再從左邊回來（返回方向相反）。
+// 驗證碼輸入 000000 可以看錯誤狀態，其他任意 6 碼都會通過。
+// 離場：sheet 往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場（進場不做淡入，只有離場有）。
 export const SIGNUP_EXIT_MS = 650;
 
 // 手機瀏覽器狀態列的底色，接漸層最上緣
@@ -465,6 +473,207 @@ function TitleLine2() {
   );
 }
 
+// 註冊流程的步驟（Figma 1413:5505 註冊／登入完整流程）：
+// phone 輸入手機 → 新用戶 otp 驗證碼 → password 設定密碼 → 首頁
+//                → 已註冊 login 輸入密碼 → 首頁
+// 網址 ?signup 走新用戶，?signup=member 走已註冊
+type Pane = "phone" | "otp" | "password" | "login";
+type Dir = "fwd" | "bwd";
+
+// 收合後的版面（Figma signup-1-2）：sheet 上緣在導覽列下方 41px，
+// 紙飛機縮到 0.6 倍，機身中心在導覽列下方 10px、水平置中
+const SHEET_BELOW_NAV = 41;
+// sheet 的圓角；漸層區往下多延伸這麼多，圓角後面才看得到色光
+const CORNER = 24;
+const PLANE_BELOW_NAV = 10;
+const PLANE_FORM_SCALE = 0.6;
+// 第 1 拍（sheet 往上展開、主視覺收合）的長度，第 2 拍（換內容）接在後面
+const BEAT1_MS = 380;
+const PANE_MS = 320;
+
+// sheet 裡的英文照 Figma 用 SF Pro；中文會自動落到系統的中文字體
+const SHEET_FONT = SF_PRO.replace('"SF Pro Display", ', '"SF Pro Text", ');
+
+const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+// 紙飛機的小動作（Web Animations，疊在收合位置外面一層，不會重新掛載起飛動畫）
+const PLANE_MOVES: Record<string, [Keyframe[], KeyframeAnimationOptions]> = {
+  // 往右上飛出去送簡訊，再從左邊飛回原位
+  deliver: [
+    [
+      { transform: "translate(0, 0)", opacity: 1 },
+      { transform: "translate(150px, -70px) rotate(-10deg) scale(0.8)", opacity: 0, offset: 0.42 },
+      { transform: "translate(-170px, 18px) scale(0.85)", opacity: 0, offset: 0.46 },
+      { transform: "translate(0, 0)", opacity: 1 },
+    ],
+    { duration: 950, easing: "ease-in-out" },
+  ],
+  // 換到下一步：往右飛出、從左邊滑回
+  fwd: [
+    [
+      { transform: "translate(0, 0)", opacity: 1 },
+      { transform: "translate(220px, -12px)", opacity: 0, offset: 0.42 },
+      { transform: "translate(-220px, 6px)", opacity: 0, offset: 0.46 },
+      { transform: "translate(0, 0)", opacity: 1 },
+    ],
+    { duration: 720, easing: "ease-in-out" },
+  ],
+  // 返回：方向相反
+  bwd: [
+    [
+      { transform: "translate(0, 0)", opacity: 1 },
+      { transform: "translate(-220px, 6px)", opacity: 0, offset: 0.42 },
+      { transform: "translate(220px, -12px)", opacity: 0, offset: 0.46 },
+      { transform: "translate(0, 0)", opacity: 1 },
+    ],
+    { duration: 720, easing: "ease-in-out" },
+  ],
+  // 每輸入一個字輕輕上浮
+  bob: [
+    [{ transform: "translateY(0)" }, { transform: "translateY(-5px)", offset: 0.4 }, { transform: "translateY(0)" }],
+    { duration: 300, easing: "ease-out" },
+  ],
+  // 錯誤：晃一下
+  shake: [
+    [
+      { transform: "translateX(0)" },
+      { transform: "translateX(-7px) rotate(-4deg)" },
+      { transform: "translateX(6px) rotate(3deg)" },
+      { transform: "translateX(-4px)" },
+      { transform: "translateX(2px)" },
+      { transform: "translateX(0)" },
+    ],
+    { duration: 450, easing: "ease-out" },
+  ],
+  // 成功、規則打勾：往上一揚
+  lift: [
+    [
+      { transform: "translateY(0) rotate(0)" },
+      { transform: "translateY(-10px) rotate(-6deg)", offset: 0.4 },
+      { transform: "translateY(0) rotate(0)" },
+    ],
+    { duration: 520, easing: "cubic-bezier(0.34, 1.4, 0.64, 1)" },
+  ],
+  // 驗證中：原地小幅盤旋，取代 loading
+  hover: [
+    [
+      { transform: "translate(0, 0) rotate(0)" },
+      { transform: "translate(4px, -4px) rotate(-4deg)" },
+      { transform: "translate(0, -7px) rotate(0)" },
+      { transform: "translate(-4px, -4px) rotate(4deg)" },
+      { transform: "translate(0, 0) rotate(0)" },
+    ],
+    { duration: 800, easing: "ease-in-out", iterations: Infinity },
+  ],
+};
+
+// 底線輸入框 focus 時從中間往兩邊長出的加粗底線
+function FocusLine({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className="absolute inset-x-0 -bottom-px h-[2px] bg-gray-800"
+      style={{
+        transform: on ? "scaleX(1)" : "scaleX(0)",
+        transition: `transform 300ms ${EASE_OUT}`,
+      }}
+    />
+  );
+}
+
+function StepHeader({ title, sub }: { title: string; sub: React.ReactNode }) {
+  return (
+    <>
+      <h2
+        className="w-[260px] text-[24px] leading-8 font-semibold text-gray-800"
+        style={{ fontFamily: SF_PRO }}
+      >
+        {title}
+      </h2>
+      <p className="text-[14px] leading-5 text-[#6a7282]">{sub}</p>
+    </>
+  );
+}
+
+function Cta({
+  label,
+  ready,
+  onClick,
+}: {
+  label: string;
+  ready: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!ready}
+      className={`flex h-12 w-full items-center justify-center rounded-2xl text-[16px] leading-6 font-semibold transition-[background-color,color,transform] duration-300 active:scale-[0.98] ${
+        ready ? "signup-cta-ready bg-[#ff3b3b] text-white" : "bg-gray-200 text-gray-400"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+// 密碼欄（Figma password field）：底線樣式、24px、右側眼睛切換顯示
+function PasswordField({
+  value,
+  onChange,
+  onEnter,
+  inputRef,
+  error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onEnter: () => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  error?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  const [focused, setFocused] = useState(false);
+  return (
+    <label
+      className={`relative flex w-full items-center gap-2 border-b py-2 ${
+        error ? "signup-shake border-[#ff3b3b]" : "border-gray-800"
+      }`}
+    >
+      <span className="sr-only">密碼</span>
+      <input
+        ref={inputRef}
+        type={show ? "text" : "password"}
+        autoComplete="current-password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") onEnter();
+        }}
+        className="block h-8 min-w-0 flex-1 bg-transparent text-[24px] leading-8 text-gray-800 caret-[#ff3b3b] outline-none"
+        style={{ fontFamily: SF_PRO }}
+      />
+      <button
+        type="button"
+        aria-label={show ? "隱藏密碼" : "顯示密碼"}
+        onClick={() => setShow((v) => !v)}
+        className="flex size-6 shrink-0 items-center justify-center"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={show ? "/v13/signup-eye-off.svg" : "/v13/signup-eye.svg"}
+          alt=""
+          width={24}
+          height={24}
+        />
+      </button>
+      <FocusLine on={focused && !error} />
+    </label>
+  );
+}
+
 export default function Signup({
   leaving,
   onContinue,
@@ -482,8 +691,43 @@ export default function Signup({
   // 用量的不用寫死，手機框從 375 到 430 都會落在對的位置
   const [start, setStart] = useState({ dx: -134, dy: 120 });
 
+  // ── 流程狀態 ──
+  const rootRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const planeSlotRef = useRef<HTMLDivElement>(null);
+  const planeMoveRef = useRef<HTMLDivElement>(null);
+  const warmRef = useRef<HTMLDivElement>(null);
+  const phonePaneRef = useRef<HTMLDivElement>(null);
+  const otpRef = useRef<HTMLInputElement>(null);
+  const pwRef = useRef<HTMLInputElement>(null);
+  const [member, setMember] = useState(false);
+  const [mode, setMode] = useState<"hero" | "form">("hero");
+  // sheet 上緣只在切換 1-1／收合時才做過場；其他時候（例如展開按鈕）要即時跟著內容高度
+  const [moving, setMoving] = useState(false);
+  const [pane, setPane] = useState<Pane>("phone");
+  const paneRef = useRef<Pane>("phone");
+  const [prev, setPrev] = useState<{ pane: Pane; dir: Dir } | null>(null);
+  const [dir, setDir] = useState<Dir>("fwd");
+  // 1-1 時 sheet 只露出手機那一步的高度；量出來之後漸層區就停在它上面
+  const [phoneH, setPhoneH] = useState(300);
+  const [formTop, setFormTop] = useState(129);
+  const [collapse, setCollapse] = useState({ dx: 0, dy: 0 });
+  const [otp, setOtp] = useState("");
+  const [otpState, setOtpState] = useState<"idle" | "verifying" | "error">("idle");
+  const [otpFocused, setOtpFocused] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+  const [pw, setPw] = useState("");
+  const hoverAnim = useRef<Animation | null>(null);
+  const timers = useRef<number[]>([]);
+  const later = (fn: () => void, ms: number) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  };
+
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
+    setMember(new URLSearchParams(window.location.search).get("signup") === "member");
+    const list = timers.current;
+    return () => list.forEach((t) => window.clearTimeout(t));
   }, []);
 
   useLayoutEffect(() => {
@@ -498,8 +742,9 @@ export default function Signup({
       const h = (MARK_H * MARK_START_SCALE) / 2;
       setStart({
         dx: s.left + MARK_LEFT + w - (c.left + c.width / 2) - FACE_OFF_X,
+        // 漸層區往下多延伸了 24px 墊在 sheet 的圓角後面，記號要以 sheet 上緣為準
         dy:
-          s.bottom - MARK_ABOVE_PANEL - h - (c.top + c.height / 2) - FACE_OFF_Y,
+          s.bottom - CORNER - MARK_ABOVE_PANEL - h - (c.top + c.height / 2) - FACE_OFF_Y,
       });
     };
     measure();
@@ -509,43 +754,443 @@ export default function Signup({
     return () => ro.disconnect();
   }, [frame]);
 
+  // 手機那一步的高度（展開「使用手機繼續」時會變）
+  useLayoutEffect(() => {
+    const el = phonePaneRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setPhoneH(el.offsetHeight));
+    ro.observe(el);
+    setPhoneH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, [frame, pane, prev]);
+
+  // 驗證碼重新傳送的倒數：每次進到驗證碼都從 60 秒開始
+  useEffect(() => {
+    if (pane !== "otp") return;
+    const t = window.setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, [pane]);
+
   if (!frame) return null;
 
   const valid = digits.length === 9;
   const ctaOpen = digits.length > 0;
+  const phoneText = `+886 ${formatPhone(digits)}`;
+  const form = mode === "form";
 
-  const submit = () => {
-    if (!valid || leaving) return;
+  const move = (name: keyof typeof PLANE_MOVES) => {
+    const el = planeMoveRef.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+    const [kf, opts] = PLANE_MOVES[name];
+    return el.animate(kf, opts);
+  };
+  // 錯誤時色光短暫偏暖
+  const warm = () =>
+    warmRef.current?.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 0 }], {
+      duration: 700,
+      easing: "ease-out",
+    });
+
+  const switchPane = (next: Pane, d: Dir) => {
+    setPrev({ pane: paneRef.current, dir: d });
+    paneRef.current = next;
+    setPane(next);
+    setDir(d);
+    later(() => setPrev(null), PANE_MS + 40);
+    move(next === "otp" && d === "fwd" ? "deliver" : d);
+    if (next === "otp") {
+      setOtp("");
+      setOtpState("idle");
+      setCountdown(60);
+      later(() => otpRef.current?.focus(), PANE_MS);
+    }
+    if (next === "password" || next === "login") {
+      setPw("");
+      later(() => pwRef.current?.focus(), PANE_MS);
+    }
+  };
+
+  // 第 1 拍：sheet 往上展開、主視覺收合（內容不換）；第 2 拍：換內容
+  const submitPhone = () => {
+    if (!valid || leaving || form) return;
     inputRef.current?.blur();
+    const slot = planeSlotRef.current?.getBoundingClientRect();
+    const nav = navRef.current?.getBoundingClientRect();
+    const root = rootRef.current?.getBoundingClientRect();
+    if (slot && nav && root) {
+      setFormTop(nav.bottom - root.top + SHEET_BELOW_NAV);
+      setCollapse({
+        dx: root.left + root.width / 2 - (slot.left + FACE_CX),
+        dy: nav.bottom + PLANE_BELOW_NAV - (slot.top + FACE_CY),
+      });
+    }
+    setMoving(true);
+    setMode("form");
+    later(() => setMoving(false), BEAT1_MS + 60);
+    later(() => switchPane(member ? "login" : "otp", "fwd"), BEAT1_MS);
+  };
+
+  // 返回：內容往右退，回到 1-1 時才把 sheet 收回去、主視覺展開
+  const goBack = () => {
+    if (!form || leaving) return;
+    hoverAnim.current?.cancel();
+    switchPane("phone", "bwd");
+    later(() => {
+      setMoving(true);
+      setMode("hero");
+      later(() => setMoving(false), BEAT1_MS + 60);
+    }, PANE_MS);
+  };
+
+  const onOtp = (raw: string) => {
+    if (otpState !== "idle") return;
+    const v = raw.replace(/\D/g, "").slice(0, 6);
+    if (v.length > otp.length) move("bob");
+    setOtp(v);
+    if (v.length < 6) return;
+    // 滿 6 碼自動送出；000000 示範驗證碼錯誤
+    setOtpState("verifying");
+    hoverAnim.current = move("hover");
+    later(() => {
+      hoverAnim.current?.cancel();
+      if (v === "000000") {
+        setOtpState("error");
+        move("shake");
+        warm();
+        later(() => {
+          setOtp("");
+          setOtpState("idle");
+          otpRef.current?.focus();
+        }, 650);
+        return;
+      }
+      move("lift");
+      later(() => switchPane("password", "fwd"), 380);
+    }, 900);
+  };
+
+  const rules = [pw.length >= 8, /[A-Za-z]/.test(pw) && /\d/.test(pw)];
+  const pwReady = rules.every(Boolean);
+  const onPw = (v: string) => {
+    if (pane === "password") {
+      const before = [pw.length >= 8, /[A-Za-z]/.test(pw) && /\d/.test(pw)].filter(Boolean).length;
+      const after = [v.length >= 8, /[A-Za-z]/.test(v) && /\d/.test(v)].filter(Boolean).length;
+      if (after > before) move("lift");
+      else if (v.length > pw.length) move("bob");
+    } else if (v.length > pw.length) move("bob");
+    setPw(v);
+  };
+  const finish = (ok: boolean) => {
+    if (!ok || leaving) return;
+    pwRef.current?.blur();
     onContinue();
   };
+  const login = () => {
+    if (!pw || leaving || otpState === "verifying") return;
+    pwRef.current?.blur();
+    setOtpState("verifying");
+    hoverAnim.current = move("hover");
+    later(() => {
+      hoverAnim.current?.cancel();
+      setOtpState("idle");
+      onContinue();
+    }, 700);
+  };
+
+  // ── 各步驟的內容 ──
+  const renderPane = (p: Pane) => {
+    if (p === "phone")
+      return (
+        <div
+          ref={phonePaneRef}
+          className="flex flex-col gap-6 px-4 pt-6 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]"
+        >
+          <div className="flex w-full flex-col gap-6">
+            <p className="w-full text-[16px] leading-6 text-gray-800">
+              Create an account or log in
+            </p>
+            <div className="flex w-full flex-col">
+              <div className="flex w-full items-start gap-2">
+                <div className="flex w-[83px] shrink-0 items-center gap-1 border-b border-gray-800 py-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/v13/signup-flag-tw.svg" alt="" width={20} height={20} />
+                  <span className="text-[24px] leading-8 text-gray-800" style={{ fontFamily: SF_PRO }}>
+                    +886
+                  </span>
+                </div>
+                <label className="relative min-w-0 flex-1 border-b border-gray-800 py-2">
+                  <span className="sr-only">手機號碼</span>
+                  <input
+                    ref={inputRef}
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    placeholder="912 345 678"
+                    value={formatPhone(digits)}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    onChange={(e) => {
+                      // 只留數字；習慣打 09 開頭的，把開頭的 0 拿掉
+                      let d = e.target.value.replace(/\D/g, "");
+                      if (d.startsWith("0")) d = d.slice(1);
+                      setDigits(d.slice(0, 9));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") submitPhone();
+                    }}
+                    className="block h-8 w-full bg-transparent text-[24px] leading-8 text-gray-800 caret-[#ff3b3b] outline-none placeholder:text-gray-300"
+                    style={{ fontFamily: SF_PRO }}
+                  />
+                  <FocusLine on={focused} />
+                </label>
+              </div>
+
+              {/* 「使用手機繼續」：開始輸入才展開，滿 9 碼變紅色可以按 */}
+              <div
+                className="grid"
+                style={{
+                  gridTemplateRows: ctaOpen ? "1fr" : "0fr",
+                  transition: `grid-template-rows 360ms ${EASE_OUT}`,
+                }}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div
+                    className="pt-2"
+                    style={{
+                      opacity: ctaOpen ? 1 : 0,
+                      transform: ctaOpen ? "translateY(0)" : "translateY(-8px)",
+                      transition: `opacity 260ms ease 80ms, transform 360ms ${EASE_OUT}`,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={submitPhone}
+                      disabled={!valid}
+                      tabIndex={ctaOpen ? 0 : -1}
+                      className={`flex h-12 w-full items-center justify-center rounded-2xl text-[16px] leading-6 font-bold transition-[background-color,color,transform] duration-300 active:scale-[0.98] ${
+                        valid ? "signup-cta-ready bg-[#ff3b3b] text-white" : "bg-gray-200 text-gray-400"
+                      }`}
+                    >
+                      使用手機繼續
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 flex w-full justify-center py-2">
+                <p className="text-[14px] leading-[18px] text-gray-800">or</p>
+              </div>
+              <div className="mt-2 flex w-full gap-2">
+                <button
+                  type="button"
+                  aria-label="使用 Apple 繼續"
+                  className="flex h-12 flex-1 items-center justify-center rounded-2xl border border-gray-800 bg-gray-800 transition-transform active:scale-[0.97]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/v13/signup-apple.svg" alt="" width={20} height={24} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="使用 Google 繼續"
+                  className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-gray-100 transition-transform active:scale-[0.97]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/v13/signup-google.svg" alt="" width={24} height={24} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
+            By continuing, you agree to AIFIAN&apos;s{" "}
+            <span className="font-semibold whitespace-nowrap">Terms of Service</span> and{" "}
+            <span className="font-semibold whitespace-nowrap">Privacy Policy</span> .
+          </p>
+        </div>
+      );
+
+    if (p === "otp") {
+      const active = otpState === "idle" && otpFocused ? otp.length : -1;
+      return (
+        <div className="flex flex-col gap-6 px-4 pt-6">
+          <StepHeader title="Enter verification code" sub={`We sent a 6-digit code to ${phoneText}`} />
+          {/* 一個看不見的輸入框蓋在 6 格上：簡訊自動帶入（one-time-code）跟貼上都能用 */}
+          <label className={`relative flex w-full gap-2 ${otpState === "error" ? "signup-shake" : ""}`}>
+            <span className="sr-only">驗證碼</span>
+            {Array.from({ length: 6 }, (_, i) => {
+              const ch = otp[i] ?? "";
+              const err = otpState === "error";
+              const on = i === active;
+              return (
+                <span
+                  key={i}
+                  className={`flex h-14 min-w-0 flex-1 items-center justify-center rounded-xl text-[24px] leading-8 text-gray-800 transition-[background-color,box-shadow] duration-200 ${
+                    otpState === "verifying" && ch ? "signup-otp-pulse" : ""
+                  }`}
+                  style={{
+                    fontFamily: SF_PRO,
+                    background: on ? "#fff" : "#f3f4f6",
+                    boxShadow: err
+                      ? "inset 0 0 0 1.5px #ff3b3b"
+                      : on
+                        ? "inset 0 0 0 1.5px #1e2939"
+                        : "none",
+                  }}
+                >
+                  {ch}
+                  {on && <span className="signup-caret h-7 w-[2px] rounded-[1px] bg-[#ff3b3b]" />}
+                </span>
+              );
+            })}
+            <input
+              ref={otpRef}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => onOtp(e.target.value)}
+              onFocus={() => setOtpFocused(true)}
+              onBlur={() => setOtpFocused(false)}
+              className="absolute inset-0 h-full w-full cursor-text opacity-0"
+            />
+          </label>
+          <div className="flex gap-1 text-[14px] leading-5">
+            {otpState === "error" ? (
+              <span className="text-[#ff3b3b]">Incorrect code, please try again</span>
+            ) : (
+              <>
+                <span className="text-[#6a7282]">Didn&apos;t get it?</span>
+                {countdown > 0 ? (
+                  <span className="font-semibold text-gray-400">Resend in {countdown}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="font-semibold text-gray-800"
+                    onClick={() => {
+                      setCountdown(60);
+                      move("deliver");
+                      otpRef.current?.focus();
+                    }}
+                  >
+                    Resend
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (p === "password")
+      return (
+        <div className="flex flex-col gap-6 px-4 pt-6">
+          <StepHeader title="Set a password" sub="You'll use it with your phone number to log in" />
+          <div className="flex w-full flex-col gap-3">
+            <PasswordField value={pw} onChange={onPw} onEnter={() => finish(pwReady)} inputRef={pwRef} />
+            <div className="flex flex-col gap-1.5">
+              {["At least 8 characters", "Includes letters and numbers"].map((r, i) => (
+                <div
+                  key={r}
+                  className="flex items-center gap-1.5 text-[14px] leading-5 transition-colors duration-200"
+                  style={{ color: rules[i] ? "#1e2939" : "#99a1af" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/v13/signup-check.svg"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="transition-[opacity,transform] duration-300"
+                    style={{
+                      opacity: rules[i] ? 1 : 0.35,
+                      transform: rules[i] ? "scale(1)" : "scale(0.85)",
+                    }}
+                  />
+                  {r}
+                </div>
+              ))}
+            </div>
+          </div>
+          <Cta label="Create account" ready={pwReady} onClick={() => finish(pwReady)} />
+        </div>
+      );
+
+    return (
+      <div className="flex flex-col gap-6 px-4 pt-6">
+        <StepHeader title="Welcome back" sub={`Enter the password for ${phoneText}`} />
+        <div className="flex w-full flex-col items-end gap-3">
+          <PasswordField value={pw} onChange={onPw} onEnter={login} inputRef={pwRef} />
+          <button type="button" className="text-[14px] leading-5 font-semibold text-gray-800">
+            Forgot password?
+          </button>
+        </div>
+        <Cta label="Log in" ready={pw.length > 0 && otpState !== "verifying"} onClick={login} />
+      </div>
+    );
+  };
+
+  // 紙飛機的位置：1-1 在原地；收合後縮小移到漸層帶中央；離場往右上飛走
+  const base = form ? { ...collapse, s: PLANE_FORM_SCALE } : { dx: 0, dy: 0, s: 1 };
+  const planeTransform = leaving
+    ? `translate(${base.dx + 140}px, ${base.dy - 200}px) scale(${base.s * 0.8})`
+    : `translate(${base.dx}px, ${base.dy}px) scale(${base.s})`;
 
   return createPortal(
     <div
-      className="absolute inset-0 z-[80] flex flex-col bg-white"
+      ref={rootRef}
+      className={`absolute inset-0 z-[80] overflow-hidden bg-white ${form ? "signup-form" : ""}`}
       style={{
         opacity: leaving ? 0 : 1,
         transition: `opacity 450ms ease ${leaving ? 200 : 0}ms`,
         pointerEvents: leaving ? "none" : undefined,
       }}
     >
-      {/* 上半部：漸層、紙飛機、logo、標語 */}
+      {/* 上半部：漸層、紙飛機、logo、標語。往下多延伸 24px 墊在 sheet 的圓角後面 */}
       <div
         ref={skyRef}
-        className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+        className="absolute inset-x-0 top-0 flex flex-col overflow-hidden"
+        style={{ bottom: phoneH - CORNER }}
       >
         <Bands leaving={leaving} />
         <AirFlow />
+        {/* 錯誤時偏暖的一層色光 */}
+        <div
+          ref={warmRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-0"
+          style={{ background: "radial-gradient(120% 80% at 50% 20%, #ff9a3c 0%, rgba(255,154,60,0) 70%)", mixBlendMode: "screen" }}
+        />
         <div className="relative">
           <StatusBar />
         </div>
-        {/* 導覽列：AIFIAN 字樣置中、客服在右（Figma logo 1343:5613 x137 y54 102×30） */}
-        <div className="relative flex h-11 shrink-0 items-center justify-center">
+        {/* 導覽列：1-1 是 AIFIAN 字樣置中；之後換成左上返回，字樣淡掉（Figma signup-1-2） */}
+        <div ref={navRef} className="relative flex h-11 shrink-0 items-center justify-center">
+          <button
+            type="button"
+            aria-label="返回"
+            onClick={goBack}
+            tabIndex={form ? 0 : -1}
+            className="absolute left-2 flex size-10 items-center justify-center rounded-full active:bg-black/5"
+            style={{
+              opacity: form && !leaving ? 1 : 0,
+              pointerEvents: form ? undefined : "none",
+              transition: "opacity 250ms ease",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/v13/signup-back.svg" alt="" width={24} height={24} />
+          </button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/v13/signup-logo.svg"
             alt="AIFIAN"
             className="h-[30px] w-[102px]"
+            style={{
+              opacity: form ? 0 : 1,
+              transform: form ? "translateY(-6px)" : "none",
+              transition: `opacity 250ms ease, transform ${BEAT1_MS}ms ${EASE_OUT}`,
+            }}
           />
           <button
             type="button"
@@ -556,19 +1201,21 @@ export default function Signup({
             <img src="/v13/signup-headset.svg" alt="" width={24} height={24} />
           </button>
         </div>
-        <div className="relative flex flex-1 flex-col items-center justify-center">
-          {/* 紙飛機：外層管離場，內層是起飛動畫，最內層管常駐漂浮 */}
+        <div className="relative flex flex-1 flex-col items-center justify-center pb-6">
+          {/* 紙飛機：最外層管收合／離場的位置，下一層是小動作（送簡訊、晃、上揚），
+              再往內是起飛動畫，最內層管常駐漂浮 */}
           <div
+            ref={planeSlotRef}
             style={{
-              transform: leaving
-                ? "translate(140px, -200px) scale(0.8)"
-                : "translate(0, 0) scale(1)",
+              transform: planeTransform,
+              transformOrigin: `${FACE_CX}px ${FACE_CY}px`,
               opacity: leaving ? 0 : 1,
               transition: leaving
                 ? "transform 420ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 150ms ease-in 120ms"
-                : undefined,
+                : `transform ${BEAT1_MS + 120}ms ${EASE_OUT}`,
             }}
           >
+            <div ref={planeMoveRef}>
             <div ref={craftRef} className="relative h-[79.696px] w-[67.9px]">
               {/* 航跡：座標原點放在機身中心（不是外框中心），
                   線才會接在紙飛機身上，而不是往下插進影子 */}
@@ -582,13 +1229,7 @@ export default function Signup({
                 fill="none"
               >
                 <defs>
-                  <linearGradient
-                    id="signup-trail-fade"
-                    x1="0"
-                    y1="1"
-                    x2="1"
-                    y2="0"
-                  >
+                  <linearGradient id="signup-trail-fade" x1="0" y1="1" x2="1" y2="0">
                     {/* 兩端都收掉：航跡不再接到紙飛機身上，
                         前端要是停在最亮的地方會像被切斷 */}
                     <stop offset="0%" stopColor="#fff" stopOpacity="0" />
@@ -647,12 +1288,19 @@ export default function Signup({
                         航向（48 度，跟起飛時那段轉向同一個角度），再做地面的
                         縱向壓縮，不然會變成畫面上第二個貼著的 logo。
                         形狀另外用 8px 的同色描邊往外撐厚：影子要是一團量體，
-                        細細一條 ∧ 看起來只像畫上去的線 */}
-                    <img
-                      src="/v13/signup-mark-shadow.svg"
-                      alt=""
-                      className="signup-plane-shadow absolute top-[46px] left-[4px] h-[45.965px] w-[59.279px]"
-                    />
+                        細細一條 ∧ 看起來只像畫上去的線。
+                        收合到漸層帶之後影子拿掉（Figma signup-1-2 只有機身） */}
+                    <div
+                      className="absolute inset-0"
+                      style={{ opacity: form ? 0 : 1, transition: "opacity 250ms ease" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/v13/signup-mark-shadow.svg"
+                        alt=""
+                        className="signup-plane-shadow absolute top-[46px] left-[4px] h-[45.965px] w-[59.279px]"
+                      />
+                    </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/v13/signup-plane.svg"
@@ -663,168 +1311,56 @@ export default function Signup({
                 </div>
               </div>
             </div>
+            </div>
           </div>
           {/* 標題：置中、寬度 232.4 自然斷行，跟紙飛機當成同一組一起置中
-              （Figma landing::title 1343:5612，SF Pro Display Medium 24/32，
-              與紙飛機下緣相距 12.18） */}
+              （Figma landing::title，SF Pro Display Medium 24/32，
+              與紙飛機下緣相距 12.18）。收合時往上淡出 */}
           <p
             className="signup-title relative mt-[12.18px] w-[232.4px] text-center text-[24px] leading-8 font-medium"
             style={{
               fontFamily: SF_PRO,
-              opacity: leaving ? 0 : 1,
-              transition: "opacity 250ms ease",
+              opacity: leaving || form ? 0 : 1,
+              transform: form ? "translateY(-16px)" : "none",
+              transition: `opacity 220ms ease, transform ${BEAT1_MS}ms ${EASE_OUT}`,
             }}
           >
             {/* 兩行各自成塊（斷行處跟自然斷行同一個地方）：句尾換字時
                 字寬會變，交給自動斷行會在某幾格跳成一行或三行 */}
-            <span className="signup-title-line signup-title-ink">
-              Invest in Yourself
-            </span>
+            <span className="signup-title-line signup-title-ink">Invest in Yourself</span>
             <TitleLine2 />
           </p>
         </div>
       </div>
 
-      {/* 下半部：註冊面板 */}
+      {/* bottom sheet：1-1 只露出手機那一步；之後往上展開到導覽列下方（Figma signup-1-2） */}
       <div
-        className="relative shrink-0"
+        className="absolute inset-x-0 bottom-0 overflow-hidden rounded-t-3xl bg-[#fefefe]"
         style={{
+          top: form ? formTop : `calc(100% - ${phoneH}px)`,
+          fontFamily: SHEET_FONT,
           transform: leaving ? "translateY(100%)" : "translateY(0)",
           opacity: leaving ? 0 : 1,
-          transition:
-            "transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 250ms ease",
+          transition: leaving
+            ? "transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 250ms ease"
+            : moving
+              ? `top ${BEAT1_MS}ms ${EASE_OUT}`
+              : "none",
         }}
       >
-        <div className="flex flex-col items-center gap-6 bg-[#fefefe] p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]">
-          <div className="flex w-full flex-col items-center gap-6">
-            <p className="w-full text-center text-[16px] leading-6 text-gray-800">
-              Create an account or log in
-            </p>
-            <div className="flex w-full flex-col">
-              <div className="flex w-full items-start gap-2">
-                <div className="flex w-[83px] shrink-0 items-center gap-1 border-b border-gray-800 py-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/v13/signup-flag-tw.svg"
-                    alt=""
-                    width={20}
-                    height={20}
-                  />
-                  <span className="text-[24px] leading-8 text-gray-800">
-                    +886
-                  </span>
-                </div>
-                <label className="relative min-w-0 flex-1 border-b border-gray-800 py-2">
-                  <span className="sr-only">手機號碼</span>
-                  <input
-                    ref={inputRef}
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    placeholder="912 345 678"
-                    value={formatPhone(digits)}
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
-                    onChange={(e) => {
-                      // 只留數字；習慣打 09 開頭的，把開頭的 0 拿掉
-                      let d = e.target.value.replace(/\D/g, "");
-                      if (d.startsWith("0")) d = d.slice(1);
-                      setDigits(d.slice(0, 9));
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") submit();
-                    }}
-                    className="block h-8 w-full bg-transparent text-[24px] leading-8 text-gray-800 caret-[#ff3b3b] outline-none placeholder:text-gray-300"
-                  />
-                  {/* focus 時從中間往兩邊長出一條加粗的底線 */}
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-0 -bottom-px h-[2px] bg-gray-800"
-                    style={{
-                      transform: focused ? "scaleX(1)" : "scaleX(0)",
-                      transition:
-                        "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)",
-                    }}
-                  />
-                </label>
-              </div>
-
-              {/* 「使用手機繼續」：開始輸入才展開，滿 9 碼變紅色可以按 */}
-              <div
-                className="grid"
-                style={{
-                  gridTemplateRows: ctaOpen ? "1fr" : "0fr",
-                  transition:
-                    "grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1)",
-                }}
-              >
-                <div className="min-h-0 overflow-hidden">
-                  <div
-                    className="pt-2"
-                    style={{
-                      opacity: ctaOpen ? 1 : 0,
-                      transform: ctaOpen ? "translateY(0)" : "translateY(-8px)",
-                      transition:
-                        "opacity 260ms ease 80ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1)",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={submit}
-                      disabled={!valid}
-                      tabIndex={ctaOpen ? 0 : -1}
-                      className={`flex h-12 w-full items-center justify-center rounded-2xl text-[16px] leading-6 font-semibold transition-[background-color,color,transform] duration-300 active:scale-[0.98] ${
-                        valid
-                          ? "signup-cta-ready bg-[#ff3b3b] text-white"
-                          : "bg-gray-200 text-gray-400"
-                      }`}
-                    >
-                      使用手機繼續
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-2 flex w-full justify-center py-2">
-                <p className="text-[14px] leading-[18px] text-gray-800">或</p>
-              </div>
-              <div className="mt-2 flex w-full gap-2">
-                <button
-                  type="button"
-                  aria-label="使用 Apple 繼續"
-                  className="flex h-12 flex-1 items-center justify-center rounded-2xl border border-gray-800 bg-gray-800 transition-transform active:scale-[0.97]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/v13/signup-apple.svg"
-                    alt=""
-                    width={20}
-                    height={24}
-                  />
-                </button>
-                <button
-                  type="button"
-                  aria-label="使用 Google 繼續"
-                  className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-gray-100 transition-transform active:scale-[0.97]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/v13/signup-google.svg"
-                    alt=""
-                    width={24}
-                    height={24}
-                  />
-                </button>
-              </div>
-            </div>
+        <div className="relative">
+          <div key={pane} className={prev ? `signup-pane-in-${dir}` : undefined}>
+            {renderPane(pane)}
           </div>
-          <p className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-gray-800">
-            繼續建立帳號或登入代表你已閱讀並同意 AIFIAN 的{" "}
-            <span className="font-bold whitespace-nowrap">服務條款</span>
-            {/* 照設計稿固定在「服務條款」後面換行，避免寬螢幕斷在「隱私權政｜策」 */}
-            <br />與{" "}
-            <span className="font-bold whitespace-nowrap">隱私權政策</span>。
-          </p>
+          {prev && (
+            <div
+              key={`out-${prev.pane}`}
+              aria-hidden
+              className={`signup-pane-out-${prev.dir} pointer-events-none absolute inset-x-0 top-0`}
+            >
+              {renderPane(prev.pane)}
+            </div>
+          )}
         </div>
       </div>
     </div>,
