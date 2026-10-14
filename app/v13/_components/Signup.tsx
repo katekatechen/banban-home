@@ -7,6 +7,7 @@ import StatusBar from "./StatusBar";
 // 註冊／登入頁（1-1 照 Figma 1343:5111 signup-1；之後的步驟照 1413:5505 註冊／登入完整流程）。
 // 網址加 ?signup 才會出現，取代開場畫面；?signup 走新用戶（手機 → 驗證碼 → 設定密碼），
 // ?signup=member 走已註冊（手機 → 輸入密碼）。最後一步完成才進首頁。
+// 再加 &lang=zh 是中文版（Figma 1422:7526／1428:9688），標語在紙飛機與 ∧ 記號翻面時整句互換。
 // 跟開場畫面一樣用 portal 掛到 #v13-frame，蓋過 tabbar。
 //
 // 進場（總長約 2 秒）：畫面上只有一件事在動，就是記號起飛。
@@ -590,12 +591,20 @@ function FocusLine({ on }: { on: boolean }) {
   );
 }
 
-function StepHeader({ title, sub }: { title: string; sub: React.ReactNode }) {
+function StepHeader({
+  title,
+  sub,
+  zh,
+}: {
+  title: string;
+  sub: React.ReactNode;
+  zh?: boolean;
+}) {
   return (
     <>
       <h2
         className="w-[260px] text-[24px] leading-8 font-semibold text-gray-800"
-        style={{ fontFamily: SF_PRO }}
+        style={{ fontFamily: zh ? undefined : SF_PRO }}
       >
         {title}
       </h2>
@@ -683,6 +692,82 @@ function PasswordField({
   );
 }
 
+// 中文版（Figma 1422:7526／1428:9688）：標語是一整句，翻面時整句互換——
+// 紙飛機那面「跟 AIFIAN 一起升級你的日常」，轉到背面 ∧ 記號時「買得更好、花得更少」。
+// 換句的時機、由下往上的遮罩動作都跟英文版句尾換字共用（.signup-title-tail）
+const ZH_PLANE = "跟 AIFIAN 一起升級你的日常";
+const ZH_MARK = "買得更好、花得更少";
+
+function TitleZh() {
+  const [line, setLine] = useState(ZH_PLANE);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t0 = performance.now();
+    let raf = 0;
+    let last = ZH_PLANE;
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const e = now - t0 - IDLE_START;
+      const p = e < 0 ? 0 : e % FLIP_CYCLE;
+      const next = p >= EDGE_IN && p < EDGE_OUT ? ZH_MARK : ZH_PLANE;
+      if (next === last) return;
+      last = next;
+      setLine(next);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return (
+    <span className="signup-title-line">
+      <span className="signup-title-tail">
+        <span className="signup-title-ink">{line}</span>
+      </span>
+    </span>
+  );
+}
+
+type Lang = "en" | "zh";
+
+// 註冊流程的文案。英文照 Figma 1413:5505，中文照 1422:7526 的 1-1，後面步驟比照翻譯
+const COPY = {
+  en: {
+    start: "Create an account or log in",
+    or: "or",
+    otpTitle: "Enter verification code",
+    otpSub: (p: string) => `We sent a 6-digit code to ${p}`,
+    noCode: "Didn't get it?",
+    resendIn: (n: number) => `Resend in ${n}s`,
+    resend: "Resend",
+    otpError: "Incorrect code, please try again",
+    pwTitle: "Set a password",
+    pwSub: "You'll use it with your phone number to log in",
+    rules: ["At least 8 characters", "Includes letters and numbers"],
+    create: "Create account",
+    loginTitle: "Welcome back",
+    loginSub: (p: string) => `Enter the password for ${p}`,
+    forgot: "Forgot password?",
+    login: "Log in",
+  },
+  zh: {
+    start: "建立帳號或登入",
+    or: "或",
+    otpTitle: "輸入驗證碼",
+    otpSub: (p: string) => `已傳送 6 位數驗證碼到 ${p}`,
+    noCode: "沒收到？",
+    resendIn: (n: number) => `${n} 秒後可重新傳送`,
+    resend: "重新傳送",
+    otpError: "驗證碼錯誤，請再試一次",
+    pwTitle: "設定密碼",
+    pwSub: "之後可以用手機號碼和密碼登入",
+    rules: ["至少 8 個字元", "包含英文和數字"],
+    create: "完成註冊",
+    loginTitle: "歡迎回來",
+    loginSub: (p: string) => `請輸入 ${p} 的密碼`,
+    forgot: "忘記密碼？",
+    login: "登入",
+  },
+};
+
 export default function Signup({
   leaving,
   onContinue,
@@ -710,6 +795,8 @@ export default function Signup({
   const otpRef = useRef<HTMLInputElement>(null);
   const pwRef = useRef<HTMLInputElement>(null);
   const [member, setMember] = useState(false);
+  // ?lang=zh 是中文版；英文版維持原樣
+  const [lang, setLang] = useState<Lang>("en");
   const [mode, setMode] = useState<"hero" | "form">("hero");
   // sheet 上緣只在切換 1-1／收合時才做過場；其他時候（例如展開按鈕）要即時跟著內容高度
   const [moving, setMoving] = useState(false);
@@ -734,7 +821,9 @@ export default function Signup({
 
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
-    setMember(new URLSearchParams(window.location.search).get("signup") === "member");
+    const q = new URLSearchParams(window.location.search);
+    setMember(q.get("signup") === "member");
+    setLang(q.get("lang") === "zh" ? "zh" : "en");
     const list = timers.current;
     return () => list.forEach((t) => window.clearTimeout(t));
   }, []);
@@ -786,6 +875,8 @@ export default function Signup({
   const ctaOpen = digits.length > 0;
   const phoneText = `+886 ${formatPhone(digits)}`;
   const form = mode === "form";
+  const zh = lang === "zh";
+  const t = COPY[lang];
 
   const move = (name: keyof typeof PLANE_MOVES) => {
     const el = planeMoveRef.current;
@@ -918,8 +1009,9 @@ export default function Signup({
           className="flex flex-col gap-6 px-4 pt-6 pb-[calc(16px+env(safe-area-inset-bottom))] sm:pb-[50px]"
         >
           <div className="flex w-full flex-col gap-6">
-            <p className="w-full text-[16px] leading-6 text-gray-800">
-              Create an account or log in
+            {/* 中文版照 Figma 1422:7526 置中 */}
+            <p className={`w-full text-[16px] leading-6 text-gray-800 ${zh ? "text-center" : ""}`}>
+              {t.start}
             </p>
             <div className="flex w-full flex-col">
               <div className="flex w-full items-start gap-2">
@@ -990,7 +1082,7 @@ export default function Signup({
               </div>
 
               <div className="mt-2 flex w-full justify-center py-2">
-                <p className="text-[14px] leading-[18px] text-gray-800">or</p>
+                <p className="text-[14px] leading-[18px] text-gray-800">{t.or}</p>
               </div>
               <div className="mt-2 flex w-full gap-2">
                 <button
@@ -1012,11 +1104,18 @@ export default function Signup({
               </div>
             </div>
           </div>
-          <p className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
-            By continuing, you agree to AIFIAN&apos;s{" "}
-            <span className="font-semibold whitespace-nowrap">Terms of Service</span> and{" "}
-            <span className="font-semibold whitespace-nowrap">Privacy Policy</span> .
-          </p>
+          {zh ? (
+            <p className="min-h-11 w-full text-center text-[12px] leading-4 text-[#4a5565]">
+              繼續即表示你同意 AIFIAN 的 <span className="font-bold">服務條款</span> 與{" "}
+              <span className="font-bold">隱私權政策</span>
+            </p>
+          ) : (
+            <p className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
+              By continuing, you agree to AIFIAN&apos;s{" "}
+              <span className="font-semibold whitespace-nowrap">Terms of Service</span> and{" "}
+              <span className="font-semibold whitespace-nowrap">Privacy Policy</span> .
+            </p>
+          )}
         </div>
       );
 
@@ -1024,7 +1123,7 @@ export default function Signup({
       const active = otpState === "idle" && otpFocused ? otp.length : -1;
       return (
         <div className="flex flex-col gap-6 px-4 pt-6">
-          <StepHeader title="Enter verification code" sub={`We sent a 6-digit code to ${phoneText}`} />
+          <StepHeader zh={zh} title={t.otpTitle} sub={t.otpSub(phoneText)} />
           {/* 一個看不見的輸入框蓋在 6 格上：簡訊自動帶入（one-time-code）跟貼上都能用 */}
           <label className={`relative flex w-full gap-2 ${otpState === "error" ? "signup-shake" : ""}`}>
             <span className="sr-only">驗證碼</span>
@@ -1068,12 +1167,12 @@ export default function Signup({
           </label>
           <div className="flex gap-1 text-[14px] leading-5">
             {otpState === "error" ? (
-              <span className="text-[#ff3b3b]">Incorrect code, please try again</span>
+              <span className="text-[#ff3b3b]">{t.otpError}</span>
             ) : (
               <>
-                <span className="text-[#6a7282]">Didn&apos;t get it?</span>
+                <span className="text-[#6a7282]">{t.noCode}</span>
                 {countdown > 0 ? (
-                  <span className="font-semibold text-gray-400">Resend in {countdown}s</span>
+                  <span className="font-semibold text-gray-400">{t.resendIn(countdown)}</span>
                 ) : (
                   <button
                     type="button"
@@ -1084,7 +1183,7 @@ export default function Signup({
                       otpRef.current?.focus();
                     }}
                   >
-                    Resend
+                    {t.resend}
                   </button>
                 )}
               </>
@@ -1097,11 +1196,11 @@ export default function Signup({
     if (p === "password")
       return (
         <div className="flex flex-col gap-6 px-4 pt-6">
-          <StepHeader title="Set a password" sub="You'll use it with your phone number to log in" />
+          <StepHeader zh={zh} title={t.pwTitle} sub={t.pwSub} />
           <div className="flex w-full flex-col gap-3">
             <PasswordField value={pw} onChange={onPw} onEnter={() => finish(pwReady)} inputRef={pwRef} />
             <div className="flex flex-col gap-1.5">
-              {["At least 8 characters", "Includes letters and numbers"].map((r, i) => (
+              {t.rules.map((r, i) => (
                 <div
                   key={r}
                   className="flex items-center gap-1.5 text-[14px] leading-5 transition-colors duration-200"
@@ -1124,20 +1223,20 @@ export default function Signup({
               ))}
             </div>
           </div>
-          <Cta label="Create account" ready={pwReady} onClick={() => finish(pwReady)} />
+          <Cta label={t.create} ready={pwReady} onClick={() => finish(pwReady)} />
         </div>
       );
 
     return (
       <div className="flex flex-col gap-6 px-4 pt-6">
-        <StepHeader title="Welcome back" sub={`Enter the password for ${phoneText}`} />
+        <StepHeader zh={zh} title={t.loginTitle} sub={t.loginSub(phoneText)} />
         <div className="flex w-full flex-col items-end gap-3">
           <PasswordField value={pw} onChange={onPw} onEnter={login} inputRef={pwRef} />
           <button type="button" className="text-[14px] leading-5 font-semibold text-gray-800">
-            Forgot password?
+            {t.forgot}
           </button>
         </div>
-        <Cta label="Log in" ready={pw.length > 0 && otpState !== "verifying"} onClick={login} />
+        <Cta label={t.login} ready={pw.length > 0 && otpState !== "verifying"} onClick={login} />
       </div>
     );
   };
@@ -1328,10 +1427,15 @@ export default function Signup({
           {/* 標題：置中、寬度 232.4 自然斷行，跟紙飛機當成同一組一起置中
               （Figma landing::title，SF Pro Display Medium 24/32，
               與紙飛機下緣相距 12.18）。收合時往上淡出 */}
+          {/* 中文版（Figma 1422:7526）：一行、Noto Sans TC Medium 20/32，與紙飛機下緣相距約 7 */}
           <p
-            className="signup-title relative mt-[12.18px] w-[232.4px] text-center text-[24px] leading-8 font-medium"
+            className={`signup-title relative text-center font-medium ${
+              zh
+                ? "mt-[7px] w-[300px] text-[20px] leading-8"
+                : "mt-[12.18px] w-[232.4px] text-[24px] leading-8"
+            }`}
             style={{
-              fontFamily: SF_PRO,
+              fontFamily: zh ? undefined : SF_PRO,
               opacity: leaving || form ? 0 : 1,
               transform: form ? "translateY(-16px)" : "none",
               transition: `opacity 220ms ease, transform ${BEAT1_MS}ms ${EASE_OUT}`,
@@ -1339,8 +1443,14 @@ export default function Signup({
           >
             {/* 兩行各自成塊（斷行處跟自然斷行同一個地方）：句尾換字時
                 字寬會變，交給自動斷行會在某幾格跳成一行或三行 */}
-            <span className="signup-title-line signup-title-ink">Invest in Yourself</span>
-            <TitleLine2 />
+            {zh ? (
+              <TitleZh />
+            ) : (
+              <>
+                <span className="signup-title-line signup-title-ink">Invest in Yourself</span>
+                <TitleLine2 />
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -1350,7 +1460,7 @@ export default function Signup({
         className="absolute inset-x-0 bottom-0 overflow-hidden rounded-t-3xl bg-[#fefefe]"
         style={{
           top: form ? formTop : `calc(100% - ${phoneH}px)`,
-          fontFamily: SHEET_FONT,
+          fontFamily: zh ? undefined : SHEET_FONT,
           transform: leaving ? "translateY(100%)" : "translateY(0)",
           opacity: leaving ? 0 : 1,
           transition: leaving
