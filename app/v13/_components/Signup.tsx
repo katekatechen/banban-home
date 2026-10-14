@@ -32,6 +32,7 @@ import StatusBar from "./StatusBar";
 // 導覽列用 AFFOGATO navigation-bar（7481:1566）的 Liquid Glass 圓鈕：1-1 只有右上客服，
 // 之後左上多一顆返回。
 // 驗證碼輸入 000000 可以看錯誤狀態，其他任意 6 碼都會通過。
+// 最後一步送出：先還原成 1-1 的比例（sheet 收回、漸層放大、紙飛機回到中央），再離場。
 // 離場：sheet 往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場（進場不做淡入，只有離場有）。
 export const SIGNUP_EXIT_MS = 650;
 
@@ -496,6 +497,8 @@ const PLANE_FORM_SCALE = 0.6;
 // 第 1 拍（sheet 往上展開、主視覺收合）的長度，第 2 拍（換內容）接在後面
 const BEAT1_MS = 380;
 const PANE_MS = 380;
+// 最後一步送出後，版面還原到 1-1 的比例之後，停多久才讓紙飛機飛走
+const FINISH_HOLD_MS = 260;
 
 // sheet 裡的英文照 Figma 用 SF Pro；中文會自動落到系統的中文字體
 const SHEET_FONT = SF_PRO.replace('"SF Pro Display", ', '"SF Pro Text", ');
@@ -830,6 +833,8 @@ export default function Signup({
   const [countdown, setCountdown] = useState(60);
   const [pw, setPw] = useState("");
   const hoverAnim = useRef<Animation | null>(null);
+  // 最後一步已經送出（等版面還原、紙飛機飛走），擋掉重複送出
+  const finishing = useRef(false);
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -999,20 +1004,30 @@ export default function Signup({
     } else if (v.length > pw.length) move("bob");
     setPw(v);
   };
+  // 最後一步送出：先把版面還原成 1-1 的比例（sheet 收回到手機那一步的高度、
+  // 漸層區放大、紙飛機回到中央變大），停一下讓人看清楚，再接紙飛機飛走的離場
+  const finishFlow = () => {
+    if (finishing.current) return;
+    finishing.current = true;
+    pwRef.current?.blur();
+    setMoving(true);
+    setMode("hero");
+    later(() => setMoving(false), BEAT1_MS + 60);
+    later(onContinue, BEAT1_MS + FINISH_HOLD_MS);
+  };
   const finish = (ok: boolean) => {
     if (!ok || leaving) return;
-    pwRef.current?.blur();
-    onContinue();
+    finishFlow();
   };
   const login = () => {
-    if (!pw || leaving || otpState === "verifying") return;
+    if (!pw || leaving || otpState === "verifying" || finishing.current) return;
     pwRef.current?.blur();
     setOtpState("verifying");
     hoverAnim.current = move("hover");
     later(() => {
       hoverAnim.current?.cancel();
       setOtpState("idle");
-      onContinue();
+      finishFlow();
     }, 700);
   };
 
