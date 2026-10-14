@@ -398,9 +398,9 @@ const FACE_OFF_Y = FACE_DY * MARK_START_SCALE;
 const MARK_LEFT = 16;
 const MARK_ABOVE_PANEL = 21.58;
 
-// 航跡只畫到整條的這個比例就停：尾巴不接到紙飛機身上，也不要壓到它的影子，
-// 三個東西各自分開，畫面才不會糊成一塊
-const TRAIL_END = 0.73;
+// 航跡只畫到整條的這個比例就停：尾巴不接到紙飛機身上。
+// 原本 0.73 是連影子都不碰，看起來太短；拉長到 0.82，尾端稍微壓到影子沒關係
+const TRAIL_END = 0.82;
 
 // 英文標語照 Figma 用 SF Pro Display：專案字體堆疊第一順位的 PingFang TC
 // 自己也帶一套拉丁字母，不指定的話英文會被它接走，字形跟字面大小都會不一樣
@@ -726,7 +726,17 @@ function TitleZh() {
   return (
     <span className="signup-title-line">
       <span className="signup-title-tail signup-title-tail-zh">
-        <span className="signup-title-ink">{line}</span>
+        {/* 第一句照設計在 AIFIAN 後面斷行；兩行各自成塊、各畫各的漸層（同英文版） */}
+        <span>
+          {line === ZH_PLANE ? (
+            <>
+              <span className="signup-title-ink block">AIFIAN</span>
+              <span className="signup-title-ink block">{ZH_PLANE.replace("AIFIAN ", "")}</span>
+            </>
+          ) : (
+            <span className="signup-title-ink block">{line}</span>
+          )}
+        </span>
       </span>
     </span>
   );
@@ -1444,7 +1454,7 @@ export default function Signup({
           <p
             className={`signup-title relative text-center ${
               zh
-                ? "mt-[7px] w-[300px] text-[20px] leading-8 font-bold"
+                ? "mt-[7px] h-16 w-[300px] text-[20px] leading-8 font-bold"
                 : "mt-[12.18px] w-[232.4px] text-[24px] leading-8 font-medium"
             }`}
             style={{

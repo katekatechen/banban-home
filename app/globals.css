@@ -1218,6 +1218,7 @@ body {
    第 14 秒換回第一句；之後跟著 15 秒的翻面週期重複（23 秒、38 秒…）。
    週期從 2.25 秒起算，所以換上在 38.333%（5.75 秒）、換回在 78.333%（11.75 秒），
    跟紙飛機翻面的時間不再對齊。TitleZh 換字串的時間（ZH_IN／ZH_OUT）要跟這兩個百分比對齊 */
+/* 第一句兩行（64px 高），收出、升入的距離要拉到 66px 才藏得住 */
 .signup-title-tail-zh > span {
   animation-name: signupTailSwapZh;
 }
@@ -1228,11 +1229,11 @@ body {
     animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.3);
   }
   38.13% {
-    transform: translateY(-34px);
+    transform: translateY(-66px);
     animation-timing-function: steps(1, end);
   }
   38.63% {
-    transform: translateY(34px);
+    transform: translateY(66px);
     animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   42.83%,
@@ -1241,11 +1242,11 @@ body {
     animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.3);
   }
   78.13% {
-    transform: translateY(-34px);
+    transform: translateY(-66px);
     animation-timing-function: steps(1, end);
   }
   78.63% {
-    transform: translateY(34px);
+    transform: translateY(66px);
     animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
   82.83%,
