@@ -23,9 +23,12 @@ import StatusBar from "./StatusBar";
 // 按下「使用手機繼續」分兩拍：
 // - 第 1 拍（0.38 秒）：bottom sheet 往上展開到導覽列下方，標語、AIFIAN 字樣淡掉，
 //   紙飛機縮到 0.6 倍移到漸層帶中央，sheet 裡的內容先不換；
-// - 第 2 拍：手機那一步往左滑出、下一步從右邊滑入；進驗證碼時紙飛機往右上飛出去「送簡訊」再飛回來。
+// - 第 2 拍：手機那一步往左滑出、下一步從右邊滑入；紙飛機停在原地，只有縮小，不飛走。
 // 之後紙飛機只回應動作、不顯示進度：輸入時上浮、驗證中盤旋、錯誤時晃一下（色光偏暖）、
-// 成功或規則打勾時上揚、換頁時往右飛出再從左邊回來（返回方向相反）。
+// 成功或規則打勾時上揚；步驟之間（驗證碼 → 密碼）換頁時往右飛出再從左邊回來，
+// 重新傳送驗證碼時往右上飛出去「送簡訊」。
+// 導覽列用 AFFOGATO navigation-bar（7481:1566）的 Liquid Glass 圓鈕：1-1 只有右上客服，
+// 之後左上多一顆返回。
 // 驗證碼輸入 000000 可以看錯誤狀態，其他任意 6 碼都會通過。
 // 離場：sheet 往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場（進場不做淡入，只有離場有）。
 export const SIGNUP_EXIT_MS = 650;
@@ -480,21 +483,27 @@ function TitleLine2() {
 type Pane = "phone" | "otp" | "password" | "login";
 type Dir = "fwd" | "bwd";
 
-// 收合後的版面（Figma signup-1-2）：sheet 上緣在導覽列下方 41px，
-// 紙飛機縮到 0.6 倍，機身中心在導覽列下方 10px、水平置中
-const SHEET_BELOW_NAV = 41;
+// 收合後的版面（Figma signup-1-2）：sheet 上緣在 129、紙飛機機身中心在 98（812 高的畫面）。
+// 導覽列換成 AFFOGATO navigation-bar（7481:1566）之後高 60（44～104），
+// 換算成相對導覽列下緣：sheet 在下方 25px，紙飛機中心在上方 6px（落在兩顆圓鈕中間）
+const SHEET_BELOW_NAV = 25;
 // sheet 的圓角；漸層區往下多延伸這麼多，圓角後面才看得到色光
 const CORNER = 24;
-const PLANE_BELOW_NAV = 10;
+const PLANE_BELOW_NAV = -6;
 const PLANE_FORM_SCALE = 0.6;
 // 第 1 拍（sheet 往上展開、主視覺收合）的長度，第 2 拍（換內容）接在後面
 const BEAT1_MS = 380;
-const PANE_MS = 320;
+const PANE_MS = 380;
 
 // sheet 裡的英文照 Figma 用 SF Pro；中文會自動落到系統的中文字體
 const SHEET_FONT = SF_PRO.replace('"SF Pro Display", ', '"SF Pro Text", ');
 
 const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+// 導覽列的圓鈕：AFFOGATO navigation-bar（7481:1566）的 Liquid Glass 樣式，
+// 44px 圓、白 60%～80%、0.5px 白邊、淡淡的陰影，加一點背景模糊
+const GLASS_BUTTON =
+  "flex size-11 shrink-0 items-center justify-center rounded-full border-[0.5px] border-white/50 bg-white/70 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.08)] backdrop-blur-md active:scale-95";
 
 // 紙飛機的小動作（Web Animations，疊在收合位置外面一層，不會重新掛載起飛動畫）
 const PLANE_MOVES: Record<string, [Keyframe[], KeyframeAnimationOptions]> = {
@@ -792,12 +801,15 @@ export default function Signup({
     });
 
   const switchPane = (next: Pane, d: Dir) => {
-    setPrev({ pane: paneRef.current, dir: d });
+    const from = paneRef.current;
+    setPrev({ pane: from, dir: d });
     paneRef.current = next;
     setPane(next);
     setDir(d);
     later(() => setPrev(null), PANE_MS + 40);
-    move(next === "otp" && d === "fwd" ? "deliver" : d);
+    // 從 1-1 進來、或回到 1-1：紙飛機只在原地縮小／放大，不飛走；
+    // 步驟之間（驗證碼 → 密碼）才往右飛出、從左邊回來
+    if (next !== "phone" && from !== "phone") move(d);
     if (next === "otp") {
       setOtp("");
       setOtpState("idle");
@@ -1165,17 +1177,21 @@ export default function Signup({
           <StatusBar />
         </div>
         {/* 導覽列：1-1 是 AIFIAN 字樣置中；之後換成左上返回，字樣淡掉（Figma signup-1-2） */}
-        <div ref={navRef} className="relative flex h-11 shrink-0 items-center justify-center">
+        <div
+          ref={navRef}
+          className="relative flex h-[60px] shrink-0 items-center justify-between px-4 py-2"
+        >
           <button
             type="button"
             aria-label="返回"
             onClick={goBack}
             tabIndex={form ? 0 : -1}
-            className="absolute left-2 flex size-10 items-center justify-center rounded-full active:bg-black/5"
+            className={GLASS_BUTTON}
             style={{
               opacity: form && !leaving ? 1 : 0,
+              transform: form ? "scale(1)" : "scale(0.8)",
               pointerEvents: form ? undefined : "none",
-              transition: "opacity 250ms ease",
+              transition: `opacity 250ms ease, transform ${BEAT1_MS}ms ${EASE_OUT}`,
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1185,20 +1201,16 @@ export default function Signup({
           <img
             src="/v13/signup-logo.svg"
             alt="AIFIAN"
-            className="h-[30px] w-[102px]"
+            className="absolute left-1/2 h-[30px] w-[102px] -translate-x-1/2"
             style={{
               opacity: form ? 0 : 1,
-              transform: form ? "translateY(-6px)" : "none",
-              transition: `opacity 250ms ease, transform ${BEAT1_MS}ms ${EASE_OUT}`,
+              marginTop: form ? -12 : 0,
+              transition: `opacity 250ms ease, margin-top ${BEAT1_MS}ms ${EASE_OUT}`,
             }}
           />
-          <button
-            type="button"
-            aria-label="客服"
-            className="absolute right-4 flex size-10 items-center justify-center rounded-full active:bg-black/5"
-          >
+          <button type="button" aria-label="客服" className={GLASS_BUTTON}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/v13/signup-headset.svg" alt="" width={24} height={24} />
+            <img src="/v13/signup-headset.svg" alt="" width={20} height={20} />
           </button>
         </div>
         <div className="relative flex flex-1 flex-col items-center justify-center pb-6">

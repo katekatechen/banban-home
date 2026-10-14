@@ -1138,20 +1138,21 @@ body {
 }
 
 /* v13 註冊流程（Signup.tsx）：sheet 裡的步驟左右換頁 */
+/* 新的一步稍晚一點進來，舊的先退開，兩層才不會疊在一起糊成一團 */
 .signup-pane-in-fwd {
-  animation: signupPaneIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: signupPaneIn 300ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
   --pane-from: 48px;
 }
 .signup-pane-in-bwd {
-  animation: signupPaneIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: signupPaneIn 300ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
   --pane-from: -48px;
 }
 .signup-pane-out-fwd {
-  animation: signupPaneOut 240ms ease-in both;
+  animation: signupPaneOut 180ms ease-in both;
   --pane-to: -48px;
 }
 .signup-pane-out-bwd {
-  animation: signupPaneOut 240ms ease-in both;
+  animation: signupPaneOut 180ms ease-in both;
   --pane-to: 48px;
 }
 @keyframes signupPaneIn {
