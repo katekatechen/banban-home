@@ -26,13 +26,12 @@ import StatusBar from "./StatusBar";
 // - 第 1 拍（0.38 秒）：bottom sheet 往上展開到導覽列下方，標語、AIFIAN 字樣淡掉，
 //   紙飛機縮到 0.6 倍移到漸層帶中央，sheet 裡的內容先不換；
 // - 第 2 拍：手機那一步往左滑出、下一步從右邊滑入；紙飛機停在原地，只有縮小，不飛走。
-// 之後紙飛機只回應動作、不顯示進度：輸入時上浮、驗證中盤旋、錯誤時晃一下（色光偏暖）、
-// 成功或規則打勾時上揚；步驟之間（驗證碼 → 密碼）換頁時往右飛出再從左邊回來，
-// 重新傳送驗證碼時往右上飛出去「送簡訊」。
+// 之後輸入、驗證、換步驟時紙飛機都不動（只有常駐的上下漂浮），回饋交給表單本身：
+// 驗證中數字格脈動、錯誤時數字格晃動並且色光短暫偏暖；只有按「重新傳送」時紙飛機會飛出去送簡訊。
 // 導覽列用 AFFOGATO navigation-bar（7481:1566）的 Liquid Glass 圓鈕：1-1 只有右上客服，
 // 之後左上多一顆返回。
 // 驗證碼輸入 000000 可以看錯誤狀態，其他任意 6 碼都會通過。
-// 最後一步送出：先還原成 1-1 的比例（sheet 收回、漸層放大、紙飛機回到中央），再離場。
+// 最後一步送出：白色表單一路往下推出畫面，紙飛機同時從漸層帶往右上飛走，接首頁進場。
 // 離場：sheet 往下收、紙飛機往右上飛走、整頁淡出，首頁同時開始進場（進場不做淡入，只有離場有）。
 export const SIGNUP_EXIT_MS = 650;
 
@@ -183,19 +182,31 @@ function BandImg({ b }: { b: Band }) {
 }
 
 // 漸層區：設計稿是 375×484，實際畫面寬高不一定，等比放大到蓋滿（以上緣中間為準）
-function Bands({ leaving }: { leaving: boolean }) {
+// coverHeight：以這個高度計算縮放（不給就用容器本身的高度）
+function Bands({
+  leaving,
+  coverHeight,
+}: {
+  leaving: boolean;
+  coverHeight?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const fit = () =>
-      setScale(Math.max(el.clientWidth / DESIGN_W, el.clientHeight / DESIGN_H));
+      setScale(
+        Math.max(
+          el.clientWidth / DESIGN_W,
+          (coverHeight ?? el.clientHeight) / DESIGN_H,
+        ),
+      );
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [coverHeight]);
   return (
     <div ref={ref} aria-hidden className="absolute inset-0 overflow-hidden">
       <div
@@ -497,8 +508,10 @@ const PLANE_FORM_SCALE = 0.6;
 // 第 1 拍（sheet 往上展開、主視覺收合）的長度，第 2 拍（換內容）接在後面
 const BEAT1_MS = 380;
 const PANE_MS = 380;
-// 最後一步送出後，版面還原到 1-1 的比例之後，停多久才讓紙飛機飛走
-const FINISH_HOLD_MS = 260;
+// 最後一步送出：表單推出畫面、紙飛機飛走的長度，以及推出多久之後開始交棒給首頁
+const EXIT_MS = 680;
+const EXIT_HANDOFF_MS = 320;
+const EXIT_EASE = "cubic-bezier(0.55, 0, 0.35, 1)";
 
 // sheet 裡的英文照 Figma 用 SF Pro；中文會自動落到系統的中文字體
 const SHEET_FONT = SF_PRO.replace('"SF Pro Display", ', '"SF Pro Text", ');
@@ -512,7 +525,8 @@ const GLASS_BUTTON =
 
 // 紙飛機的小動作（Web Animations，疊在收合位置外面一層，不會重新掛載起飛動畫）
 const PLANE_MOVES: Record<string, [Keyframe[], KeyframeAnimationOptions]> = {
-  // 往右上飛出去送簡訊，再從左邊飛回原位
+  // 按「重新傳送」：往右上飛出去送簡訊，再從左邊飛回原位。
+  // 其他時候（輸入、驗證、換步驟）紙飛機都不動，只留常駐的上下漂浮
   deliver: [
     [
       { transform: "translate(0, 0)", opacity: 1 },
@@ -521,63 +535,6 @@ const PLANE_MOVES: Record<string, [Keyframe[], KeyframeAnimationOptions]> = {
       { transform: "translate(0, 0)", opacity: 1 },
     ],
     { duration: 950, easing: "ease-in-out" },
-  ],
-  // 換到下一步：往右飛出、從左邊滑回
-  fwd: [
-    [
-      { transform: "translate(0, 0)", opacity: 1 },
-      { transform: "translate(220px, -12px)", opacity: 0, offset: 0.42 },
-      { transform: "translate(-220px, 6px)", opacity: 0, offset: 0.46 },
-      { transform: "translate(0, 0)", opacity: 1 },
-    ],
-    { duration: 720, easing: "ease-in-out" },
-  ],
-  // 返回：方向相反
-  bwd: [
-    [
-      { transform: "translate(0, 0)", opacity: 1 },
-      { transform: "translate(-220px, 6px)", opacity: 0, offset: 0.42 },
-      { transform: "translate(220px, -12px)", opacity: 0, offset: 0.46 },
-      { transform: "translate(0, 0)", opacity: 1 },
-    ],
-    { duration: 720, easing: "ease-in-out" },
-  ],
-  // 每輸入一個字輕輕上浮
-  bob: [
-    [{ transform: "translateY(0)" }, { transform: "translateY(-5px)", offset: 0.4 }, { transform: "translateY(0)" }],
-    { duration: 300, easing: "ease-out" },
-  ],
-  // 錯誤：晃一下
-  shake: [
-    [
-      { transform: "translateX(0)" },
-      { transform: "translateX(-7px) rotate(-4deg)" },
-      { transform: "translateX(6px) rotate(3deg)" },
-      { transform: "translateX(-4px)" },
-      { transform: "translateX(2px)" },
-      { transform: "translateX(0)" },
-    ],
-    { duration: 450, easing: "ease-out" },
-  ],
-  // 成功、規則打勾：往上一揚
-  lift: [
-    [
-      { transform: "translateY(0) rotate(0)" },
-      { transform: "translateY(-10px) rotate(-6deg)", offset: 0.4 },
-      { transform: "translateY(0) rotate(0)" },
-    ],
-    { duration: 520, easing: "cubic-bezier(0.34, 1.4, 0.64, 1)" },
-  ],
-  // 驗證中：原地小幅盤旋，取代 loading
-  hover: [
-    [
-      { transform: "translate(0, 0) rotate(0)" },
-      { transform: "translate(4px, -4px) rotate(-4deg)" },
-      { transform: "translate(0, -7px) rotate(0)" },
-      { transform: "translate(-4px, -4px) rotate(4deg)" },
-      { transform: "translate(0, 0) rotate(0)" },
-    ],
-    { duration: 800, easing: "ease-in-out", iterations: Infinity },
   ],
 };
 
@@ -832,9 +789,15 @@ export default function Signup({
   const [otpFocused, setOtpFocused] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [pw, setPw] = useState("");
-  const hoverAnim = useRef<Animation | null>(null);
   // 最後一步已經送出（等版面還原、紙飛機飛走），擋掉重複送出
   const finishing = useRef(false);
+  const [exiting, setExiting] = useState(false);
+  // 整個畫面的高度：漸層的縮放要以「1-1 時漸層區的高度」為準，
+  // 表單推出畫面時漸層才不會跟著放大
+  const [rootH, setRootH] = useState(812);
+  // 收合之後把漸層區的高度定住：手機鍵盤彈出時畫面會變矮，
+  // 不定住的話紙飛機會跟著重新置中，看起來就是在抖
+  const [frozenSkyH, setFrozenSkyH] = useState<number | null>(null);
   const timers = useRef<number[]>([]);
   const later = (fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -870,6 +833,15 @@ export default function Signup({
     const ro = new ResizeObserver(measure);
     ro.observe(craft);
     ro.observe(sky);
+    return () => ro.disconnect();
+  }, [frame]);
+
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setRootH(el.clientHeight));
+    ro.observe(el);
+    setRootH(el.clientHeight);
     return () => ro.disconnect();
   }, [frame]);
 
@@ -919,9 +891,8 @@ export default function Signup({
     setPane(next);
     setDir(d);
     later(() => setPrev(null), PANE_MS + 40);
-    // 從 1-1 進來、或回到 1-1：紙飛機只在原地縮小／放大，不飛走；
-    // 步驟之間（驗證碼 → 密碼）才往右飛出、從左邊回來
-    if (next !== "phone" && from !== "phone") move(d);
+    // 換步驟時紙飛機不動：從 1-1 進來、回到 1-1 只在原地縮小／放大，
+    // 驗證碼 → 密碼也不飛（送出驗證碼時畫面上只有內容在換）
     if (next === "otp") {
       setOtp("");
       setOtpState("idle");
@@ -941,6 +912,7 @@ export default function Signup({
     const slot = planeSlotRef.current?.getBoundingClientRect();
     const nav = navRef.current?.getBoundingClientRect();
     const root = rootRef.current?.getBoundingClientRect();
+    if (skyRef.current) setFrozenSkyH(skyRef.current.offsetHeight);
     if (slot && nav && root) {
       setFormTop(nav.bottom - root.top + SHEET_BELOW_NAV);
       setCollapse({
@@ -957,11 +929,11 @@ export default function Signup({
   // 返回：內容往右退，回到 1-1 時才把 sheet 收回去、主視覺展開
   const goBack = () => {
     if (!form || leaving) return;
-    hoverAnim.current?.cancel();
     switchPane("phone", "bwd");
     later(() => {
       setMoving(true);
       setMode("hero");
+      setFrozenSkyH(null);
       later(() => setMoving(false), BEAT1_MS + 60);
     }, PANE_MS);
   };
@@ -969,17 +941,15 @@ export default function Signup({
   const onOtp = (raw: string) => {
     if (otpState !== "idle") return;
     const v = raw.replace(/\D/g, "").slice(0, 6);
-    if (v.length > otp.length) move("bob");
     setOtp(v);
     if (v.length < 6) return;
-    // 滿 6 碼自動送出；000000 示範驗證碼錯誤
+    // 滿 6 碼自動送出；000000 示範驗證碼錯誤。
+    // 輸入、驗證、送出時紙飛機都不動（原本每打一碼上浮一下，連續輸入時動畫互相打斷會抖）；
+    // 驗證中改由數字格脈動表示，錯誤時數字格晃動、色光短暫偏暖
     setOtpState("verifying");
-    hoverAnim.current = move("hover");
     later(() => {
-      hoverAnim.current?.cancel();
       if (v === "000000") {
         setOtpState("error");
-        move("shake");
         warm();
         later(() => {
           setOtp("");
@@ -988,32 +958,22 @@ export default function Signup({
         }, 650);
         return;
       }
-      move("lift");
-      later(() => switchPane("password", "fwd"), 380);
+      switchPane("password", "fwd");
     }, 900);
   };
 
   const rules = [pw.length >= 8, /[A-Za-z]/.test(pw) && /\d/.test(pw)];
   const pwReady = rules.every(Boolean);
-  const onPw = (v: string) => {
-    if (pane === "password") {
-      const before = [pw.length >= 8, /[A-Za-z]/.test(pw) && /\d/.test(pw)].filter(Boolean).length;
-      const after = [v.length >= 8, /[A-Za-z]/.test(v) && /\d/.test(v)].filter(Boolean).length;
-      if (after > before) move("lift");
-      else if (v.length > pw.length) move("bob");
-    } else if (v.length > pw.length) move("bob");
-    setPw(v);
-  };
-  // 最後一步送出：先把版面還原成 1-1 的比例（sheet 收回到手機那一步的高度、
-  // 漸層區放大、紙飛機回到中央變大），停一下讓人看清楚，再接紙飛機飛走的離場
+  // 輸入密碼時紙飛機也不動，規則打勾只在清單上回饋
+  const onPw = (v: string) => setPw(v);
+  // 最後一步送出：白色表單一路往下推出畫面，紙飛機同時從漸層帶往右上飛走，
+  // 一個連續的動作；表單推出一段之後才交棒給首頁進場（整頁淡出）
   const finishFlow = () => {
     if (finishing.current) return;
     finishing.current = true;
     pwRef.current?.blur();
-    setMoving(true);
-    setMode("hero");
-    later(() => setMoving(false), BEAT1_MS + 60);
-    later(onContinue, BEAT1_MS + FINISH_HOLD_MS);
+    setExiting(true);
+    later(onContinue, EXIT_HANDOFF_MS);
   };
   const finish = (ok: boolean) => {
     if (!ok || leaving) return;
@@ -1023,9 +983,7 @@ export default function Signup({
     if (!pw || leaving || otpState === "verifying" || finishing.current) return;
     pwRef.current?.blur();
     setOtpState("verifying");
-    hoverAnim.current = move("hover");
     later(() => {
-      hoverAnim.current?.cancel();
       setOtpState("idle");
       finishFlow();
     }, 700);
@@ -1274,7 +1232,8 @@ export default function Signup({
 
   // 紙飛機的位置：1-1 在原地；收合後縮小移到漸層帶中央；離場往右上飛走
   const base = form ? { ...collapse, s: PLANE_FORM_SCALE } : { dx: 0, dy: 0, s: 1 };
-  const planeTransform = leaving
+  const flying = leaving || exiting;
+  const planeTransform = flying
     ? `translate(${base.dx + 140}px, ${base.dy - 200}px) scale(${base.s * 0.8})`
     : `translate(${base.dx}px, ${base.dy}px) scale(${base.s})`;
 
@@ -1290,13 +1249,19 @@ export default function Signup({
         pointerEvents: leaving ? "none" : undefined,
       }}
     >
-      {/* 上半部：漸層、紙飛機、logo、標語。往下多延伸 24px 墊在 sheet 的圓角後面 */}
+      {/* 漸層鋪滿整個畫面（底下平常被表單蓋住，最後送出、表單推出畫面時才露出來），
+          縮放仍以 1-1 漸層區的高度為準，構圖跟原本一樣 */}
+      <div aria-hidden className="absolute inset-0 overflow-hidden bg-[#ff2a2e]">
+        <Bands leaving={leaving} coverHeight={frozenSkyH ?? rootH - phoneH + CORNER} />
+      </div>
+      {/* 上半部：氣流、紙飛機、logo、標語。往下多延伸 24px 墊在 sheet 的圓角後面 */}
       <div
         ref={skyRef}
         className="absolute inset-x-0 top-0 flex flex-col overflow-hidden"
-        style={{ bottom: phoneH - CORNER }}
+        style={
+          frozenSkyH != null ? { height: frozenSkyH } : { bottom: phoneH - CORNER }
+        }
       >
-        <Bands leaving={leaving} />
         <AirFlow />
         {/* 錯誤時偏暖的一層色光 */}
         <div
@@ -1320,7 +1285,7 @@ export default function Signup({
             tabIndex={form ? 0 : -1}
             className={GLASS_BUTTON}
             style={{
-              opacity: form && !leaving ? 1 : 0,
+              opacity: form && !leaving && !exiting ? 1 : 0,
               transform: form ? "scale(1)" : "scale(0.8)",
               pointerEvents: form ? undefined : "none",
               transition: `opacity 250ms ease, transform ${BEAT1_MS}ms ${EASE_OUT}`,
@@ -1358,10 +1323,12 @@ export default function Signup({
             style={{
               transform: planeTransform,
               transformOrigin: `${FACE_CX}px ${FACE_CY}px`,
-              opacity: leaving ? 0 : 1,
-              transition: leaving
-                ? "transform 420ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 150ms ease-in 120ms"
-                : `transform ${BEAT1_MS + 120}ms ${EASE_OUT}`,
+              opacity: flying ? 0 : 1,
+              transition: exiting
+                ? `transform ${EXIT_MS}ms ${EXIT_EASE}, opacity 220ms ease-in ${EXIT_MS - 260}ms`
+                : leaving
+                  ? "transform 420ms cubic-bezier(0.25, 0.5, 0.45, 1), opacity 150ms ease-in 120ms"
+                  : `transform ${BEAT1_MS + 120}ms ${EASE_OUT}`,
             }}
           >
             <div ref={planeMoveRef}>
@@ -1497,11 +1464,13 @@ export default function Signup({
       <div
         className="absolute inset-x-0 bottom-0 overflow-hidden rounded-t-3xl bg-[#fefefe]"
         style={{
-          top: form ? formTop : `calc(100% - ${phoneH}px)`,
+          top: exiting ? "100%" : form ? formTop : `calc(100% - ${phoneH}px)`,
           fontFamily: zh ? undefined : SHEET_FONT,
-          transform: leaving ? "translateY(100%)" : "translateY(0)",
-          opacity: leaving ? 0 : 1,
-          transition: leaving
+          transform: leaving && !exiting ? "translateY(100%)" : "translateY(0)",
+          opacity: leaving && !exiting ? 0 : 1,
+          transition: exiting
+            ? `top ${EXIT_MS}ms ${EXIT_EASE}`
+            : leaving
             ? "transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 250ms ease"
             : moving
               ? `top ${BEAT1_MS}ms ${EASE_OUT}`
