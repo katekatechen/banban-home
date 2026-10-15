@@ -8,7 +8,7 @@ import StatusBar from "./StatusBar";
 // 網址加 ?signup 才會出現，取代開場畫面；?signup 走新用戶（手機 → 驗證碼 → 設定密碼），
 // ?signup=member 走已註冊（手機 → 輸入密碼）。最後一步完成才進首頁。
 // 再加 &lang=zh 是中文版（Figma 1422:7526／1428:9688），標語在紙飛機與 ∧ 記號翻面時整句互換
-// （「AIFIAN 幫你買得更好、花得更少」↔「回饋自己的生活」）。
+// （「AIFIAN 買得更好、賺得更多」↔「輕鬆回饋你的日常生活」）。
 // 跟開場畫面一樣用 portal 掛到 #v13-frame，蓋過 tabbar。
 //
 // 進場（總長約 2 秒）：畫面上只有一件事在動，就是記號起飛。
@@ -238,23 +238,40 @@ function Bands({
 
 // 氣流：一格一格沿 45° 往右上飄的小翼形刻度，疊在漸層上，
 // 位置用固定算式產生（不用隨機，避免 SSR 跟 client 對不起來）
-// 6 欄 6 列，列距 17% 從 6% 排到 91%，整個漸層區（含標題、記號起點那一帶）
-// 都要鋪到，不然下半部會空一塊
+// 6 欄 8 列，列距 12% 從 5% 排到 89%，整個漸層區（含標題、記號起點那一帶）
+// 都要鋪到，不然下半部會空一塊。
+// 要有規律感：交錯排列（奇數列剛好位移半格）、大小線粗一致、飄移時間一致，
+// 起始相位依「斜對角」分三組輪流，亮起來的是一條條斜線往右上推進，像整齊的氣流層。
+// 流動感（參考「記號起飛」動畫原型）：每一格的方向不是全部 45°，而是隨位置
+// 平滑地偏 ±12°（sin 方向場），相鄰的刻度方向接得起來，整片讀成一道道彎曲的氣流線；
+// 每一格也順著自己的方向飄，不是全部往同一個角度平移
 const AIR_COLS = 6;
-const AIR_TICKS = Array.from({ length: 36 }, (_, i) => {
+const AIR_ROWS = 8;
+const AIR_DUR = 6;
+const AIR_TINTS = ["#fff4ee", "#ffc9c4", "#ffdca8"];
+const AIR_TICKS = Array.from({ length: AIR_COLS * AIR_ROWS }, (_, i) => {
   const col = i % AIR_COLS;
   const row = Math.floor(i / AIR_COLS);
+  const diag = col + (AIR_ROWS - 1 - row);
+  const x = 7 + col * 17 + (row % 2 ? 8.5 : 0);
+  const y = 5 + row * 12;
   return {
-    left: `${5 + col * 17 + (row % 2 ? 8 : 0)}%`,
-    top: `${6 + row * 17}%`,
-    delay: `${-(((i * 7) % 9) * 0.6).toFixed(1)}s`,
-    dur: `${(5 + ((i * 3) % 5) * 0.8).toFixed(1)}s`,
+    left: `${x}%`,
+    top: `${y}%`,
+    // 方向場：以約略的像素座標（390 寬、540 高）代入，跟參考原型同一個頻率
+    heading: `${(Math.sin((x * 3.9 + y * 5.4) * 0.021) * 12).toFixed(1)}deg`,
+    delay: `${-((diag % 3) * (AIR_DUR / 3)).toFixed(1)}s`,
+    dur: `${AIR_DUR}s`,
     // 轉向的相位依「位置」給，不是各自亂轉——相鄰的刻度先後差一點點，
     // 整片看起來就是一陣風斜斜吹過去，而不是一堆箭頭各自抖動
     swayDelay: `${-((col + row) * 0.9).toFixed(1)}s`,
-    // 大小與線粗微微不同，拉出遠近層次，不然整片會讀成規律的圖樣
-    size: 9 + ((i * 5) % 3) * 1.5,
-    stroke: 1.1 + ((i * 2) % 3) * 0.2,
+    // 偶爾轉向：從左下往右上依序被吹偏，整片掃過去約 3 秒
+    veerDelay: `${(diag * 0.3).toFixed(1)}s`,
+    size: 10.5,
+    stroke: 1.3,
+    // 三種取自漸層本身的淺色（暖白、淡粉、淡杏），依格子位置規律輪替，
+    // 疊在紅底上不會像純白那麼跳，比較像背景裡的一層空氣
+    color: AIR_TINTS[(col + 2 * row) % AIR_TINTS.length],
   };
 });
 
@@ -279,13 +296,25 @@ function AirFlow() {
   return (
     <div aria-hidden className="signup-air absolute inset-0 overflow-hidden">
       {AIR_TICKS.map((t, i) => (
+        // 外層負責「偶爾轉向」：以起點為圓心整條飄移路徑一起偏，
+        // 所以轉的是風向，不只是箭頭本身；相位跟 sway 一樣依位置排開
         <span
           key={i}
-          className="signup-air-tick absolute block"
+          className="signup-air-veer absolute block"
           style={
             {
               left: t.left,
               top: t.top,
+              // 用獨立的 rotate 屬性放基本方向，跟 veer 動畫的 transform 疊加、不互相蓋掉
+              rotate: t.heading,
+              "--veer-delay": t.veerDelay,
+            } as React.CSSProperties
+          }
+        >
+        <span
+          className="signup-air-tick block"
+          style={
+            {
               "--delay": t.delay,
               "--d": t.dur,
             } as React.CSSProperties
@@ -312,7 +341,7 @@ function AirFlow() {
             >
               <path
                 d="M -4,3 L 0,-4 L 4,3"
-                stroke="#fff"
+                stroke={t.color}
                 strokeWidth={t.stroke}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -320,6 +349,7 @@ function AirFlow() {
               />
             </svg>
           </span>
+        </span>
         </span>
       ))}
     </div>
@@ -654,13 +684,13 @@ function PasswordField({
 }
 
 // 中文版（Figma 1422:7526／1428:9688）：標語是一整句，翻面時整句互換——
-// 紙飛機那面「AIFIAN 幫你買得更好、花得更少」，轉到背面 ∧ 記號時「回饋自己的生活」。
+// 紙飛機那面「AIFIAN 買得更好、賺得更多」，轉到背面 ∧ 記號時「輕鬆回饋你的日常生活」。
 // 由下往上的遮罩動作跟英文版句尾換字共用（.signup-title-tail），時間另外訂：
 // 第二句在開頁後第 8 秒出現、停 6 秒到第 14 秒換回，之後每 15 秒重複。
 // 中文版的翻面也跟著提早、在背面停住（globals.css 的 .signup-zh），
 // 兩次換句都壓在紙飛機轉到側面的那一格；要跟 signupTailSwapZh、signupIdleSpinZh 對齊
-const ZH_PLANE = "AIFIAN 幫你買得更好、花得更少";
-const ZH_MARK = "回饋自己的生活";
+const ZH_PLANE = "AIFIAN 買得更好、賺得更多";
+const ZH_MARK = "輕鬆回饋你的日常生活";
 const ZH_IN = 8000 - IDLE_START;
 const ZH_OUT = 14000 - IDLE_START;
 

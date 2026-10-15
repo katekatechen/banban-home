@@ -1014,7 +1014,10 @@ body {
    再疊一層整層的上下位移之後，它們才會被綁成同一團空氣在呼吸。
    先下沉再浮起，週期 9 秒、幅度 16px，比個別刻度的飄移慢得多，
    所以是底下那層大的律動，不會跟個別的飄移打架 */
+/* 隱約一點：用 soft-light 跟底下的漸層融在一起，亮處淡、暗處稍微浮出來，
+   不會像一層白色貼紙蓋在上面 */
 .signup-air {
+  mix-blend-mode: soft-light;
   animation:
     signupAirIn 900ms ease 500ms backwards,
     signupAirBreath 9s ease-in-out 1s infinite;
@@ -1036,8 +1039,8 @@ body {
 .signup-air-tick {
   animation: signupAirDrift var(--d) linear var(--delay) infinite;
 }
-/* 風向會慢慢換：每一格在 ±15 度之間來回擺。相位依位置排開（--sway-delay），
-   轉向因此是斜斜掃過整片，像一陣風經過，而不是每個箭頭各自抖 */
+/* 箭頭本身只留 ±5 度的細微擺動，讓它有生命感；真正的換風向交給 .signup-air-veer，
+   底下的擺動太大的話，偶爾那一下轉向就看不出來 */
 .signup-air-sway {
   display: block;
   animation: signupAirSway 16s ease-in-out var(--sway-delay, 0s) infinite
@@ -1045,22 +1048,52 @@ body {
 }
 @keyframes signupAirSway {
   from {
-    transform: rotate(-15deg);
+    transform: rotate(-5deg);
   }
   to {
-    transform: rotate(15deg);
+    transform: rotate(5deg);
   }
 }
+/* 偶爾轉向：大部分時間風向穩定，每 11 秒有一陣風把整條路徑往上偏 14 度、
+   停一下再回正（回正時稍微過頭一點，比較像被風帶回來）。
+   以刻度起點為圓心轉，飄移的方向跟箭頭一起偏；相位從左下往右上掃過整片 */
+.signup-air-veer {
+  transform-origin: 0 0;
+  animation: signupAirVeer 11s ease-in-out calc(3s + var(--veer-delay, 0s))
+    infinite;
+}
+@keyframes signupAirVeer {
+  0%,
+  52% {
+    transform: rotate(0deg);
+  }
+  62%,
+  72% {
+    transform: rotate(-14deg);
+  }
+  82% {
+    transform: rotate(3deg);
+  }
+  90%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+/* 氣流加強：飄的距離從 26 拉到 42（同樣的時間，速度快約 1.6 倍），
+   而且更早亮起來，風感比較明確；顏色改成混色（soft-light）之後，
+   最亮要到 0.9 才看得出來，整體還是比原本純白 0.5 隱約 */
+/* 從起點後方一點點出發、往前穿過起點再飄遠（同參考原型），
+   每一格看起來是從氣流裡流過來的，不是在固定點冒出來 */
 @keyframes signupAirDrift {
   0% {
-    transform: translate(0, 0);
+    transform: translate(-8px, 8px);
     opacity: 0;
   }
   25% {
-    opacity: 0.5;
+    opacity: 0.9;
   }
   100% {
-    transform: translate(26px, -26px);
+    transform: translate(34px, -34px);
     opacity: 0;
   }
 }
@@ -1115,6 +1148,7 @@ body {
   .signup-air,
   .signup-air-tick,
   .signup-air-sway,
+  .signup-air-veer,
   .signup-air-gust,
   .signup-echo,
   .signup-echo-mark,
@@ -1214,7 +1248,7 @@ body {
   }
 }
 
-/* 中文版標語換句（TitleZh）：第二句「回饋自己的生活」在開頁後第 8 秒出現、停 6 秒，
+/* 中文版標語換句（TitleZh）：第二句「輕鬆回饋你的日常生活」在開頁後第 8 秒出現、停 6 秒，
    第 14 秒換回第一句；之後跟著 15 秒的翻面週期重複（23 秒、38 秒…）。
    週期從 2.25 秒起算，所以換上在 38.333%（5.75 秒）、換回在 78.333%（11.75 秒），
    跟紙飛機翻面的時間不再對齊。TitleZh 換字串的時間（ZH_IN／ZH_OUT）要跟這兩個百分比對齊 */
