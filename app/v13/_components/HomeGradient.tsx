@@ -142,22 +142,43 @@ export default function HomeGradient({
                 : undefined,
             }}
           >
-            {/* 淡淡的影子落在白底上 */}
-            <div className="absolute inset-0" style={{ opacity: 0.5 }}>
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="glider-shadow absolute inset-0 size-full overflow-visible"
-              >
-                <polygon
-                  points="7,21 94,7 90,92"
-                  fill="#1e2939"
-                  stroke="#1e2939"
-                  strokeWidth={10}
+            {/* 影子：照 Figma 1083:25414 的 plane（1499:11724），#E5E7EB 填色、模糊 4，
+                落在飛機右下方。框是飛機的 67×55，影子的匯出範圍（含模糊外擴）在
+                x -5.63、y 40.83、65.59×48.12，換算成百分比放上去 */}
+            <svg
+              viewBox="0 0 66 49"
+              aria-hidden
+              className="glider-shadow absolute overflow-visible"
+              style={{
+                left: "-8.4%",
+                top: "74.9%",
+                width: "97.9%",
+                height: "88.3%",
+              }}
+            >
+              <defs>
+                <filter
+                  id="glider-shadow-blur"
+                  x="0"
+                  y="0"
+                  width="65.587"
+                  height="48.1194"
+                  filterUnits="userSpaceOnUse"
+                  colorInterpolationFilters="sRGB"
+                >
+                  <feGaussianBlur stdDeviation="2" />
+                </filter>
+              </defs>
+              <g filter="url(#glider-shadow-blur)">
+                <path
+                  d="M45.2308 31.5414C46.4154 32.9163 47.6834 34.2109 49.2782 35.6189C51.0669 37.1993 53.2667 38.9228 56.2239 41.0619C56.3621 41.1628 56.5049 41.2651 56.6471 41.3679C56.8011 41.478 57.01 41.6297 57.2073 41.7659C57.4027 41.9019 57.4505 41.9359 57.534 41.9838C57.8637 42.1753 58.109 42.1399 58.1 42.0261L59.587 7.67833C59.5451 7.24845 59.2158 6.7661 58.4787 6.40792C57.7415 6.04973 56.8833 5.95515 56.1696 6.01789L6.12627 16.774C5.93849 16.7913 5.93015 16.9419 6.31054 17.0963C6.40613 17.1353 6.4715 17.1564 6.73429 17.243C6.99771 17.3307 7.29029 17.4227 7.50096 17.4897C7.69776 17.5524 7.89456 17.6151 8.08876 17.6749C12.1981 18.9693 15.4725 19.9048 18.4275 20.6301C21.0624 21.2771 23.4434 21.7556 25.9381 22.1684C28.248 22.5514 30.4824 22.6527 32.5982 22.5056C35.3716 22.3128 37.9442 21.6944 40.2115 20.7237L52.9055 10.4926L44.7146 22.8944C43.5731 24.4294 43.0805 26.0584 43.327 27.7184C43.5149 28.9849 44.1344 30.2702 45.2308 31.5414Z"
+                  fill="#E5E7EB"
+                  stroke="#E5E7EB"
+                  strokeWidth={2}
                   strokeLinejoin="round"
                 />
-              </svg>
-            </div>
+              </g>
+            </svg>
             <div className="glider-float relative">
               <SimpleGlider className="block h-auto w-full" />
             </div>

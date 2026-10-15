@@ -340,15 +340,17 @@ body {
     transform: translate(1px, -6px) rotate(-1.5deg) scale(1.03);
   }
 }
+/* 影子位置已經照 Figma 放在飛機右下方，這裡只跟著漂浮：
+   飛機浮高時影子稍微退開、縮小、變淡 */
 @keyframes gliderShadow {
   0%,
   100% {
-    transform: translate(-3%, 58%) scale(0.95, 0.86);
-    opacity: 0.2;
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
   }
   50% {
-    transform: translate(-2%, 66%) scale(0.92, 0.83);
-    opacity: 0.14;
+    transform: translate(1%, 4%) scale(0.95);
+    opacity: 0.75;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1484,6 +1486,51 @@ body {
   }
   .signup-zh .signup-takeoff-plane {
     opacity: 1;
+    animation: none;
+  }
+}
+
+/* v13 改版公告卡：遮罩淡入，卡片稍微放大進來 */
+@keyframes v13ModalFade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes v13ModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* AI 思考中的文案：參考 Mixpanel Agent 的紫 → 粉 → 珊瑚橘，
+   顏色取自首頁色光（紫光團 #8E3F86 拉亮、粉 #E0607A、橘 #FF9A4D），慢慢往右流動 */
+.thinking-gradient-text {
+  background-image: linear-gradient(
+    90deg,
+    #b65ce0 0%,
+    #e0607a 25%,
+    #f58a5b 50%,
+    #e0607a 75%,
+    #b65ce0 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: thinkingGradientFlow 2.4s linear infinite;
+}
+@keyframes thinkingGradientFlow {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-gradient-text {
     animation: none;
   }
 }

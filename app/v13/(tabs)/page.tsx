@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
@@ -43,13 +44,19 @@ import {
   type Stage,
 } from "../_lib/chat-storage";
 import {
+  AI_SELECT_CAPACITY,
   AI_SELECT_HOLDING,
+  RATE_FORECAST_POOL,
   RECOMMENDED_PRODUCTS,
   REWARD_BALANCE,
   TRENDING_PRODUCTS,
+  WINE_HOLDINGS,
+  WINE_HOLDINGS_TOTAL_CHANGE_PCT,
+  WINE_HOLDINGS_TOTAL_VALUE,
   WINE_PICKS,
 } from "../_lib/mock-data";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
+import aiLoadingAnimation from "../_lib/ai-loading.json";
 
 // v13 首頁＝聊天分頁，照 Figma 948:44415（首頁）跟 981:24621（對話中）。
 // 點輸入框本身不會有任何變化，送出第一句話之後才原地展開對話：插圖淡出、
@@ -93,6 +100,47 @@ const SUGGESTION_POOL = [
     prompt: "我想看智能選品",
     label: "你的每日回饋突破 100 元！再買點智能選品？",
   },
+];
+
+// 既有用戶更新後第一次打開（網址 ?returning）：首頁招呼語換成「歡迎回來」，
+// 再給一個「看看新的 AIFIAN」打開改版公告卡（可以左右滑的幾則引導）；
+// 建議也換成改版後最常見的問題。
+// 有沒有每日回饋看到的都一樣，不分眾
+// 切分頁再回來時沿用，不用再讀一次網址
+let returningUser = false;
+
+// 首頁大標欄位：同一時間只放一件事。要放哪一則由後端排好序給一則，前端只負責顯示；
+// 有放東西（大標下方有 CTA）時「你可能想知道」收合。prototype 用網址 ?reminder= 切換情境
+type ReminderKey = "pay" | "kyc" | "referral";
+let reminderKey: ReminderKey | null = null;
+const REMINDERS: Record<
+  ReminderKey,
+  { title: string; sub: string; cta: string; href?: string; toast?: string }
+> = {
+  pay: {
+    title: "有一筆訂單還沒付款",
+    sub: "今天 23:59 前付款，用掉的回饋會先幫你保留",
+    cta: "去付款",
+    toast: "示意：前往這筆訂單的付款頁",
+  },
+  kyc: {
+    title: "身分驗證還沒通過",
+    sub: "補上資料，就能繼續買賣跟提領",
+    cta: "重新驗證",
+    href: "/v13/account",
+  },
+  referral: {
+    title: "你有 100 回饋可以領",
+    sub: "完成身分驗證、持有智能選品 7 天就入帳",
+    cta: "去驗證",
+    href: "/v13/account",
+  },
+};
+
+const RETURNING_SUGGESTIONS: typeof SUGGESTION_POOL = [
+  { key: "what-changed", prompt: "AIFIAN 改了什麼？", label: "AIFIAN 改了什麼？" },
+  { key: "earn-more", prompt: "今天還能多賺什麼？", label: "今天還能多賺什麼？" },
+  { key: "spend-rewards", prompt: "我的回饋可以換什麼？", label: "我的回饋可以換什麼？" },
 ];
 
 // 「繼續聊」可能從對話裡或兌換頁的任一張商品卡回來，這裡把所有商品攤平成同一份清單
@@ -175,13 +223,30 @@ export default function V13HomePage() {
   // 網址加 ?signup：開場畫面換成註冊頁，停在那裡等使用者按「使用手機繼續」，
   // 之後跟開場畫面一樣進入 leaving（首頁開始進場）→ done
   const [signup, setSignup] = useState(false);
+  const [returning, setReturning] = useState(returningUser);
+  const [reminder, setReminder] = useState<ReminderKey | null>(reminderKey);
+  // 點「看看新的 AIFIAN」才打開的改版公告卡
+  const [announce, setAnnounce] = useState(false);
   const continueFromSignup = () => {
     setSplash("leaving");
     window.setTimeout(() => setSplash("done"), SIGNUP_EXIT_MS + 60);
   };
   useEffect(() => {
     if (splash !== "show") return;
-    if (new URLSearchParams(window.location.search).has("signup")) {
+    const q = new URLSearchParams(window.location.search);
+    if (q.has("returning")) {
+      returningUser = true;
+      setReturning(true);
+      setSuggestions(RETURNING_SUGGESTIONS);
+      setChipsOpen(false);
+    }
+    const r = q.get("reminder");
+    if (r === "pay" || r === "kyc" || r === "referral") {
+      reminderKey = r;
+      setReminder(r);
+      setChipsOpen(false);
+    }
+    if (q.has("signup")) {
       setSignup(true);
       return;
     }
@@ -265,9 +330,15 @@ export default function V13HomePage() {
   const [typing, setTyping] = useState(false);
   const [thinkingText, setThinkingText] = useState(false);
   const [input, setInput] = useState("");
-  // 首頁預設展開建議，進到對話後收成一行，點標題可以再打開
-  const [chipsOpen, setChipsOpen] = useState(!chat.open);
-  const [suggestions, setSuggestions] = useState(SUGGESTION_POOL.slice(0, 3));
+  // 首頁預設展開建議，進到對話後收成一行，點標題可以再打開。
+  // 大標下方有 CTA 的時候（目前是既有用戶的「看看新的 AIFIAN」），建議預設收合，
+  // 畫面上只留一個主要動作，不跟 CTA 搶注意力
+  const [chipsOpen, setChipsOpen] = useState(
+    !chat.open && !returningUser && !reminderKey,
+  );
+  const [suggestions, setSuggestions] = useState(() =>
+    returningUser ? RETURNING_SUGGESTIONS : SUGGESTION_POOL.slice(0, 3),
+  );
   const [itemPhase, setItemPhase] = useState<SuggestionPhase>("idle");
   const [historyLoaded, setHistoryLoaded] = useState(chat.historyLoaded);
   const [showHistoryBtn, setShowHistoryBtn] = useState(false);
@@ -727,6 +798,46 @@ export default function V13HomePage() {
       return;
     }
 
+    if (text.includes("這個月")) {
+      await pushBot({
+        text: `幫你整理好了。這個月到目前賺了 $1,284 回饋，大部分來自智能選品的每日回饋；用掉 $320，花在許願池跟一筆商品兌換。照這個速度，月底大概會累積到 $1,900。想讓回饋多一點，可以把智能選品剩下的 ${AI_SELECT_CAPACITY - AI_SELECT_HOLDING} 瓶空位補滿。`,
+        quickReplies: ["查看我的回饋", "我的回饋可以換什麼？"],
+      });
+      return;
+    }
+
+    if (text.includes("改了什麼")) {
+      await pushBot({
+        text: "首頁換成我了。以前要自己逛，才知道哪裡還能賺回饋；現在我會直接告訴你今天還能賺什麼，想用回饋的時候也會幫你挑值得換的東西。你的回饋、收藏跟交易紀錄都沒有變，收藏在「帳號」裡的「我的收藏」。",
+        quickReplies: ["打開我的收藏", "今天還能多賺什麼？"],
+      });
+      return;
+    }
+
+    if (text.includes("值多少")) {
+      await pushBot({
+        text: `你的 ${WINE_HOLDINGS.length} 款酒總現值 $${WINE_HOLDINGS_TOTAL_VALUE.toLocaleString()}，比買入時漲了 ${WINE_HOLDINGS_TOTAL_CHANGE_PCT}%。想賣出或領回，都在「我的收藏」裡。`,
+        quickReplies: ["打開我的收藏"],
+      });
+      return;
+    }
+
+    if (text.includes("多賺")) {
+      await pushBot({
+        text: `我幫你看了一下，有兩個還沒用到：這期匯率預測你還沒參加，獎金池目前 $${RATE_FORECAST_POOL.toLocaleString()}；智能選品還有 ${AI_SELECT_CAPACITY - AI_SELECT_HOLDING} 瓶的空位，補滿之後每天的回饋會再多一點。`,
+        quickReplies: ["查看我的回饋"],
+      });
+      return;
+    }
+
+    if (text.includes("可以換什麼")) {
+      await pushBot({
+        text: `你現在有 $${REWARD_BALANCE.toLocaleString()} 回饋，可以拿去許願池抽喜歡的東西，或直接用來買商品。`,
+        quickReplies: ["去看兌換商品"],
+      });
+      return;
+    }
+
     if (text.includes("麵")) {
       await pushBot({
         text: "先推薦你一款我覺得最讚的：大師兄銷魂麻辣粗麵。它是排隊名店直接做成快煮麵的版本，麻辣醬料熬了十小時，香氣跟店裡吃到的很接近，麵體也夠粗夠有嚼勁。不管是自己想解饞，還是要送給喜歡吃辣的朋友，都不容易踩雷，算是討論度最高、回購率也最好的一款：",
@@ -810,6 +921,10 @@ export default function V13HomePage() {
       router.push("/v13/exchange");
       return;
     }
+    if (reply === "打開我的收藏") {
+      router.push("/v13/collection");
+      return;
+    }
     handleSend(reply);
   };
 
@@ -853,6 +968,27 @@ export default function V13HomePage() {
       s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
     );
 
+  // 大標欄位這次要放什麼：提醒（後端給的那一則）優先，其次是改版的「歡迎回來」
+  const hero = reminder
+    ? {
+        title: REMINDERS[reminder].title,
+        sub: REMINDERS[reminder].sub,
+        cta: REMINDERS[reminder].cta,
+        onCta: () => {
+          const r = REMINDERS[reminder];
+          if (r.href) router.push(r.href);
+          else if (r.toast) showToast(r.toast);
+        },
+      }
+    : returning
+      ? {
+          title: "歡迎回來",
+          sub: "以後該賺的、值得買的，AI 會幫你找",
+          cta: "看看新的 AIFIAN",
+          onCta: () => setAnnounce(true),
+        }
+      : null;
+
   const lastMessage = messages[messages.length - 1];
   const lastQuickReplies = !typing ? lastMessage?.quickReplies : undefined;
   const fade = `opacity ${MODE_TRANSITION_MS}ms ease`;
@@ -877,6 +1013,16 @@ export default function V13HomePage() {
         <Splash
           leaving={splash === "leaving"}
           variant={glowHome ? "glow" : "plain"}
+        />
+      )}
+      {announce && returning && (
+        <AnnouncementModal
+          onClose={() => setAnnounce(false)}
+          onAction={(slide) => {
+            setAnnounce(false);
+            if (slide.href) router.push(slide.href);
+            else if (slide.prompt) handleSend(slide.prompt);
+          }}
         />
       )}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
@@ -1032,7 +1178,7 @@ export default function V13HomePage() {
                 }
                 style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
               >
-                {greetingOf(time.hour)}
+                {hero ? hero.title : greetingOf(time.hour)}
               </p>
               <p
                 className="text-[14px] leading-[18px]"
@@ -1044,8 +1190,29 @@ export default function V13HomePage() {
                       : "#ffffff",
                 }}
               >
-                賺回饋，買東西，我都很在行
+                {hero ? hero.sub : "賺回饋，買東西，我都很在行"}
               </p>
+              {hero && (
+                // 照既有元件 AFFOGATO bullet_button（Light／solid／bright）的尺寸：
+                // 高 48、圓角 16、內距 12／16、文字 16/24，右邊 24px nav-arrow-right 用黑色；
+                // 底色改白色（元件裡還沒有白底的變體，先覆寫）
+                <button
+                  onClick={hero.onCta}
+                  className="pointer-events-auto mt-3 flex h-12 w-fit items-center gap-2 rounded-2xl bg-white px-4 py-3 text-[16px] font-medium leading-6 text-gray-800 active:scale-95"
+                  style={{ transition: "transform 150ms ease" }}
+                >
+                  {hero.cta}
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden className="size-6">
+                    <path
+                      d="M9 6l6 6-6 6"
+                      stroke="#1e2939"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
             </div>
           </div>
@@ -1240,11 +1407,12 @@ export default function V13HomePage() {
               aria-expanded={chipsOpen}
               className="flex items-center gap-1"
             >
+              {/* 照 Figma 1083:25414：Medium 14/18 */}
               <span
-                className="text-[16px] font-bold transition-colors duration-300"
+                className="text-[14px] font-medium leading-[18px] transition-colors duration-300"
                 style={{ color: glowDark ? "#ffffff" : "#1e2939" }}
               >
-                你可能也想知道
+                你可能想知道
               </span>
               <img
                 src="/figma/v13-nav-arrow-down.svg"
@@ -1414,14 +1582,227 @@ export default function V13HomePage() {
   );
 }
 
+// 字級照 Figma 1083:25414 的 suggestion-chip：14/18
 const CHIP_CLASS =
-  "max-w-full rounded-[999px] border border-[#d1d6db] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461]";
+  "max-w-full rounded-[999px] border border-[#d1d6db] bg-white px-[14px] py-2 text-left text-[14px] leading-[18px] text-[#4a5461]";
 // 光暈版首頁（深靛藍到紫的底）：半透明白的玻璃膠囊、白字
 const CHIP_CLASS_DARK =
-  "max-w-full rounded-[999px] border border-white/30 bg-white/10 px-[14px] py-2 text-left text-[13px] text-white backdrop-blur-[2px]";
+  "max-w-full rounded-[999px] border border-white/30 bg-white/10 px-[14px] py-2 text-left text-[14px] leading-[18px] text-white backdrop-blur-[2px]";
 // 預設版（照 Figma 1017:3714）：不要邊框，改用淡淡的陰影浮在天空漸層上
 const CHIP_CLASS_SHADOW =
-  "max-w-full rounded-[999px] bg-white px-[14px] py-2 text-left text-[13px] text-[#4a5461] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]";
+  "max-w-full rounded-[999px] bg-white px-[14px] py-2 text-left text-[14px] leading-[18px] text-[#4a5461] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]";
+
+// 改版公告卡：照既有元件 AFFOGATO modal（Mode=Light）做，不另外設計新元件。
+// 上方 modol_image 328×226、右上關閉鈕；內容區上下 24、左右 16，
+// 標題 20/28 置中、內文 16/24；兩顆 48 高的按鈕並排（外框紅／實心紅），不顯示 text_button。
+// 參考 Gemini 的更新介面：圖片跟文字一起左右滑，一則講一件新版的事，下方點點標示第幾則。
+// 最多 3 則。右邊（主要）按鈕翻下一則，最後一則變成「開始體驗」關掉公告卡；
+// 左邊（外框）按鈕是這一則的動作
+type AnnounceSlide = {
+  key: string;
+  visual: "plane" | "mark" | string;
+  title: string;
+  body: string;
+  action: string;
+  prompt?: string;
+  href?: string;
+};
+
+// 跟用戶說的三個重點：AI 幫你買、幫你賺／酒是賺回饋的方法之一，之後還有更多／回饋換成喜歡的東西
+const ANNOUNCE_SLIDES: AnnounceSlide[] = [
+  {
+    key: "ai",
+    visual: "plane",
+    title: "買東西、賺回饋，交給 AI",
+    body: "想買什麼、怎麼多賺回饋，說一聲就好。\nAI 幫你挑好、算好，在對話裡直接完成。",
+    action: "問問看",
+    prompt: "今天還能多賺什麼？",
+  },
+  {
+    // 把酒從主角降成賺回饋的方法之一，並預告之後還有更多（不點名還沒上線的功能）
+    key: "earn",
+    visual: "mark",
+    title: "賺回饋的方法，不只有酒",
+    body: "除了買酒，匯率預測也能賺回饋，\n之後還會有更多賺回饋的方法。",
+    action: "看看怎麼賺",
+    href: "/v13/rewards",
+  },
+  {
+    key: "spend",
+    visual: "/figma/wish-camera.png",
+    title: "把回饋，換成喜歡的東西",
+    body: "賺到的回饋可以直接買東西，\n也能參加許願池抽好禮。",
+    action: "看看能換什麼",
+    prompt: "我的回饋可以換什麼？",
+  },
+];
+
+function AnnouncementModal({
+  onClose,
+  onAction,
+}: {
+  onClose: () => void;
+  onAction: (slide: AnnounceSlide) => void;
+}) {
+  // 掛到整個手機框上，才蓋得過 tabbar
+  const [frame, setFrame] = useState<HTMLElement | null>(null);
+  useEffect(() => setFrame(document.getElementById("v13-frame")), []);
+  // 一次只翻一則：不用原生捲動（甩得快會一次跳好幾則），改成自己算拖曳距離，
+  // 放手時超過門檻就前進或後退一則；觸控板橫向滑動一個手勢也只算一則
+  const [index, setIndex] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const dragStart = useRef<number | null>(null);
+  const wheelLock = useRef(false);
+  if (!frame) return null;
+  const count = ANNOUNCE_SLIDES.length;
+  const last = index === count - 1;
+  const slide = ANNOUNCE_SLIDES[index];
+  const goTo = (i: number) => setIndex(Math.max(0, Math.min(count - 1, i)));
+  const SWIPE_PX = 40;
+  const endDrag = () => {
+    if (dragStart.current == null) return;
+    dragStart.current = null;
+    if (drag <= -SWIPE_PX) goTo(index + 1);
+    else if (drag >= SWIPE_PX) goTo(index - 1);
+    setDrag(0);
+  };
+  return createPortal(
+    <div
+      className="absolute inset-0 z-[90] flex items-center justify-center bg-black/40 px-6"
+      style={{ animation: "v13ModalFade 200ms ease both" }}
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-[328px] overflow-hidden rounded-2xl bg-white shadow-[0px_4px_8px_0px_rgba(0,0,0,0.06),0px_0.5px_4px_0px_rgba(0,0,0,0.02)]"
+        style={{ animation: `v13ModalIn 260ms ${EASING} both` }}
+      >
+        {/* 圖片＋文字一起左右滑；每一則等高（取最高的那則），切換時按鈕不會跳 */}
+        <div
+          className="overflow-hidden"
+          style={{ touchAction: "pan-y" }}
+          onPointerDown={(e) => {
+            dragStart.current = e.clientX;
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            if (dragStart.current == null) return;
+            const dx = e.clientX - dragStart.current;
+            // 第一則往右拉、最後一則往左拉時加阻力，看得出已經到底了
+            const edge = (dx > 0 && index === 0) || (dx < 0 && last);
+            setDrag(edge ? dx / 3 : dx);
+          }}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onWheel={(e) => {
+            if (Math.abs(e.deltaX) < Math.abs(e.deltaY) || Math.abs(e.deltaX) < 8) return;
+            if (wheelLock.current) return;
+            wheelLock.current = true;
+            goTo(index + (e.deltaX > 0 ? 1 : -1));
+            window.setTimeout(() => (wheelLock.current = false), 600);
+          }}
+        >
+        <div
+          className="flex"
+          style={{
+            transform: `translateX(calc(${-index * 100}% + ${drag}px))`,
+            transition:
+              dragStart.current != null ? "none" : `transform 320ms ${EASING}`,
+          }}
+        >
+          {ANNOUNCE_SLIDES.map((sl) => (
+            <div key={sl.key} className="flex w-full shrink-0 select-none flex-col">
+              <AnnounceVisual visual={sl.visual} />
+              <div className="flex flex-col gap-2.5 px-4 pt-6">
+                <p className="text-center text-[20px] font-semibold leading-7 text-gray-800">
+                  {sl.title}
+                </p>
+                {/* 內文用 \n 指定斷行，避免最後一兩個字單獨掉到下一行 */}
+                <p className="whitespace-pre-line text-[16px] leading-6 text-gray-800">
+                  {sl.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="關閉"
+          className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-full bg-[#fefefe]/60 p-1"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="size-6">
+            <path
+              d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+              stroke="#1e2939"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+        <div className="flex flex-col gap-6 px-4 pt-6 pb-6">
+          <div className="flex justify-center gap-1.5" aria-hidden>
+            {ANNOUNCE_SLIDES.map((sl, i) => (
+              <span
+                key={sl.key}
+                className="h-1.5 rounded-full"
+                style={{
+                  width: i === index ? 16 : 6,
+                  background: i === index ? "#ff3b3b" : "#e5e7eb",
+                  transition: `width 250ms ${EASING}, background-color 250ms ease`,
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onAction(slide)}
+              className="flex h-12 flex-1 items-center justify-center whitespace-nowrap rounded-2xl border border-[#ff3b3b] px-2 text-[16px] font-medium text-[#ff3b3b] active:scale-[0.98]"
+            >
+              {slide.action}
+            </button>
+            <button
+              onClick={() => (last ? onClose() : goTo(index + 1))}
+              className="flex h-12 flex-1 items-center justify-center whitespace-nowrap rounded-2xl bg-[#ff3b3b] px-2 text-[16px] font-medium text-white active:scale-[0.98]"
+            >
+              {last ? "開始體驗" : "下一則"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    frame,
+  );
+}
+
+// modol_image 的示意圖：品牌漸層上放紙飛機或 ∧ 記號，或是商品圖
+function AnnounceVisual({ visual }: { visual: string }) {
+  if (visual === "plane" || visual === "mark") {
+    return (
+      <div
+        className="flex h-[226px] w-full shrink-0 items-center justify-center"
+        style={{
+          background:
+            "radial-gradient(70% 60% at 85% 10%, #ffd978 0%, rgba(255,217,120,0) 60%), linear-gradient(155deg, #ff3f7f 0%, #ff4a43 50%, #f22d33 100%)",
+        }}
+      >
+        <img
+          src={visual === "plane" ? "/v13/signup-plane.svg" : "/v13/signup-mark.svg"}
+          alt=""
+          draggable={false}
+          className="h-24 w-auto drop-shadow-[0_8px_14px_rgba(120,10,22,0.26)]"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-[226px] w-full shrink-0 items-center justify-center bg-[#f3f4f6]">
+      <img src={visual} alt="" draggable={false} className="h-[78%] w-auto object-contain" />
+    </div>
+  );
+}
 
 function DateDivider({ label }: { label: string }) {
   return (
@@ -1435,38 +1816,45 @@ function DateDivider({ label }: { label: string }) {
 
 // AI 思考中：文字上有一道亮光從左掃到右（漸層字＋背景位移），
 // 後面四個點依序亮起，看起來像「正在想」而不是卡住
+// AI 思考中：左邊放 AIFIAN 的等待動態（三個三角形，ai-loading.json），
+// 文案用首頁色光的同一組顏色做漸層，顏色慢慢流動
 function ThinkingIndicator() {
   return (
     <div
-      className="flex items-center py-1 text-[15px] leading-[25px]"
+      className="flex items-center gap-1.5 py-1 text-[15px] leading-[25px]"
       style={{ animation: "fadeIn 240ms ease" }}
     >
-      <span
-        className="bg-clip-text text-transparent"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, #a1a5ac 0%, #a1a5ac 35%, #1e2939 50%, #a1a5ac 65%, #a1a5ac 100%)",
-          backgroundSize: "300% 100%",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          animation: "shimmerSweep 1.8s linear infinite",
-        }}
-      >
-        收到你的需求了，讓我想一想
-      </span>
-      {[0, 1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className="text-[#a1a5ac]"
-          style={{
-            animation: `thinkingDot 1.2s ease-in-out ${i * 0.18}s infinite`,
-          }}
-        >
-          ．
-        </span>
-      ))}
+      <AiLoadingLottie />
+      <span className="thinking-gradient-text">收到你的需求了，讓我想一想</span>
     </div>
   );
+}
+
+function AiLoadingLottie() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let anim: { destroy: () => void } | null = null;
+    let cancelled = false;
+    // lottie-web 一 import 就會碰 document，放到 effect 裡動態載入，避免 SSR 出錯
+    import("lottie-web").then(({ default: lottie }) => {
+      if (cancelled) return;
+      anim = lottie.loadAnimation({
+        container: el,
+        renderer: "svg",
+        loop: true,
+        autoplay: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        animationData: aiLoadingAnimation,
+      });
+    });
+    return () => {
+      cancelled = true;
+      anim?.destroy();
+    };
+  }, []);
+  // 原檔 260×180，縮到跟一行字差不多高
+  return <div ref={ref} aria-hidden className="h-[25px] w-[36px] shrink-0" />;
 }
 
 function Dot({ delay }: { delay: string }) {
