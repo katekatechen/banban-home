@@ -161,7 +161,7 @@ export default function ProductSheet({
                       <p className="text-[15px] font-bold text-gray-800">
                         概覽
                       </p>
-                      <p className="text-[12px] text-[#a1a5ac]">伴伴整理</p>
+                      <p className="text-[12px] text-[#a1a5ac]">AI 整理</p>
                     </div>
                     <p className="whitespace-pre-line text-[14.5px] leading-[1.85] text-gray-800">
                       {detail.overview}

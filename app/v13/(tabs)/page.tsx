@@ -748,7 +748,8 @@ export default function V13HomePage() {
           setMessages((m) => [...m, { id: genId(), role: "bot", ...msg }]);
           resolve();
         },
-        delay ?? (first ? 1800 : 700),
+        // 第一則回覆要等思考文案三句都換過一輪（THINKING_STEP_MS × 3）
+        delay ?? (first ? THINKING_STEP_MS * 3 : 700),
       );
       timersRef.current.push(t);
     });
@@ -1817,15 +1818,27 @@ function DateDivider({ label }: { label: string }) {
 // AI 思考中：文字上有一道亮光從左掃到右（漸層字＋背景位移），
 // 後面四個點依序亮起，看起來像「正在想」而不是卡住
 // AI 思考中：左邊放 AIFIAN 的等待動態（三個三角形，ai-loading.json），
-// 文案用首頁色光的同一組顏色做漸層，顏色慢慢流動
+// 文案用首頁色光的同一組顏色做漸層，顏色慢慢流動。
+// 等比較久時分段換句，讓人知道還在進行、而且快好了；停在最後一句不循環
+const THINKING_STEPS = ["正在了解你的需求…", "正在幫你比較…", "快好了…"];
+const THINKING_STEP_MS = 1200;
+
 function ThinkingIndicator() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timers = THINKING_STEPS.slice(1).map((_, i) =>
+      window.setTimeout(() => setStep(i + 1), THINKING_STEP_MS * (i + 1)),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, []);
   return (
     <div
       className="flex items-center gap-1.5 py-1 text-[15px] leading-[25px]"
       style={{ animation: "fadeIn 240ms ease" }}
     >
       <AiLoadingLottie />
-      <span className="thinking-gradient-text">收到你的需求了，讓我想一想</span>
+      {/* 換句直接換字，不做進場動畫；漸層流動照常 */}
+      <span className="thinking-gradient-text">{THINKING_STEPS[step]}</span>
     </div>
   );
 }
@@ -1924,7 +1937,7 @@ function ChatMessage({
       )}
       {showDisclaimer && (
         <p className="text-[12px] text-[#a1a5af]">
-          伴伴是 AI，有時可能會出錯。
+          AIFIAN 是 AI，有時可能會出錯。
         </p>
       )}
     </div>
