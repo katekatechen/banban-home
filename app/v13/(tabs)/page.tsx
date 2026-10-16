@@ -984,7 +984,7 @@ export default function V13HomePage() {
     : returning
       ? {
           title: "歡迎回來",
-          sub: "以後該賺的、值得買的，AI 會幫你找",
+          sub: "以後該賺的、值得買的，AI 都能幫你找",
           cta: "看看新的 AIFIAN",
           onCta: () => setAnnounce(true),
         }
@@ -1597,7 +1597,7 @@ const CHIP_CLASS_SHADOW =
 // 上方 modol_image 328×226、右上關閉鈕；內容區上下 24、左右 16，
 // 標題 20/28 置中、內文 16/24；兩顆 48 高的按鈕並排（外框紅／實心紅），不顯示 text_button。
 // 參考 Gemini 的更新介面：圖片跟文字一起左右滑，一則講一件新版的事，下方點點標示第幾則。
-// 最多 3 則。右邊（主要）按鈕翻下一則，最後一則變成「開始體驗」關掉公告卡；
+// 最多 3 則。右邊（主要）按鈕翻下一則，最後一則變成「開始探索」關掉公告卡；
 // 左邊（外框）按鈕是這一則的動作
 type AnnounceSlide = {
   key: string;
@@ -1614,8 +1614,8 @@ const ANNOUNCE_SLIDES: AnnounceSlide[] = [
   {
     key: "ai",
     visual: "plane",
-    title: "買東西、賺回饋，交給 AI",
-    body: "想買什麼、怎麼多賺回饋，說一聲就好。\nAI 幫你挑好、算好，在對話裡直接完成。",
+    title: "買東西、賺回饋都交給 AI",
+    body: "想買什麼、怎麼賺回饋，跟 AI 說就好。\n在對話裡直接下單，東西送到家。",
     action: "問問看",
     prompt: "今天還能多賺什麼？",
   },
@@ -1623,18 +1623,19 @@ const ANNOUNCE_SLIDES: AnnounceSlide[] = [
     // 把酒從主角降成賺回饋的方法之一，並預告之後還有更多（不點名還沒上線的功能）
     key: "earn",
     visual: "mark",
-    title: "賺回饋的方法，不只有酒",
-    body: "除了買酒，匯率預測也能賺回饋，\n之後還會有更多賺回饋的方法。",
-    action: "看看怎麼賺",
+    title: "賺回饋，不只靠買酒",
+    body: "除了買酒，之後還有更多賺回饋的方法，\n上線時第一時間告訴你。",
+    action: "看看回饋",
     href: "/v13/rewards",
   },
   {
     key: "spend",
     visual: "/figma/wish-camera.png",
-    title: "把回饋，換成喜歡的東西",
-    body: "賺到的回饋可以直接買東西，\n也能參加許願池抽好禮。",
-    action: "看看能換什麼",
-    prompt: "我的回饋可以換什麼？",
+    title: "把回饋換成喜歡的東西",
+    body: "賺到的回饋可以直接拿來買東西，\n也能參加許願池抽好禮。",
+    action: "看大家買什麼",
+    // 「大家都在買」是兌換分頁的第一區，進去就看得到
+    href: "/v13/exchange",
   },
 ];
 
@@ -1768,7 +1769,7 @@ function AnnouncementModal({
               onClick={() => (last ? onClose() : goTo(index + 1))}
               className="flex h-12 flex-1 items-center justify-center whitespace-nowrap rounded-2xl bg-[#ff3b3b] px-2 text-[16px] font-medium text-white active:scale-[0.98]"
             >
-              {last ? "開始體驗" : "下一則"}
+              {last ? "開始探索" : "下一則"}
             </button>
           </div>
         </div>
