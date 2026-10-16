@@ -1610,29 +1610,30 @@ type AnnounceSlide = {
 };
 
 // 跟用戶說的三個重點：AI 幫你買、幫你賺／酒是賺回饋的方法之一，之後還有更多／回饋換成喜歡的東西
+// 文案與公告圖照 Figma 1537:4102 定稿；公告圖是 Figma 匯出的 3 倍圖（984×678）
 const ANNOUNCE_SLIDES: AnnounceSlide[] = [
   {
     key: "ai",
-    visual: "plane",
+    visual: "/v13/announce-1.png",
     title: "買東西、賺回饋都交給 AI",
-    body: "想買什麼、怎麼賺回饋，跟 AI 說就好。\n在對話裡直接下單，東西送到家。",
+    body: "想買什麼、怎麼賺回饋，跟 AI 說就好。在對話裡直接下單，東西送到家。",
     action: "問問看",
     prompt: "今天還能多賺什麼？",
   },
   {
     // 把酒從主角降成賺回饋的方法之一，並預告之後還有更多（不點名還沒上線的功能）
     key: "earn",
-    visual: "mark",
-    title: "賺回饋，不只靠買酒",
-    body: "除了買酒，之後還有更多賺回饋的方法，\n上線時第一時間告訴你。",
-    action: "看看回饋",
+    visual: "/v13/announce-2.png",
+    title: "想賺回饋，不只有買酒",
+    body: "之後還有更多賺回饋的功能，上線時第一時間告訴你。",
+    action: "看回饋功能",
     href: "/v13/rewards",
   },
   {
     key: "spend",
-    visual: "/figma/wish-camera.png",
+    visual: "/v13/announce-3.png",
     title: "把回饋換成喜歡的東西",
-    body: "賺到的回饋可以直接拿來買東西，\n也能參加許願池抽好禮。",
+    body: "賺到的回饋可以直接拿來買東西，也能參加許願池抽好禮。",
     action: "看大家買什麼",
     // 「大家都在買」是兌換分頁的第一區，進去就看得到
     href: "/v13/exchange",
@@ -1799,9 +1800,10 @@ function AnnounceVisual({ visual }: { visual: string }) {
       </div>
     );
   }
+  // 公告圖：滿版鋪滿 328×226（Figma 匯出的圖本身已經是這個比例）
   return (
-    <div className="flex h-[226px] w-full shrink-0 items-center justify-center bg-[#f3f4f6]">
-      <img src={visual} alt="" draggable={false} className="h-[78%] w-auto object-contain" />
+    <div className="h-[226px] w-full shrink-0 overflow-hidden bg-[#f3f4f6]">
+      <img src={visual} alt="" draggable={false} className="size-full object-cover" />
     </div>
   );
 }
