@@ -2,10 +2,10 @@
 // 兌換（線上藏酒／3C 商品）、我的收藏。刻意不跟其他版本共用，
 // 每個 prototype 版本保持獨立，之後任一版本改動都不會互相牽動
 
-export const REWARD_BALANCE = 14320;
-// 只有回饋紀錄頁的大數字才會顯示到小數，跟 Figma 一致——其餘地方
-// 一律只顯示整數 REWARD_BALANCE，這個小數尾數純粹是視覺上的裝飾
-export const REWARD_BALANCE_DECIMAL = "15";
+export const REWARD_BALANCE = 240.2;
+// 回饋紀錄頁的大數字是「整數 + 小數尾數」兩段拼起來的，所以小數另外放一個常數；
+// 其餘地方直接印 REWARD_BALANCE
+export const REWARD_BALANCE_DECIMAL = "2";
 // v13 回饋頁上方改照 Figma 的數字：今天拿到 26.12、今日回饋率 8.64%
 export const TODAY_REWARD_AMOUNT = 26.12;
 export const TODAY_REWARD_RATE_PCT = 8.64;
@@ -188,22 +188,9 @@ type ExchangeProduct = {
 // 還沒有真的商品照的項目統一用淺灰色佔位，不要每個各自配一個深色調，
 // 佔位色本身不該帶出「這個商品是什麼顏色」的錯誤資訊
 const PLACEHOLDER_COLOR = "#E5E7EB";
+// 兩排商品都由低價排到高價：回饋能全額折抵的（$0）會排在最前面
 
 export const TRENDING_PRODUCTS: ExchangeProduct[] = [
-  {
-    id: "airpods-pro-2",
-    name: "AirPods Pro 2",
-    subtitle: "3C 配件",
-    price: 12000,
-    image: "/figma/product-airpods-pro-2.jpg",
-  },
-  {
-    id: "power-bank-20w",
-    name: "20W 行動電源",
-    subtitle: "3C 配件",
-    price: 8500,
-    image: "/figma/product-power-bank-20w.jpg",
-  },
   {
     id: "wailan-power-bank",
     name: "威嵐隨行行動電源",
@@ -218,16 +205,23 @@ export const TRENDING_PRODUCTS: ExchangeProduct[] = [
     price: 2490,
     color: PLACEHOLDER_COLOR,
   },
+  {
+    id: "power-bank-20w",
+    name: "20W 行動電源",
+    subtitle: "3C 配件",
+    price: 8500,
+    image: "/figma/product-power-bank-20w.jpg",
+  },
+  {
+    id: "airpods-pro-2",
+    name: "AirPods Pro 2",
+    subtitle: "3C 配件",
+    price: 12000,
+    image: "/figma/product-airpods-pro-2.jpg",
+  },
 ];
 
 export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
-  {
-    id: "wailan-earbuds",
-    name: "威嵐旗艦款藍牙耳機",
-    subtitle: "3C 配件",
-    price: 4990,
-    image: "/figma/product-wailan-earbuds.jpg",
-  },
   {
     id: "taiwan-tobacco-spicy-noodles",
     name: "台酒麻辣乾拌麵",
@@ -241,6 +235,13 @@ export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
     subtitle: "3C 配件",
     price: 990,
     color: PLACEHOLDER_COLOR,
+  },
+  {
+    id: "wailan-earbuds",
+    name: "威嵐旗艦款藍牙耳機",
+    subtitle: "3C 配件",
+    price: 4990,
+    image: "/figma/product-wailan-earbuds.jpg",
   },
 ];
 

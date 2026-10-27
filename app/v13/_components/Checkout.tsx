@@ -402,7 +402,7 @@ export default function Checkout({
                 />
                 <button
                   onClick={() =>
-                    setPoints(String(Math.min(REWARD_BALANCE, total)))
+                    setPoints(String(Math.floor(Math.min(REWARD_BALANCE, total))))
                   }
                   className="shrink-0 rounded-[11px] bg-[#f0f1f3] px-[15px] text-[14px] font-semibold text-gray-800"
                 >

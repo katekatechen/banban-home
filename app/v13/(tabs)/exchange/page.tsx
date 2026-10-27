@@ -33,6 +33,9 @@ const HEADER_GRADIENT_CLASS =
   "h-[72px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_78%,rgba(255,255,255,0)_100%)] sm:h-[112px] sm:bg-[linear-gradient(to_bottom,rgba(255,255,255,0.95)_85.7%,rgba(255,255,255,0)_100%)]";
 const HEADER_PADDING_CLASS = "pt-[72px] sm:pt-[112px]";
 
+// 商品飛進購物車的時間，跟聊天分頁對齊
+const FLY_TO_CART_MS = 650;
+
 // 兌換分頁是這版新增的：許願池搬到這裡（原本在回饋頁的許願池子分頁），
 // 加上「熱門商品」——用回饋折抵一般商品（不只是酒），跟回饋分頁區分開來：
 // 回饋分頁講「你賺了多少」，兌換分頁講「你可以拿去換什麼」
@@ -66,6 +69,12 @@ export default function ExchangePage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
+  // 購物車平常不佔位置，膠囊裡只有回饋數字；有東西、或商品正在飛過去的
+  // 路上（cartPeek）才讓購物車出現，動畫才有落點
+  const [cartPeek, setCartPeek] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cartIconRef = useRef<HTMLImageElement>(null);
+  const showCart = cart.length > 0 || cartPeek;
 
   useEffect(
     () => () => {
@@ -80,8 +89,102 @@ export default function ExchangePage() {
     toastTimer.current = window.setTimeout(() => setToast(null), 2200);
   };
 
+  // 加入購物車：複製一份商品圖疊在原位，沿著一道往左上鼓起的弧線邊飛邊縮小，
+  // 落在右上角購物車正中間，接著購物車縮放一下、數字才 +1 跳出來。
+  // 跟聊天分頁同一套做法：用 Web Animations API 直接動 DOM，不走 React state，
+  // 動畫期間不會重繪整頁
+  const flyToCart = (from: HTMLElement, onLand: () => void) => {
+    const root = rootRef.current;
+    const image = from
+      .closest("[data-product-card]")
+      ?.querySelector<HTMLElement>("[data-product-image]");
+    if (!root || !image) {
+      onLand();
+      return;
+    }
+    setCartPeek(true);
+    // 購物車是這一刻才出現的，要等 React 把它畫出來才量得到落點
+    requestAnimationFrame(() => {
+      const cartIcon = cartIconRef.current;
+      if (!cartIcon) {
+        onLand();
+        setCartPeek(false);
+        return;
+      }
+      const rootRect = root.getBoundingClientRect();
+      const a = image.getBoundingClientRect();
+      const b = cartIcon.getBoundingClientRect();
+      const w = a.width;
+      const endScale = 22 / w;
+      const x0 = a.left - rootRect.left;
+      const y0 = a.top - rootRect.top;
+      const x1 = b.left + b.width / 2 - rootRect.left - (w * endScale) / 2;
+      const y1 = b.top + b.height / 2 - rootRect.top - (w * endScale) / 2;
+      // 中途點：垂直先走掉七成、水平只走三成，路徑往左上鼓成一道弧，
+      // 不會衝出畫面上緣（購物車本來就貼著頂部）
+      const midX = x0 + (x1 - x0) * 0.3;
+      const midY = y0 + (y1 - y0) * 0.7;
+
+      const ghost = image.cloneNode(true) as HTMLElement;
+      ghost.querySelector("button")?.remove();
+      ghost.removeAttribute("data-product-image");
+      Object.assign(ghost.style, {
+        position: "absolute",
+        left: "0",
+        top: "0",
+        width: `${w}px`,
+        height: `${a.height}px`,
+        margin: "0",
+        zIndex: "30",
+        pointerEvents: "none",
+        borderRadius: "16px",
+        overflow: "hidden",
+        transformOrigin: "0 0",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
+      });
+      root.appendChild(ghost);
+      const anim = ghost.animate(
+        [
+          {
+            transform: `translate(${x0}px, ${y0}px) scale(1)`,
+            borderRadius: "16px",
+          },
+          {
+            transform: `translate(${midX}px, ${midY}px) scale(0.45)`,
+            offset: 0.45,
+          },
+          {
+            transform: `translate(${x1}px, ${y1}px) scale(${endScale})`,
+            opacity: 0.7,
+            borderRadius: `${w / 2}px`,
+          },
+        ],
+        { duration: FLY_TO_CART_MS, easing: "cubic-bezier(0.45, 0, 0.55, 1)" },
+      );
+      anim.onfinish = () => {
+        ghost.remove();
+        cartIcon.animate(
+          [
+            { transform: "scale(1)" },
+            { transform: "scale(1.3)", offset: 0.4 },
+            { transform: "scale(0.92)", offset: 0.75 },
+            { transform: "scale(1)" },
+          ],
+          { duration: 360, easing: "ease-out" },
+        );
+        window.setTimeout(() => {
+          onLand();
+          setCartPeek(false);
+        }, 140);
+      };
+    });
+  };
+
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white">
+    <div
+      ref={rootRef}
+      className="relative flex h-full flex-col overflow-hidden bg-white"
+    >
       <div
         className={`pointer-events-none absolute inset-x-0 top-0 z-10 ${HEADER_GRADIENT_CLASS}`}
       >
@@ -92,32 +195,41 @@ export default function ExchangePage() {
             <p className="text-[24px] font-semibold leading-8 text-gray-800">
               兌換
             </p>
-            <div className="flex items-center gap-2">
+            {/* 回饋數字跟購物車照 Figma 1242:2710 收在同一顆膠囊裡，
+                購物車平常不佔位置，有東西才出現在數字右邊 */}
+            <div className="flex h-11 shrink-0 items-center gap-1.5 rounded-[22px] border-[0.5px] border-white/50 bg-white/80 pl-2.5 pr-2 shadow-[0px_8px_12px_0px_rgba(0,0,0,0.04)] backdrop-blur-xl">
               <button
                 onClick={() => router.push("/v13/reward-history")}
-                className="flex shrink-0 items-center gap-1.5 rounded-[22px] bg-white py-1.5 pl-1.5 pr-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
+                className="flex items-center gap-1.5"
               >
                 <img
                   src="/figma/reward-icon-hero.svg"
                   alt=""
-                  className="size-7"
+                  className="size-6"
                 />
                 <span className="text-[16px] font-medium leading-6 text-gray-800">
                   {REWARD_BALANCE.toLocaleString()}
                 </span>
               </button>
-              <button
-                aria-label="購物車"
-                onClick={() => setCheckoutOpen(true)}
-                className="relative flex h-11 items-center rounded-[22px] bg-white px-3 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
-              >
-                <img src="/figma/v13-cart.svg" alt="" className="size-5" />
-                {cart.length > 0 && (
-                  <span className="absolute -right-[3px] top-0 rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
-                    {cart.length}
-                  </span>
-                )}
-              </button>
+              {showCart && (
+                <button
+                  aria-label="購物車"
+                  onClick={() => setCheckoutOpen(true)}
+                  className="relative flex h-11 w-7 items-center justify-center"
+                >
+                  <img
+                    ref={cartIconRef}
+                    src="/figma/v13-cart.svg"
+                    alt=""
+                    className="size-5"
+                  />
+                  {cart.length > 0 && (
+                    <span className="absolute left-4 top-0.5 min-w-4 rounded-[20px] bg-brand px-1 py-0.5 text-center text-[12px] font-bold leading-3 text-gray-000">
+                      {cart.length}
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -134,9 +246,15 @@ export default function ExchangePage() {
           subtitle="用回饋折抵商品"
           products={TRENDING_PRODUCTS}
           onOpen={(i) => setSheet({ cards: TRENDING_CARDS, index: i })}
-          onAddToCart={(p) => {
-            setCart(addToCart(cart, toCards([p])[0]));
-            showToast("已加入購物車");
+          addedIds={addedIds}
+          onAddToCart={(p, from) => {
+            if (addedIds.includes(p.id)) {
+              setCart(removeFromCart(cart, p.id));
+              return;
+            }
+            // 按下去先震一下，再讓商品飛進購物車，落地才真的加進去
+            navigator.vibrate?.(18);
+            flyToCart(from, () => setCart(addToCart(cart, toCards([p])[0])));
           }}
         />
         <ProductRow
@@ -144,9 +262,15 @@ export default function ExchangePage() {
           subtitle="根據你的對話"
           products={RECOMMENDED_PRODUCTS}
           onOpen={(i) => setSheet({ cards: RECOMMENDED_CARDS, index: i })}
-          onAddToCart={(p) => {
-            setCart(addToCart(cart, toCards([p])[0]));
-            showToast("已加入購物車");
+          addedIds={addedIds}
+          onAddToCart={(p, from) => {
+            if (addedIds.includes(p.id)) {
+              setCart(removeFromCart(cart, p.id));
+              return;
+            }
+            // 按下去先震一下，再讓商品飛進購物車，落地才真的加進去
+            navigator.vibrate?.(18);
+            flyToCart(from, () => setCart(addToCart(cart, toCards([p])[0])));
           }}
         />
 
@@ -317,14 +441,19 @@ function ProductRow({
   title,
   subtitle,
   products,
+  addedIds,
   onOpen,
   onAddToCart,
 }: {
   title: string;
   subtitle: string;
   products: typeof TRENDING_PRODUCTS;
+  addedIds: string[];
   onOpen: (index: number) => void;
-  onAddToCart: (product: (typeof TRENDING_PRODUCTS)[number]) => void;
+  onAddToCart: (
+    product: (typeof TRENDING_PRODUCTS)[number],
+    from: HTMLElement,
+  ) => void;
 }) {
   return (
     <div className="flex flex-col gap-4 py-4">
@@ -336,14 +465,17 @@ function ProductRow({
       </div>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
         {products.map((p, i) => {
-          // 折抵後要補的差額：回饋跟金額是 1:1，跟結帳頁同一套算法
-          const payable = Math.max(0, p.price - REWARD_BALANCE);
-          const fullyCovered = payable === 0;
+          // 折抵後要補的差額：回饋跟金額是 1:1，跟結帳頁同一套算法。
+          // 餘額帶小數（240.2），金額取整數顯示，跟結帳頁實際折抵的結果一致
+          const shortfall = Math.max(0, p.price - REWARD_BALANCE);
+          const fullyCovered = shortfall === 0;
+          const added = addedIds.includes(p.id);
           return (
             // 卡片本身是可點的，但裡面還有一顆加入購物車按鈕，所以外層
             // 不能用 <button>（button 不能包 button），改成 role="button"
             <div
               key={p.id}
+              data-product-card
               role="button"
               tabIndex={0}
               onClick={() => onOpen(i)}
@@ -352,7 +484,10 @@ function ProductRow({
               }}
               className="w-[168px] shrink-0 cursor-pointer text-left"
             >
-              <div className="relative aspect-square overflow-hidden rounded-2xl">
+              <div
+                data-product-image
+                className="relative aspect-square overflow-hidden rounded-2xl"
+              >
                 {p.image ? (
                   <img
                     src={p.image}
@@ -370,19 +505,41 @@ function ProductRow({
                     $0
                   </span>
                 )}
+                {/* 已加入的樣式跟商品細節頁的「已加入」按鈕同一組綠：
+                    邊框 #1f8a5b、底色是同一個綠的 8% 疊在白底上 */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddToCart(p);
+                    onAddToCart(p, e.currentTarget);
                   }}
-                  aria-label="加入購物車"
-                  className="absolute bottom-2 right-2 flex items-center rounded-full border border-gray-100 bg-white px-2 py-1.5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.06)]"
+                  aria-label={added ? "從購物車移除" : "加入購物車"}
+                  aria-pressed={added}
+                  className={`absolute bottom-2 right-2 flex items-center rounded-full border px-2 py-1.5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.06)] ${
+                    added
+                      ? "border-[#1f8a5b] bg-[#edf6f2]"
+                      : "border-gray-100 bg-white"
+                  }`}
                 >
-                  <img
-                    src="/figma/v13-add-to-cart.svg"
-                    alt=""
-                    className="size-5"
-                  />
+                  {added ? (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#1f8a5b"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  ) : (
+                    <img
+                      src="/figma/v13-add-to-cart.svg"
+                      alt=""
+                      className="size-5"
+                    />
+                  )}
                 </button>
               </div>
               <div className="flex flex-col gap-2 p-2">
@@ -401,7 +558,10 @@ function ProductRow({
                       fullyCovered ? "text-brand" : "text-gray-800"
                     }`}
                   >
-                    ${payable.toLocaleString()}
+                    $
+                    {shortfall.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })}
                   </p>
                 </div>
               </div>

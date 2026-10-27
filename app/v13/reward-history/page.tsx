@@ -90,7 +90,7 @@ export default function RewardHistoryPage() {
                   />
                 </svg>
               </span>
-              {REWARD_BALANCE.toLocaleString()}
+              {Math.floor(REWARD_BALANCE).toLocaleString()}
             </span>
             <span className="pb-1 text-[16px] text-gray-400">
               .{REWARD_BALANCE_DECIMAL}
