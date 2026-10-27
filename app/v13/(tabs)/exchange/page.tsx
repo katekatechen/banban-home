@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ProductSheet from "../../_components/ProductSheet";
-import { CheckCircleIcon } from "../../_components/CorpIcons";
 import StatusBar from "../../_components/StatusBar";
 import Checkout from "../../_components/Checkout";
 import {
@@ -36,6 +35,8 @@ const HEADER_PADDING_CLASS = "pt-[72px] sm:pt-[112px]";
 
 // 商品飛進購物車的時間，跟聊天分頁對齊
 const FLY_TO_CART_MS = 650;
+// 購物車從無到有的縮放進場時間，飛入動畫要等它就定位才量得到落點
+const CART_SLOT_IN_MS = 240;
 
 // 兌換分頁是這版新增的：許願池搬到這裡（原本在回饋頁的許願池子分頁），
 // 加上「熱門商品」——用回饋折抵一般商品（不只是酒），跟回饋分頁區分開來：
@@ -105,82 +106,90 @@ export default function ExchangePage() {
       onLand();
       return;
     }
+    // 購物車本來就在的話量了就能飛；是這一刻才縮放進場的，要等它就定位，
+    // 不然會量到還在放大途中的位置，ghost 會飛到半路
+    const cartWasVisible = showCart;
     setCartPeek(true);
-    // 購物車是這一刻才出現的，要等 React 把它畫出來才量得到落點
-    requestAnimationFrame(() => {
-      const cartIcon = cartIconRef.current;
-      if (!cartIcon) {
-        onLand();
-        setCartPeek(false);
-        return;
-      }
-      const rootRect = root.getBoundingClientRect();
-      const a = image.getBoundingClientRect();
-      const b = cartIcon.getBoundingClientRect();
-      const w = a.width;
-      const endScale = 22 / w;
-      const x0 = a.left - rootRect.left;
-      const y0 = a.top - rootRect.top;
-      const x1 = b.left + b.width / 2 - rootRect.left - (w * endScale) / 2;
-      const y1 = b.top + b.height / 2 - rootRect.top - (w * endScale) / 2;
-      // 中途點：垂直先走掉七成、水平只走三成，路徑往左上鼓成一道弧，
-      // 不會衝出畫面上緣（購物車本來就貼著頂部）
-      const midX = x0 + (x1 - x0) * 0.3;
-      const midY = y0 + (y1 - y0) * 0.7;
-
-      const ghost = image.cloneNode(true) as HTMLElement;
-      ghost.querySelector("button")?.remove();
-      ghost.removeAttribute("data-product-image");
-      Object.assign(ghost.style, {
-        position: "absolute",
-        left: "0",
-        top: "0",
-        width: `${w}px`,
-        height: `${a.height}px`,
-        margin: "0",
-        zIndex: "30",
-        pointerEvents: "none",
-        borderRadius: "16px",
-        overflow: "hidden",
-        transformOrigin: "0 0",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
-      });
-      root.appendChild(ghost);
-      const anim = ghost.animate(
-        [
-          {
-            transform: `translate(${x0}px, ${y0}px) scale(1)`,
-            borderRadius: "16px",
-          },
-          {
-            transform: `translate(${midX}px, ${midY}px) scale(0.45)`,
-            offset: 0.45,
-          },
-          {
-            transform: `translate(${x1}px, ${y1}px) scale(${endScale})`,
-            opacity: 0.7,
-            borderRadius: `${w / 2}px`,
-          },
-        ],
-        { duration: FLY_TO_CART_MS, easing: "cubic-bezier(0.45, 0, 0.55, 1)" },
-      );
-      anim.onfinish = () => {
-        ghost.remove();
-        cartIcon.animate(
-          [
-            { transform: "scale(1)" },
-            { transform: "scale(1.3)", offset: 0.4 },
-            { transform: "scale(0.92)", offset: 0.75 },
-            { transform: "scale(1)" },
-          ],
-          { duration: 360, easing: "ease-out" },
-        );
-        window.setTimeout(() => {
+    window.setTimeout(
+      () => {
+        const cartIcon = cartIconRef.current;
+        if (!cartIcon) {
           onLand();
           setCartPeek(false);
-        }, 140);
-      };
-    });
+          return;
+        }
+        const rootRect = root.getBoundingClientRect();
+        const a = image.getBoundingClientRect();
+        const b = cartIcon.getBoundingClientRect();
+        const w = a.width;
+        const endScale = 22 / w;
+        const x0 = a.left - rootRect.left;
+        const y0 = a.top - rootRect.top;
+        const x1 = b.left + b.width / 2 - rootRect.left - (w * endScale) / 2;
+        const y1 = b.top + b.height / 2 - rootRect.top - (w * endScale) / 2;
+        // 中途點：垂直先走掉七成、水平只走三成，路徑往左上鼓成一道弧，
+        // 不會衝出畫面上緣（購物車本來就貼著頂部）
+        const midX = x0 + (x1 - x0) * 0.3;
+        const midY = y0 + (y1 - y0) * 0.7;
+
+        const ghost = image.cloneNode(true) as HTMLElement;
+        ghost.querySelector("button")?.remove();
+        ghost.removeAttribute("data-product-image");
+        Object.assign(ghost.style, {
+          position: "absolute",
+          left: "0",
+          top: "0",
+          width: `${w}px`,
+          height: `${a.height}px`,
+          margin: "0",
+          zIndex: "30",
+          pointerEvents: "none",
+          borderRadius: "16px",
+          overflow: "hidden",
+          transformOrigin: "0 0",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
+        });
+        root.appendChild(ghost);
+        const anim = ghost.animate(
+          [
+            {
+              transform: `translate(${x0}px, ${y0}px) scale(1)`,
+              borderRadius: "16px",
+            },
+            {
+              transform: `translate(${midX}px, ${midY}px) scale(0.45)`,
+              offset: 0.45,
+            },
+            {
+              transform: `translate(${x1}px, ${y1}px) scale(${endScale})`,
+              opacity: 0.7,
+              borderRadius: `${w / 2}px`,
+            },
+          ],
+          {
+            duration: FLY_TO_CART_MS,
+            easing: "cubic-bezier(0.45, 0, 0.55, 1)",
+          },
+        );
+        anim.onfinish = () => {
+          ghost.remove();
+          cartIcon.animate(
+            [
+              { transform: "scale(1)" },
+              { transform: "scale(1.3)", offset: 0.4 },
+              { transform: "scale(0.92)", offset: 0.75 },
+              { transform: "scale(1)" },
+            ],
+            { duration: 360, easing: "ease-out" },
+          );
+          window.setTimeout(() => {
+            onLand();
+            setCartPeek(false);
+          }, 140);
+        };
+      },
+      cartWasVisible ? 0 : CART_SLOT_IN_MS,
+    );
   };
 
   return (
@@ -200,7 +209,7 @@ export default function ExchangePage() {
             </p>
             {/* 回饋數字跟購物車照 Figma 1242:2710 收在同一顆膠囊裡，
                 購物車平常不佔位置，有東西才出現在數字右邊 */}
-            <div className="flex h-11 shrink-0 items-center gap-1.5 rounded-[22px] border-[0.5px] border-white/50 bg-white/80 pl-2.5 pr-2 shadow-[0px_8px_12px_0px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+            <div className="flex h-11 shrink-0 items-center rounded-[22px] border-[0.5px] border-white/50 bg-white/80 pl-2.5 pr-2 shadow-[0px_8px_12px_0px_rgba(0,0,0,0.04)] backdrop-blur-xl">
               <button
                 onClick={() => router.push("/v13/reward-history")}
                 className="flex items-center gap-1.5"
@@ -214,11 +223,23 @@ export default function ExchangePage() {
                   {REWARD_BALANCE.toLocaleString()}
                 </span>
               </button>
-              {showCart && (
+              {/* 購物車不是硬生生跳出來：外層把寬度從 0 撐開，裡面的 icon 同時
+                  從小放大，膠囊跟著一起變寬。外層要 overflow-hidden 才不會在
+                  撐開的過程中漏出去，所以數量角標靠右收在按鈕裡，不往外掛 */}
+              <div
+                className="h-11 shrink-0 overflow-hidden transition-[width,opacity] duration-[240ms] ease-[cubic-bezier(0.2,0.9,0.25,1)]"
+                style={{
+                  width: showCart ? "34px" : "0px",
+                  opacity: showCart ? 1 : 0,
+                }}
+                aria-hidden={!showCart}
+              >
                 <button
                   aria-label="購物車"
                   onClick={() => setCheckoutOpen(true)}
-                  className="relative flex h-11 w-7 items-center justify-center"
+                  tabIndex={showCart ? 0 : -1}
+                  className="relative ml-1.5 flex h-11 w-7 items-center justify-center transition-transform duration-[240ms] ease-[cubic-bezier(0.2,0.9,0.25,1)]"
+                  style={{ transform: showCart ? "scale(1)" : "scale(0.4)" }}
                 >
                   <img
                     ref={cartIconRef}
@@ -227,12 +248,12 @@ export default function ExchangePage() {
                     className="size-5"
                   />
                   {cart.length > 0 && (
-                    <span className="absolute left-4 top-0.5 min-w-4 rounded-[20px] bg-brand px-1 py-0.5 text-center text-[12px] font-bold leading-3 text-gray-000">
+                    <span className="absolute right-0 top-0.5 min-w-4 rounded-[20px] bg-brand px-1 py-0.5 text-center text-[12px] font-bold leading-3 text-gray-000">
                       {cart.length}
                     </span>
                   )}
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -428,7 +449,9 @@ export default function ExchangePage() {
         />
       )}
 
-      {/* snackbar：固定在 tabbar 上方，不跟著捲，樣式跟帳號分頁同一組 */}
+      {/* snackbar：樣式照 AFFOGATO 的 snackbar 元件（6674:3171），深色 80%
+          透明底、圓角 8、16/24 白字、backdrop-blur 2。位置固定在 tabbar 上方
+          不跟著捲，進場沿用 corp-toast */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+83px)] z-30 flex justify-center px-4 sm:bottom-[105px]"
         aria-live="polite"
@@ -436,9 +459,8 @@ export default function ExchangePage() {
         {toast && (
           <div
             key={toast.id}
-            className="corp-toast flex items-center gap-2 rounded-full bg-[#1e2939] px-4 py-2.5 text-[14px] font-medium leading-5 text-white shadow-[0px_4px_16px_rgba(0,0,0,0.12)]"
+            className="corp-toast rounded-[8px] bg-[rgba(12,14,17,0.8)] px-4 py-3 text-center text-[16px] leading-6 text-white backdrop-blur-[2px]"
           >
-            <CheckCircleIcon className="size-5" />
             {toast.text}
           </div>
         )}
@@ -556,7 +578,7 @@ function ProductRow({
                 <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">
                   {p.name}
                 </p>
-                <div>
+                <div className="flex flex-col gap-1">
                   <p className="text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
                     折抵後價格{" "}
                     <span className="line-through">
