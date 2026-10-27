@@ -1,8 +1,11 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E2939" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <g id="add-to-cart">
-<path id="Ellipse 2" d="M3 6H22L19 16H6L3 6ZM3 6L2.25 3.5" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="#1E2939"/>
-<path id="Vector" d="M9.99219 11H11.9922M11.9922 11H13.9922M11.9922 11V9M11.9922 11V13" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="#1E2939"/>
-<path id="Vector_2" d="M11 19.5C11 20.3284 10.3284 21 9.5 21C8.67157 21 8 20.3284 8 19.5" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="#1E2939"/>
-<path id="Vector_3" d="M17 19.5C17 20.3284 16.3284 21 15.5 21C14.6716 21 14 20.3284 14 19.5" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" stroke="#1E2939"/>
+<path d="M16 5h6" />
+<path d="M19 2v6" />
+<path d="m2.05 2.05 1.099-.028a1 1 0 011.008.815l2.69 14.347A1 1 0 007.83 18H18" />
+<path d="M4.564 5H12" />
+<path d="M6.25 14h12.712a2 2 0 001.991-1.57l.172-1.041" />
+<circle cx="18" cy="20" r="2" />
+<circle cx="8" cy="20" r="2" />
 </g>
 </svg>
