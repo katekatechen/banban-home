@@ -16,10 +16,7 @@ import HomeGradient, {
 } from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
-import Splash, {
-  SPLASH_EXIT_MS,
-  SPLASH_HOLD_MS,
-} from "../_components/Splash";
+import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
 import Signup, { SIGNUP_EXIT_MS, SIGNUP_TOP } from "../_components/Signup";
 import {
   SKY_THEMES,
@@ -72,6 +69,11 @@ const ITEM_STAGGER_MS = 60;
 const ITEM_DURATION_MS = 200;
 const MODE_TRANSITION_MS = 300;
 const FLY_TO_CART_MS = 650;
+
+// 送出後把提問錨到畫面頂端時，上面要留夠，避開捲動區頂部 16px 的淡出遮罩
+const ANCHOR_TOP_PAD = 24;
+// 底部補空白時在內容結尾之後再多留一段，不要剛好卡死
+const ANCHOR_BOTTOM_GAP = 24;
 
 // 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
 // 首頁的載入動畫（天空淡入、雲升起）只在打開頁面後第一次看到首頁時播，
@@ -138,9 +140,21 @@ const REMINDERS: Record<
 };
 
 const RETURNING_SUGGESTIONS: typeof SUGGESTION_POOL = [
-  { key: "what-changed", prompt: "AIFIAN 改了什麼？", label: "AIFIAN 改了什麼？" },
-  { key: "earn-more", prompt: "今天還能多賺什麼？", label: "今天還能多賺什麼？" },
-  { key: "spend-rewards", prompt: "我的回饋可以換什麼？", label: "我的回饋可以換什麼？" },
+  {
+    key: "what-changed",
+    prompt: "AIFIAN 改了什麼？",
+    label: "AIFIAN 改了什麼？",
+  },
+  {
+    key: "earn-more",
+    prompt: "今天還能多賺什麼？",
+    label: "今天還能多賺什麼？",
+  },
+  {
+    key: "spend-rewards",
+    prompt: "我的回饋可以換什麼？",
+    label: "我的回饋可以換什麼？",
+  },
 ];
 
 // 「繼續聊」可能從對話裡或兌換頁的任一張商品卡回來，這裡把所有商品攤平成同一份清單
@@ -433,6 +447,54 @@ export default function V13HomePage() {
     const el = scrollRef.current;
     return !!el && el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
   };
+
+  // 送出之後把那則提問錨到畫面頂端，回答往下長，閱讀起點就是答案的第一行。
+  // 底部要補一段空白，不然回答很短時提問根本捲不到頂端
+  const innerRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const anchorMsgId = useRef<number | null>(null);
+  const pendingAnchor = useRef(false);
+  // 錨好之後一直握著，直到使用者自己動手捲。握著的時候不自動追底，
+  // 回覆一段一段補上來也不會把提問擠出畫面
+  const anchorHold = useRef(false);
+  const stickToBottom = useRef(true);
+  const releaseAnchor = () => {
+    anchorHold.current = false;
+  };
+  const [showJump, setShowJump] = useState(false);
+
+  const anchorEl = () =>
+    anchorMsgId.current == null
+      ? null
+      : (scrollRef.current?.querySelector<HTMLElement>(
+          `[data-message-id="${anchorMsgId.current}"]`,
+        ) ?? null);
+
+  // 空白高度＝視窗高度扣掉「提問頂端到內容結尾」那一段。先歸零再量，
+  // 不然會把上一次補的空白也算進去，越補越高
+  const syncAnchorSpacer = () => {
+    const el = scrollRef.current;
+    const inner = innerRef.current;
+    const spacer = spacerRef.current;
+    if (!el || !inner || !spacer) return;
+    spacer.style.height = "0px";
+    const anchor = anchorEl();
+    if (!anchor) return;
+    const afterH =
+      inner.getBoundingClientRect().bottom - anchor.getBoundingClientRect().top;
+    spacer.style.height = `${Math.max(
+      0,
+      el.clientHeight - afterH - ANCHOR_BOTTOM_GAP,
+    )}px`;
+  };
+
+  const jumpToLatest = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    anchorHold.current = false;
+    stickToBottom.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
   const openChipsFromPull = () => {
     bottomPullStartY.current = null;
     bottomWheelPull.current = 0;
@@ -478,6 +540,10 @@ export default function V13HomePage() {
   const handleChatScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+    // 貼底與否決定回覆吐出來時要不要跟著捲，也決定「跳到最新」出不出現
+    const atBottom = isAtBottom();
+    stickToBottom.current = atBottom && !anchorHold.current;
+    setShowJump(!atBottom);
     if (isAtBottom()) {
       if (atBottomSince.current == null)
         atBottomSince.current = performance.now();
@@ -617,10 +683,30 @@ export default function V13HomePage() {
   };
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    const el = scrollRef.current;
+    if (!el) return;
+    syncAnchorSpacer();
+    // 剛送出：把提問捲到頂端，只做這一次
+    if (pendingAnchor.current) {
+      const anchor = anchorEl();
+      if (anchor) {
+        pendingAnchor.current = false;
+        stickToBottom.current = false;
+        const top =
+          el.scrollTop +
+          anchor.getBoundingClientRect().top -
+          el.getBoundingClientRect().top -
+          ANCHOR_TOP_PAD;
+        el.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        return;
+      }
+    }
+    // 回覆一段一段吐出來的過程，只有本來就貼著底部才跟著往下
+    if (stickToBottom.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      return;
+    }
+    setShowJump(!isAtBottom());
   }, [messages, typing, chatOpen]);
 
   useEffect(() => {
@@ -780,7 +866,12 @@ export default function V13HomePage() {
     const text = raw.trim();
     if (!text) return;
     openChat();
-    setMessages((m) => [...m, { id: genId(), role: "user", text }]);
+    const sentId = genId();
+    // 這則提問等一下要錨到畫面頂端
+    anchorMsgId.current = sentId;
+    pendingAnchor.current = true;
+    anchorHold.current = true;
+    setMessages((m) => [...m, { id: sentId, role: "user", text }]);
     setInput("");
     firstReplyPending.current = true;
 
@@ -1041,17 +1132,16 @@ export default function V13HomePage() {
       {splash !== "show" && glowHome && (
         <HomeGradient covered={chatOpen} intro={playIntro} />
       )}
-      {splash !== "show" &&
-        !glowHome && (
-          <HomeSky
-            covered={chatOpen}
-            intro={playIntro}
-            theme={skyTheme}
-            planeHandoff={false}
-            pull={homeReveal}
-            pullDragging={homePull > 0 && !homeHistoryShown}
-          />
-        )}
+      {splash !== "show" && !glowHome && (
+        <HomeSky
+          covered={chatOpen}
+          intro={playIntro}
+          theme={skyTheme}
+          planeHandoff={false}
+          pull={homeReveal}
+          pullDragging={homePull > 0 && !homeHistoryShown}
+        />
+      )}
 
       <div className="relative flex shrink-0 flex-col">
         <StatusBar light={lightHeader} />
@@ -1173,58 +1263,63 @@ export default function V13HomePage() {
                 transition: `opacity ${glowHome && chatOpen ? 160 : MODE_TRANSITION_MS}ms ease`,
               }}
             >
-            <div
-              className="flex flex-col gap-1"
-              style={{
-                animation: playIntro
-                  ? `heroGreetIn 600ms ${EASING} 300ms both`
-                  : undefined,
-              }}
-            >
-              <p
-                className={
-                  glowHome
-                    ? "text-[26px] font-medium leading-[1.35] tracking-[-0.01em]"
-                    : "text-[24px] font-bold leading-[1.4]"
-                }
-                style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
-              >
-                {hero ? hero.title : greetingOf(time.hour)}
-              </p>
-              <p
-                className="text-[14px] leading-[18px]"
+              <div
+                className="flex flex-col gap-1"
                 style={{
-                  color: darkGreeting
-                    ? "#4a5565"
-                    : glowHome
-                      ? "rgba(255,255,255,0.85)"
-                      : "#ffffff",
+                  animation: playIntro
+                    ? `heroGreetIn 600ms ${EASING} 300ms both`
+                    : undefined,
                 }}
               >
-                {hero ? hero.sub : "賺回饋，買東西，我都很在行"}
-              </p>
-              {hero && (
-                // 照既有元件 AFFOGATO bullet_button（Light／solid／bright）的尺寸：
-                // 高 48、圓角 16、內距 12／16、文字 16/24，右邊 24px nav-arrow-right 用黑色；
-                // 底色改白色（元件裡還沒有白底的變體，先覆寫）
-                <button
-                  onClick={hero.onCta}
-                  className="pointer-events-auto mt-3 flex h-12 w-fit items-center gap-2 rounded-2xl bg-white px-4 py-3 text-[16px] font-medium leading-6 text-gray-800 active:scale-95"
-                  style={{ transition: "transform 150ms ease" }}
+                <p
+                  className={
+                    glowHome
+                      ? "text-[26px] font-medium leading-[1.35] tracking-[-0.01em]"
+                      : "text-[24px] font-bold leading-[1.4]"
+                  }
+                  style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
                 >
-                  {hero.cta}
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden className="size-6">
-                    <path
-                      d="M9 6l6 6-6 6"
-                      stroke="#1e2939"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
+                  {hero ? hero.title : greetingOf(time.hour)}
+                </p>
+                <p
+                  className="text-[14px] leading-[18px]"
+                  style={{
+                    color: darkGreeting
+                      ? "#4a5565"
+                      : glowHome
+                        ? "rgba(255,255,255,0.85)"
+                        : "#ffffff",
+                  }}
+                >
+                  {hero ? hero.sub : "賺回饋，買東西，我都很在行"}
+                </p>
+                {hero && (
+                  // 照既有元件 AFFOGATO bullet_button（Light／solid／bright）的尺寸：
+                  // 高 48、圓角 16、內距 12／16、文字 16/24，右邊 24px nav-arrow-right 用黑色；
+                  // 底色改白色（元件裡還沒有白底的變體，先覆寫）
+                  <button
+                    onClick={hero.onCta}
+                    className="pointer-events-auto mt-3 flex h-12 w-fit items-center gap-2 rounded-2xl bg-white px-4 py-3 text-[16px] font-medium leading-6 text-gray-800 active:scale-95"
+                    style={{ transition: "transform 150ms ease" }}
+                  >
+                    {hero.cta}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                      className="size-6"
+                    >
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="#1e2939"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1281,6 +1376,7 @@ export default function V13HomePage() {
           ref={scrollRef}
           onScroll={handleChatScroll}
           onWheel={(e) => {
+            if (Math.abs(e.deltaY) > 2) releaseAnchor();
             if (Math.abs(e.deltaY) > 2) revealHistoryBtn(e.deltaY < 0);
             // 內容短到捲不動時不會有 scroll 事件，滾輪往上也要算
             const el0 = scrollRef.current;
@@ -1318,6 +1414,7 @@ export default function V13HomePage() {
             if (touchStartY.current == null) return;
             const y = e.touches[0].clientY;
             const dy = y - touchStartY.current;
+            if (Math.abs(dy) > 12) releaseAnchor();
             if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
             // 同上：捲不動時看手指往下拖（＝往上滑）的距離
             const el1 = scrollRef.current;
@@ -1344,6 +1441,7 @@ export default function V13HomePage() {
           className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 pb-10 pt-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
         >
           <div
+            ref={innerRef}
             className="flex flex-col gap-6"
             style={{
               // 越拉越緊：位移用 ease-out 曲線，不是跟手指 1:1
@@ -1405,7 +1503,26 @@ export default function V13HomePage() {
               </div>
             )}
           </div>
+          {/* 錨點用的底部空白，高度由 syncAnchorSpacer 算，放在內層外面
+              才不會被自己算進去 */}
+          <div ref={spacerRef} aria-hidden />
         </div>
+
+        {/* 跳到最新：捲離底部才出現，點了回到最下面並恢復自動跟隨 */}
+        <button
+          onClick={jumpToLatest}
+          aria-label="跳到最新"
+          tabIndex={showJump ? 0 : -1}
+          className="absolute bottom-3 left-1/2 z-10 flex size-9 items-center justify-center rounded-full bg-white shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)]"
+          style={{
+            opacity: showJump ? 1 : 0,
+            pointerEvents: showJump ? "auto" : "none",
+            transform: showJump ? "translate(-50%, 0)" : "translate(-50%, 8px)",
+            transition: "opacity 200ms ease, transform 200ms ease",
+          }}
+        >
+          <img src="/figma/v13-nav-arrow-down.svg" alt="" className="size-5" />
+        </button>
       </div>
 
       {/* 底部留白要讓過 tabbar：55px 膠囊＋底部安全區（真手機 env()+12px、
@@ -1710,36 +1827,45 @@ function AnnouncementModal({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           onWheel={(e) => {
-            if (Math.abs(e.deltaX) < Math.abs(e.deltaY) || Math.abs(e.deltaX) < 8) return;
+            if (
+              Math.abs(e.deltaX) < Math.abs(e.deltaY) ||
+              Math.abs(e.deltaX) < 8
+            )
+              return;
             if (wheelLock.current) return;
             wheelLock.current = true;
             goTo(index + (e.deltaX > 0 ? 1 : -1));
             window.setTimeout(() => (wheelLock.current = false), 600);
           }}
         >
-        <div
-          className="flex"
-          style={{
-            transform: `translateX(calc(${-index * 100}% + ${drag}px))`,
-            transition:
-              dragStart.current != null ? "none" : `transform 320ms ${EASING}`,
-          }}
-        >
-          {ANNOUNCE_SLIDES.map((sl) => (
-            <div key={sl.key} className="flex w-full shrink-0 select-none flex-col">
-              <AnnounceVisual visual={sl.visual} />
-              <div className="flex flex-col gap-2.5 px-4 pt-6">
-                <p className="text-center text-[20px] font-semibold leading-7 text-gray-800">
-                  {sl.title}
-                </p>
-                {/* 內文用 \n 指定斷行，避免最後一兩個字單獨掉到下一行 */}
-                <p className="whitespace-pre-line text-[16px] leading-6 text-gray-800">
-                  {sl.body}
-                </p>
+          <div
+            className="flex"
+            style={{
+              transform: `translateX(calc(${-index * 100}% + ${drag}px))`,
+              transition:
+                dragStart.current != null
+                  ? "none"
+                  : `transform 320ms ${EASING}`,
+            }}
+          >
+            {ANNOUNCE_SLIDES.map((sl) => (
+              <div
+                key={sl.key}
+                className="flex w-full shrink-0 select-none flex-col"
+              >
+                <AnnounceVisual visual={sl.visual} />
+                <div className="flex flex-col gap-2.5 px-4 pt-6">
+                  <p className="text-center text-[20px] font-semibold leading-7 text-gray-800">
+                    {sl.title}
+                  </p>
+                  {/* 內文用 \n 指定斷行，避免最後一兩個字單獨掉到下一行 */}
+                  <p className="whitespace-pre-line text-[16px] leading-6 text-gray-800">
+                    {sl.body}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         </div>
         <button
           onClick={onClose}
@@ -1802,7 +1928,11 @@ function AnnounceVisual({ visual }: { visual: string }) {
         }}
       >
         <img
-          src={visual === "plane" ? "/v13/signup-plane.svg" : "/v13/signup-mark.svg"}
+          src={
+            visual === "plane"
+              ? "/v13/signup-plane.svg"
+              : "/v13/signup-mark.svg"
+          }
           alt=""
           draggable={false}
           className="h-24 w-auto drop-shadow-[0_8px_14px_rgba(120,10,22,0.26)]"
@@ -1813,7 +1943,12 @@ function AnnounceVisual({ visual }: { visual: string }) {
   // 公告圖：滿版鋪滿 328×226（Figma 匯出的圖本身已經是這個比例）
   return (
     <div className="h-[226px] w-full shrink-0 overflow-hidden bg-[#f3f4f6]">
-      <img src={visual} alt="" draggable={false} className="size-full object-cover" />
+      <img
+        src={visual}
+        alt=""
+        draggable={false}
+        className="size-full object-cover"
+      />
     </div>
   );
 }
@@ -1870,7 +2005,8 @@ function AiLoadingLottie() {
         container: el,
         renderer: "svg",
         loop: true,
-        autoplay: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        autoplay: !window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches,
         animationData: aiLoadingAnimation,
       });
     });
@@ -1909,7 +2045,10 @@ function ChatMessage({
 }) {
   if (message.role === "user") {
     return (
-      <div className="max-w-[80%] self-end rounded-[18px] bg-gray-800 px-[18px] py-[11px] text-[15px] text-white">
+      <div
+        data-message-id={message.id}
+        className="max-w-[80%] self-end rounded-[18px] bg-gray-800 px-[18px] py-[11px] text-[15px] text-white"
+      >
         {message.text}
       </div>
     );
@@ -1917,7 +2056,7 @@ function ChatMessage({
 
   const cards = message.cards ?? [];
   return (
-    <div className="flex flex-col gap-3">
+    <div data-message-id={message.id} className="flex flex-col gap-3">
       {message.text && (
         <p className="text-[15px] leading-[25px] text-gray-800">
           {message.text}
