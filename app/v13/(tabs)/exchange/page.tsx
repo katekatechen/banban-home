@@ -134,12 +134,20 @@ export default function ExchangePage() {
           subtitle="用回饋折抵商品"
           products={TRENDING_PRODUCTS}
           onOpen={(i) => setSheet({ cards: TRENDING_CARDS, index: i })}
+          onAddToCart={(p) => {
+            setCart(addToCart(cart, toCards([p])[0]));
+            showToast("已加入購物車");
+          }}
         />
         <ProductRow
           title="猜你喜歡"
           subtitle="根據你的對話"
           products={RECOMMENDED_PRODUCTS}
           onOpen={(i) => setSheet({ cards: RECOMMENDED_CARDS, index: i })}
+          onAddToCart={(p) => {
+            setCart(addToCart(cart, toCards([p])[0]));
+            showToast("已加入購物車");
+          }}
         />
 
         {/* 許願池（照 Figma 948:45714）：跟上面用回饋折抵的商品邏輯不同（這裡是抽獎），
@@ -301,18 +309,22 @@ export default function ExchangePage() {
   );
 }
 
-// 「大家都在買」「猜你喜歡」：照 Figma 948:45874，卡寬 168、圖片 1:1 圓角 16，
-// 下面品名（最多兩行）跟價格，左右 8px 內縮；整排可以往右滑
+// 「大家都在買」「猜你喜歡」：照 Figma 1846:5705（exchange/product-card），卡寬 168、
+// 圖片 1:1 圓角 16，圖片右下角浮一顆加入購物車按鈕。下面是品名（最多兩行）、
+// 「折抵後價格」帶刪除線的原價，再來是折抵後實付金額。回饋足夠付全額時金額用
+// 品牌色並在圖片左上角掛一個 $0 標籤，要補差額時用文字主色、不放標籤
 function ProductRow({
   title,
   subtitle,
   products,
   onOpen,
+  onAddToCart,
 }: {
   title: string;
   subtitle: string;
   products: typeof TRENDING_PRODUCTS;
   onOpen: (index: number) => void;
+  onAddToCart: (product: (typeof TRENDING_PRODUCTS)[number]) => void;
 }) {
   return (
     <div className="flex flex-col gap-4 py-4">
@@ -323,34 +335,79 @@ function ProductRow({
         <p className="text-[14px] leading-[18px] text-gray-400">{subtitle}</p>
       </div>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
-        {products.map((p, i) => (
-          <button
-            key={p.id}
-            onClick={() => onOpen(i)}
-            className="w-[168px] shrink-0 text-left"
-          >
-            {p.image ? (
-              <img
-                src={p.image}
-                alt={p.name}
-                className="aspect-square w-full rounded-2xl object-cover"
-              />
-            ) : (
-              <div
-                className="aspect-square rounded-2xl"
-                style={{ backgroundColor: p.color }}
-              />
-            )}
-            <div className="flex flex-col gap-1 px-2 py-3">
-              <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">
-                {p.name}
-              </p>
-              <p className="text-[14px] leading-[18px] text-gray-800">
-                ${p.price.toLocaleString()}
-              </p>
+        {products.map((p, i) => {
+          // 折抵後要補的差額：回饋跟金額是 1:1，跟結帳頁同一套算法
+          const payable = Math.max(0, p.price - REWARD_BALANCE);
+          const fullyCovered = payable === 0;
+          return (
+            // 卡片本身是可點的，但裡面還有一顆加入購物車按鈕，所以外層
+            // 不能用 <button>（button 不能包 button），改成 role="button"
+            <div
+              key={p.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpen(i)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onOpen(i);
+              }}
+              className="w-[168px] shrink-0 cursor-pointer text-left"
+            >
+              <div className="relative aspect-square overflow-hidden rounded-2xl">
+                {p.image ? (
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="size-full"
+                    style={{ backgroundColor: p.color }}
+                  />
+                )}
+                {fullyCovered && (
+                  <span className="absolute left-0 top-0 rounded-br-2xl rounded-tl-2xl bg-brand px-2 py-1 text-[12px] font-bold leading-4 tracking-[0.12px] text-white">
+                    $0
+                  </span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToCart(p);
+                  }}
+                  aria-label="加入購物車"
+                  className="absolute bottom-2 right-2 flex items-center rounded-full border border-gray-100 bg-white px-2 py-1.5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.06)]"
+                >
+                  <img
+                    src="/figma/v13-add-to-cart.svg"
+                    alt=""
+                    className="size-5"
+                  />
+                </button>
+              </div>
+              <div className="flex flex-col gap-2 p-2">
+                <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">
+                  {p.name}
+                </p>
+                <div>
+                  <p className="text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
+                    折抵後價格{" "}
+                    <span className="line-through">
+                      ${p.price.toLocaleString()}
+                    </span>
+                  </p>
+                  <p
+                    className={`text-[16px] font-semibold leading-5 ${
+                      fullyCovered ? "text-brand" : "text-gray-800"
+                    }`}
+                  >
+                    ${payable.toLocaleString()}
+                  </p>
+                </div>
+              </div>
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
