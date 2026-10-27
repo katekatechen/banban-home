@@ -169,8 +169,18 @@ const NOODLE_PICKS: RecCard[] = [
     price: 129,
     image: "/figma/v13-product-dashixiong.jpg",
   },
-  { id: "laotao", name: "老饕乾拌麵 麻醬蒜香", price: 99 },
-  { id: "jinjiazhuang", name: "金家莊 蒜辣拌麵", price: 109 },
+  {
+    id: "laotao",
+    name: "老饕乾拌麵 麻醬蒜香",
+    price: 99,
+    image: "/products/coke-zero.jpg",
+  },
+  {
+    id: "jinjiazhuang",
+    name: "金家莊 蒜辣拌麵",
+    price: 109,
+    image: "/products/kinmen-58.jpg",
+  },
 ];
 
 // 上次對話的假資料：對話中往上滑會冒出「載入上次對話」，點了才接到目前對話上面。

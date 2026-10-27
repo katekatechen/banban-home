@@ -192,18 +192,25 @@ const PLACEHOLDER_COLOR = "#E5E7EB";
 
 export const TRENDING_PRODUCTS: ExchangeProduct[] = [
   {
+    id: "dashixiong",
+    name: "大師兄銷魂麻辣粗麵",
+    subtitle: "台灣排隊名店 · 4 入裝",
+    price: 129,
+    image: "/figma/v13-product-dashixiong.jpg",
+  },
+  {
     id: "wailan-power-bank",
     name: "威嵐隨行行動電源",
     subtitle: "3C 配件",
     price: 1290,
-    color: PLACEHOLDER_COLOR,
+    image: "/products/ps5.jpg",
   },
   {
     id: "wailan-speaker",
     name: "威嵐藍牙喇叭",
     subtitle: "3C 配件",
     price: 2490,
-    color: PLACEHOLDER_COLOR,
+    image: "/products/macallan-12.jpg",
   },
   {
     id: "power-bank-20w",
@@ -234,7 +241,7 @@ export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
     name: "威嵐無線充電盤",
     subtitle: "3C 配件",
     price: 990,
-    color: PLACEHOLDER_COLOR,
+    image: "/products/plum-wine.jpg",
   },
   {
     id: "wailan-earbuds",
