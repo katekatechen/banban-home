@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ProductSheet from "../../_components/ProductSheet";
+import { CheckCircleIcon } from "../../_components/CorpIcons";
 import StatusBar from "../../_components/StatusBar";
 import Checkout from "../../_components/Checkout";
 import {
@@ -67,7 +68,8 @@ export default function ExchangePage() {
   };
   const addedIds = cart.map((it) => it.card.id);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
+  const toastId = useRef(0);
   const toastTimer = useRef<number | null>(null);
   // 購物車平常不佔位置，膠囊裡只有回饋數字；有東西、或商品正在飛過去的
   // 路上（cartPeek）才讓購物車出現，動畫才有落點
@@ -84,7 +86,8 @@ export default function ExchangePage() {
   );
 
   const showToast = (text: string) => {
-    setToast(text);
+    toastId.current += 1;
+    setToast({ id: toastId.current, text });
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2200);
   };
@@ -254,7 +257,10 @@ export default function ExchangePage() {
             }
             // 按下去先震一下，再讓商品飛進購物車，落地才真的加進去
             navigator.vibrate?.(18);
-            flyToCart(from, () => setCart(addToCart(cart, toCards([p])[0])));
+            flyToCart(from, () => {
+              setCart(addToCart(cart, toCards([p])[0]));
+              showToast("已加入購物車");
+            });
           }}
         />
         <ProductRow
@@ -270,7 +276,10 @@ export default function ExchangePage() {
             }
             // 按下去先震一下，再讓商品飛進購物車，落地才真的加進去
             navigator.vibrate?.(18);
-            flyToCart(from, () => setCart(addToCart(cart, toCards([p])[0])));
+            flyToCart(from, () => {
+              setCart(addToCart(cart, toCards([p])[0]));
+              showToast("已加入購物車");
+            });
           }}
         />
 
@@ -419,16 +428,21 @@ export default function ExchangePage() {
         />
       )}
 
-      {toast && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center px-4">
-          <p
-            className="rounded-full bg-gray-800/90 px-4 py-2 text-[13px] text-white shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
-            style={{ animation: "fadeIn 200ms ease" }}
+      {/* snackbar：固定在 tabbar 上方，不跟著捲，樣式跟帳號分頁同一組 */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+83px)] z-30 flex justify-center px-4 sm:bottom-[105px]"
+        aria-live="polite"
+      >
+        {toast && (
+          <div
+            key={toast.id}
+            className="corp-toast flex items-center gap-2 rounded-full bg-[#1e2939] px-4 py-2.5 text-[14px] font-medium leading-5 text-white shadow-[0px_4px_16px_rgba(0,0,0,0.12)]"
           >
-            {toast}
-          </p>
-        </div>
-      )}
+            <CheckCircleIcon className="size-5" />
+            {toast.text}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
