@@ -180,18 +180,21 @@ const NOODLE_PICKS: RecCard[] = [
   {
     id: "dashixiong",
     name: "大師兄銷魂麻辣粗麵",
+    subtitle: "排隊名店的快煮版，麻辣醬熬足十小時",
     price: 129,
     image: "/figma/v13-product-dashixiong.jpg",
   },
   {
     id: "laotao",
     name: "老饕乾拌麵 麻醬蒜香",
+    subtitle: "芝麻醬濃郁、蒜香不嗆，不吃辣也能吃",
     price: 99,
     image: "/products/coke-zero.jpg",
   },
   {
     id: "jinjiazhuang",
     name: "金家莊 蒜辣拌麵",
+    subtitle: "大量蒜末配微辣辣油，寬麵條有口感",
     price: 109,
     image: "/products/kinmen-58.jpg",
   },
@@ -338,7 +341,6 @@ export default function V13HomePage() {
   }, []);
   const [messages, setMessages] = useState<Message[]>(chat.messages);
   const [stage, setStage] = useState<Stage>(chat.stage);
-  const [selected, setSelected] = useState<string[]>(chat.selected);
   const [cart, setCart] = useState<CartItem[]>(chat.cart);
   const cartCount = cartCountOf(cart);
   const addedIds = cart.map((it) => it.card.id);
@@ -391,10 +393,9 @@ export default function V13HomePage() {
       historyLoaded,
       messages,
       stage,
-      selected,
       cart,
     });
-  }, [chatOpen, historyLoaded, messages, stage, selected, cart]);
+  }, [chatOpen, historyLoaded, messages, stage, cart]);
 
   const showToast = (text: string) => {
     setToast(text);
@@ -1065,11 +1066,6 @@ export default function V13HomePage() {
     timersRef.current.push(t1);
   };
 
-  const toggleSelected = (id: string) =>
-    setSelected((s) =>
-      s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
-    );
-
   // 大標欄位這次要放什麼：提醒（後端給的那一則）優先，其次是改版的「歡迎回來」
   const hero = reminder
     ? {
@@ -1456,9 +1452,8 @@ export default function V13HomePage() {
                   <ChatMessage
                     key={m.id}
                     message={m}
-                    selected={selected}
-                    onToggle={toggleSelected}
                     onAdd={addFromCard}
+                    onBuy={buyFromSheet}
                     onOpen={(cards, index) => setSheet({ cards, index })}
                     showDisclaimer={false}
                   />
@@ -1470,9 +1465,8 @@ export default function V13HomePage() {
               <ChatMessage
                 key={m.id}
                 message={m}
-                selected={selected}
-                onToggle={toggleSelected}
                 onAdd={addFromCard}
+                onBuy={buyFromSheet}
                 onOpen={(cards, index) => setSheet({ cards, index })}
                 showDisclaimer={
                   !typing && m === lastMessage && m.role === "bot"
@@ -2030,16 +2024,14 @@ function Dot({ delay }: { delay: string }) {
 
 function ChatMessage({
   message,
-  selected,
-  onToggle,
   onAdd,
+  onBuy,
   onOpen,
   showDisclaimer,
 }: {
   message: Message;
-  selected: string[];
-  onToggle: (id: string) => void;
   onAdd: (from: HTMLElement, card: RecCard) => void;
+  onBuy: (card: RecCard) => void;
   onOpen: (cards: RecCard[], index: number) => void;
   showDisclaimer: boolean;
 }) {
@@ -2062,26 +2054,14 @@ function ChatMessage({
           {message.text}
         </p>
       )}
-      {cards.length === 1 && (
-        <ProductCard
-          card={cards[0]}
-          className="w-[172px]"
-          checked={selected.includes(cards[0].id)}
-          onToggle={onToggle}
-          onAdd={onAdd}
-          onOpen={() => onOpen(cards, 0)}
-        />
-      )}
-      {cards.length > 1 && (
-        <div className="flex gap-4">
+      {cards.length > 0 && (
+        <div className="flex flex-col gap-3">
           {cards.map((c, i) => (
             <ProductCard
               key={c.id}
               card={c}
-              className="min-w-0 flex-1"
-              checked={selected.includes(c.id)}
-              onToggle={onToggle}
               onAdd={onAdd}
+              onBuy={onBuy}
               onOpen={() => onOpen(cards, i)}
             />
           ))}
@@ -2096,22 +2076,19 @@ function ChatMessage({
   );
 }
 
-// 商品卡照 Figma：上方方形圖（還沒有實拍的先用灰底）、右上角圓圈勾選、
-// 下方品名＋價格＋紅色加入購物車按鈕。點卡片其他地方打開商品細節頁，
-// 勾選圈跟 + 按鈕各自擋掉冒泡，不會順便打開細節頁
+// 聊天商品卡照 Figma 1710:6039（chat-prd-card）：左邊 96 的方圖、右邊品名最多兩行、
+// 一行灰色說明，最後一列是價格跟「加入購物車／購買」兩顆按鈕。價格長到擠不下時
+// 按鈕整組換到下一行（價格列可換行、按鈕組有最小寬度）。
+// 點卡片其他地方打開商品細節頁，兩顆按鈕各自擋掉冒泡
 function ProductCard({
   card,
-  className,
-  checked,
-  onToggle,
   onAdd,
+  onBuy,
   onOpen,
 }: {
   card: RecCard;
-  className: string;
-  checked: boolean;
-  onToggle: (id: string) => void;
   onAdd: (from: HTMLElement, card: RecCard) => void;
+  onBuy: (card: RecCard) => void;
   onOpen: () => void;
 }) {
   return (
@@ -2123,9 +2100,12 @@ function ProductCard({
       onKeyDown={(e) => {
         if (e.key === "Enter") onOpen();
       }}
-      className={`cursor-pointer overflow-hidden rounded-[16px] border border-[#e8eaee] bg-white ${className}`}
+      className="flex cursor-pointer items-center gap-3 overflow-hidden rounded-[16px] border border-[#e5e7eb] bg-white p-3"
     >
-      <div data-product-image className="relative aspect-square bg-[#f0f2f5]">
+      <div
+        data-product-image
+        className="size-24 shrink-0 overflow-hidden rounded-[12px] bg-[#f0f2f5]"
+      >
         {card.image && (
           <img
             src={card.image}
@@ -2133,57 +2113,47 @@ function ProductCard({
             className="size-full object-cover"
           />
         )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(card.id);
-          }}
-          aria-label={checked ? "取消勾選" : "勾選"}
-          aria-pressed={checked}
-          className="absolute right-[11px] top-[9px] size-6"
-        >
-          {checked ? (
-            <svg viewBox="0 0 24 24" className="size-6">
-              <circle cx="12" cy="12" r="12" fill="#ff3b3b" />
-              <path
-                d="M7.5 12.5l3 3 6-6.5"
-                stroke="white"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          ) : (
-            <img src="/figma/v13-check-circle.svg" alt="" className="size-6" />
-          )}
-        </button>
       </div>
-      <div className="flex flex-col gap-1 px-[11px] pb-3 pt-[9px]">
-        <p className="line-clamp-1 text-[13px] font-medium leading-[18px] text-gray-800">
-          {card.name}
-        </p>
-        <div className="flex items-center justify-between">
-          <p className="text-[14px] font-bold text-gray-800">
-            NT$ {card.price.toLocaleString()}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-1 overflow-hidden">
+          <p className="line-clamp-2 text-[16px] leading-6 text-gray-800">
+            {card.name}
           </p>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAdd(e.currentTarget, card);
-            }}
-            aria-label="加入購物車"
-            className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#ff5050]"
-          >
-            <svg viewBox="0 0 16 16" className="size-4">
-              <path
-                d="M8 3v10M3 8h10"
-                stroke="white"
-                strokeWidth="1.8"
-                strokeLinecap="round"
+          {card.subtitle && (
+            <p className="truncate text-[14px] leading-[18px] text-gray-400">
+              {card.subtitle}
+            </p>
+          )}
+        </div>
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <p className="whitespace-nowrap text-[16px] font-semibold leading-6 text-gray-800">
+            NT${card.price.toLocaleString()}
+          </p>
+          <div className="flex min-w-[104px] flex-1 items-center justify-end gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(e.currentTarget, card);
+              }}
+              aria-label="加入購物車"
+              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-[#e5e7eb] bg-white"
+            >
+              <img
+                src="/figma/v13-chat-cart-plus.svg"
+                alt=""
+                className="size-5"
               />
-            </svg>
-          </button>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBuy(card);
+              }}
+              className="flex h-9 shrink-0 items-center justify-center rounded-[10px] bg-brand px-4 text-[14px] font-medium leading-[18px] text-white"
+            >
+              購買
+            </button>
+          </div>
         </div>
       </div>
     </div>

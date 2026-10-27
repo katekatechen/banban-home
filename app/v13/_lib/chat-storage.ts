@@ -57,7 +57,6 @@ export type ChatSnapshot = {
   historyLoaded: boolean;
   messages: Message[];
   stage: Stage;
-  selected: string[];
   cart: CartItem[];
 };
 
@@ -70,7 +69,6 @@ export const loadChat = (): ChatSnapshot =>
     // 不放招呼語：對話是送出第一句話才展開的，一打開就是使用者自己那句
     messages: [],
     stage: "idle",
-    selected: [],
     cart: [],
   };
 
