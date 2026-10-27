@@ -450,7 +450,8 @@ export default function ExchangePage() {
 // 「大家都在買」「猜你喜歡」：照 Figma 1846:5705（exchange/product-card），卡寬 168、
 // 圖片 1:1 圓角 16，圖片右下角浮一顆加入購物車按鈕。下面是品名（最多兩行）、
 // 「折抵後價格」帶刪除線的原價，再來是折抵後實付金額。回饋足夠付全額時金額用
-// 品牌色並在圖片左上角掛一個 $0 標籤，要補差額時用文字主色、不放標籤
+// 品牌色，要補差額時用文字主色——Figma 原本在圖片左上角還有一個 $0 標籤，
+// 跟下面的 $0 講同一件事，拿掉
 function ProductRow({
   title,
   subtitle,
@@ -513,11 +514,6 @@ function ProductRow({
                     className="size-full"
                     style={{ backgroundColor: p.color }}
                   />
-                )}
-                {fullyCovered && (
-                  <span className="absolute left-0 top-0 rounded-br-2xl rounded-tl-2xl bg-brand px-2 py-1 text-[12px] font-bold leading-4 tracking-[0.12px] text-white">
-                    $0
-                  </span>
                 )}
                 {/* 已加入的樣式跟商品細節頁的「已加入」按鈕同一組綠：
                     邊框 #1f8a5b、底色是同一個綠的 8% 疊在白底上 */}
