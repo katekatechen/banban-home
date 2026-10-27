@@ -193,7 +193,7 @@ const PLACEHOLDER_COLOR = "#E5E7EB";
 export const TRENDING_PRODUCTS: ExchangeProduct[] = [
   {
     id: "dashixiong",
-    name: "大師兄銷魂麻辣粗麵",
+    name: "大師兄銷魂麵舖 麻辣粗麵 4 入裝",
     subtitle: "台灣排隊名店 · 4 入裝",
     price: 129,
     image: "/figma/v13-product-dashixiong.jpg",
@@ -214,7 +214,7 @@ export const TRENDING_PRODUCTS: ExchangeProduct[] = [
   },
   {
     id: "power-bank-20w",
-    name: "20W 行動電源",
+    name: "20W PD 快充行動電源 10000mAh",
     subtitle: "3C 配件",
     price: 8500,
     image: "/figma/product-power-bank-20w.jpg",
@@ -231,7 +231,7 @@ export const TRENDING_PRODUCTS: ExchangeProduct[] = [
 export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
   {
     id: "taiwan-tobacco-spicy-noodles",
-    name: "台酒麻辣乾拌麵",
+    name: "台酒麻辣乾拌麵 椒麻醇香 4 入裝",
     subtitle: "台酒聯名 · 4 入裝",
     price: 150,
     image: "/figma/product-spicy-noodles.jpg",
@@ -245,7 +245,7 @@ export const RECOMMENDED_PRODUCTS: ExchangeProduct[] = [
   },
   {
     id: "wailan-earbuds",
-    name: "威嵐旗艦款藍牙耳機",
+    name: "威嵐旗艦款主動降噪藍牙耳機",
     subtitle: "3C 配件",
     price: 4990,
     image: "/figma/product-wailan-earbuds.jpg",
