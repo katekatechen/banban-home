@@ -54,6 +54,16 @@ import {
 } from "../_lib/mock-data";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
 import aiLoadingAnimation from "../_lib/ai-loading.json";
+import AiConsentSheet from "../_components/AiConsentSheet";
+import {
+  emptyStateCopy,
+  errorCopy,
+  initConsentFromUrl,
+  isConsented,
+  readConsent,
+  retryLoadConsent,
+  useConsent,
+} from "../_lib/ai-consent";
 
 // v13 首頁＝聊天分頁，照 Figma 948:44415（首頁）跟 981:24621（對話中）。
 // 點輸入框本身不會有任何變化，送出第一句話之後才原地展開對話：插圖淡出、
@@ -254,10 +264,45 @@ export default function V13HomePage() {
   const [reminder, setReminder] = useState<ReminderKey | null>(reminderKey);
   // 點「看看新的 AIFIAN」才打開的改版公告卡
   const [announce, setAnnounce] = useState(false);
+  // 第三方 AI 的揭露與同意：沒同意之前不能把對話送出去。
+  // 變數（供應商、什麼時候跳、說明二用哪版、模擬哪個錯誤）都在 _lib/ai-consent.ts
+  const consentVars = useConsent();
+  // blocked：畫面上看得出來「還沒開啟」。在其他裝置關掉的那一種不算，
+  // 這台還不知道，看起來跟正常一樣，要送訊息時才會被擋下來
+  const consentBlocked =
+    consentVars.loadFailed ||
+    consentVars.consent === "unset" ||
+    consentVars.consent === "declined";
+  const consentCopyEmpty = emptyStateCopy(consentVars);
+  const [consentSheet, setConsentSheet] = useState(false);
+  // 使用者已經打好字才被擋下來的話，同意之後直接幫他送出去，不用再打一次
+  const pendingConsentSend = useRef<string | null>(null);
+  // 在其他裝置關掉、這台還想送訊息時，輸入列上方出現的提醒
+  const [remoteNotice, setRemoteNotice] = useState(false);
+  const askConsent = (pending: string | null) => {
+    pendingConsentSend.current = pending;
+    setConsentSheet(true);
+  };
   const continueFromSignup = () => {
     setSplash("leaving");
     window.setTimeout(() => setSplash("done"), SIGNUP_EXIT_MS + 60);
   };
+  useEffect(() => {
+    initConsentFromUrl();
+    // 大標那一格放了「AI 對話尚未開啟」時，「你可能想知道」先收起來，
+    // 跟放提醒時的規則一樣：同一時間只放一件事
+    const c = readConsent();
+    if (!isConsented(c) && c.consent !== "remote_off") setChipsOpen(false);
+  }, []);
+  // gate=enter：一進聊天分頁就跳同意，使用者還沒做任何事。
+  // 按過「先不要」之後不再一直跳，改成由空狀態的按鈕自己打開
+  useEffect(() => {
+    if (splash !== "done") return;
+    if (consentVars.gate !== "enter") return;
+    if (consentVars.loadFailed) return;
+    if (consentVars.consent !== "unset") return;
+    setConsentSheet(true);
+  }, [splash, consentVars.gate, consentVars.consent, consentVars.loadFailed]);
   useEffect(() => {
     if (splash !== "show") return;
     const q = new URLSearchParams(window.location.search);
@@ -866,6 +911,19 @@ export default function V13HomePage() {
   const handleSend = async (raw: string) => {
     const text = raw.trim();
     if (!text) return;
+    // 同意在傳送之前：沒同意就不送出，先把這句話記著，同意完再幫他送。
+    // 這裡讀的是當下的同意狀態，不是這次 render 當下的——剛按完「同意並開始」
+    // 要補送那一句時，拿到的會是同意之前的那份 closure
+    const now = readConsent();
+    if (!isConsented(now)) {
+      if (now.loadFailed) return;
+      if (now.consent === "remote_off") {
+        setRemoteNotice(true);
+        return;
+      }
+      askConsent(text);
+      return;
+    }
     openChat();
     const sentId = genId();
     // 這則提問等一下要錨到畫面頂端
@@ -1067,7 +1125,24 @@ export default function V13HomePage() {
   };
 
   // 大標欄位這次要放什麼：提醒（後端給的那一則）優先，其次是改版的「歡迎回來」
-  const hero = reminder
+  // 沒同意時，首頁大標換成「AI 對話尚未開啟」，按鈕打開同一張 Sheet，
+  // 不另外做一張簡化版。這一格同一時間只放一件事，所以同意優先於提醒
+  const hero = consentVars.loadFailed
+    ? {
+        // 讀不到同意狀態就當作未同意，不能當作已同意放行
+        title: consentCopyEmpty.title,
+        sub: errorCopy.load,
+        cta: "再試一次",
+        onCta: retryLoadConsent,
+      }
+    : consentBlocked
+    ? {
+        title: consentCopyEmpty.title,
+        sub: consentCopyEmpty.sub,
+        cta: consentCopyEmpty.cta,
+        onCta: () => askConsent(null),
+      }
+    : reminder
     ? {
         title: REMINDERS[reminder].title,
         sub: REMINDERS[reminder].sub,
@@ -1086,6 +1161,28 @@ export default function V13HomePage() {
           onCta: () => setAnnounce(true),
         }
       : null;
+
+  // 輸入列上方的提示條：在其他裝置關掉最優先，接著是讀取失敗，
+  // 最後是對話已經展開、但同意被關掉的情況（首頁大標那組空狀態這時看不到）
+  const consentNotice = remoteNotice
+    ? {
+        text: errorCopy.remoteOff,
+        action: "重新開啟",
+        onAction: () => {
+          setRemoteNotice(false);
+          // 被擋下來的那句話還在輸入框裡，重新同意之後直接幫他送出去
+          askConsent(input.trim() || null);
+        },
+      }
+    : consentVars.loadFailed && chatOpen
+    ? { text: errorCopy.load, action: "再試一次", onAction: retryLoadConsent }
+    : consentBlocked && chatOpen
+    ? {
+        text: consentCopyEmpty.sub,
+        action: consentCopyEmpty.cta,
+        onAction: () => askConsent(null),
+      }
+    : null;
 
   const lastMessage = messages[messages.length - 1];
   const lastQuickReplies = !typing ? lastMessage?.quickReplies : undefined;
@@ -1631,10 +1728,31 @@ export default function V13HomePage() {
           </div>
         </div>
 
+        {/* 不能打字的時候，說明為什麼。對話已經展開時看不到首頁大標那組空狀態，
+            這條就是唯一的說明，所以一定要帶一顆回到同意的按鈕 */}
+        {consentNotice && (
+          <div
+            className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3 shadow-[0px_4px_24px_0px_rgba(0,0,0,0.1)]"
+            style={{ animation: "fadeIn 200ms ease" }}
+          >
+            <p className="min-w-0 flex-1 text-[13.5px] leading-[1.5] text-[#4a5565]">
+              {consentNotice.text}
+            </p>
+            <button
+              onClick={consentNotice.onAction}
+              className="shrink-0 text-[13.5px] font-semibold text-brand"
+            >
+              {consentNotice.action}
+            </button>
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend(input);
+          }}
+          onClick={() => {
+            if (consentBlocked && !consentVars.loadFailed) askConsent(null);
           }}
           className="flex h-[52px] items-center gap-2 rounded-[999px] bg-white/90 px-3 py-2 shadow-[0px_4px_36px_0px_rgba(0,0,0,0.12)]"
         >
@@ -1643,7 +1761,10 @@ export default function V13HomePage() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="什麼都可以聊..."
+            readOnly={consentBlocked}
+            placeholder={
+              consentBlocked ? consentCopyEmpty.placeholder : "什麼都可以聊..."
+            }
             className="min-w-0 flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder:text-[#a1a6ab]"
           />
           <span className="flex size-9 shrink-0 items-center justify-center">
@@ -1651,9 +1772,9 @@ export default function V13HomePage() {
           </span>
           <button
             type="submit"
-            disabled={!input.trim()}
+            disabled={!input.trim() || consentBlocked}
             className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
-              input.trim() ? "bg-brand" : "bg-gray-400"
+              input.trim() && !consentBlocked ? "bg-brand" : "bg-gray-400"
             }`}
             aria-label="送出"
           >
@@ -1687,6 +1808,23 @@ export default function V13HomePage() {
             handleSend(`我想多了解「${card.name}」`);
           }}
           onClose={() => setSheet(null)}
+        />
+      )}
+
+      {consentSheet && (
+        <AiConsentSheet
+          onAgree={() => {
+            setConsentSheet(false);
+            setRemoteNotice(false);
+            showToast("AI 對話已開啟");
+            const pending = pendingConsentSend.current;
+            pendingConsentSend.current = null;
+            if (pending) window.setTimeout(() => handleSend(pending), 120);
+          }}
+          onDecline={() => {
+            setConsentSheet(false);
+            pendingConsentSend.current = null;
+          }}
         />
       )}
 

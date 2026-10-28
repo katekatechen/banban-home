@@ -276,9 +276,10 @@ export default function ExchangePage() {
               setCart(removeFromCart(cart, p.id));
               return;
             }
-            // 按下去先震一下，再讓商品飛進購物車，落地才真的加進去
-            navigator.vibrate?.(18);
+            // 商品飛進購物車，落地那一刻才震動、才真的加進去，
+            // 震動對到的是「東西進購物車了」而不是「你按到了」
             flyToCart(from, () => {
+              navigator.vibrate?.(18);
               setCart(addToCart(cart, toCards([p])[0]));
               showToast("已加入購物車");
             });
@@ -295,9 +296,10 @@ export default function ExchangePage() {
               setCart(removeFromCart(cart, p.id));
               return;
             }
-            // 按下去先震一下，再讓商品飛進購物車，落地才真的加進去
-            navigator.vibrate?.(18);
+            // 商品飛進購物車，落地那一刻才震動、才真的加進去，
+            // 震動對到的是「東西進購物車了」而不是「你按到了」
             flyToCart(from, () => {
+              navigator.vibrate?.(18);
               setCart(addToCart(cart, toCards([p])[0]));
               showToast("已加入購物車");
             });

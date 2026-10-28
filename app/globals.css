@@ -116,6 +116,18 @@ body {
   }
 }
 
+/* 確認對話框：淡入同時從 96% 放到定位，不要整個彈出來 */
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* 隱藏 scrollbar，維持手機瀏覽的乾淨感 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

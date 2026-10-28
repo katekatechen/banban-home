@@ -1,5 +1,7 @@
 import type { Viewport } from "next";
 
+import ConsentPanel from "./_components/ConsentPanel";
+
 // 輸入框字級是 14px，iOS Safari 遇到小於 16px 的輸入框 focus 時會自動放大頁面，
 // 設 maximumScale: 1 擋掉這個自動放大（iOS 10 之後使用者仍可手動雙指縮放）。
 // 只放在 v13 layout，不影響其他版本；viewportFit 需重寫一次，因為 Next 會以這裡為準
@@ -20,6 +22,8 @@ export default function V13Layout({ children }: { children: React.ReactNode }) {
       >
         {children}
       </div>
+      {/* Demo 用的狀態切換面板，掛在手機外框旁邊，不是 App 的一部分 */}
+      <ConsentPanel />
     </div>
   );
 }

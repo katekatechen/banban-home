@@ -267,7 +267,12 @@ export default function AccountPage() {
               <Row icon={img("/figma/icon-gift.svg")} title="我的禮物" />
             </>
           )}
-          <Row icon={img("/figma/icon-settings.svg")} title="偏好設定" />
+          <Row
+            icon={img("/figma/icon-settings.svg")}
+            title="偏好設定"
+            desc="AI 對話資料使用、通知、語言"
+            onClick={() => router.push("/v13/preferences")}
+          />
           <Divider />
 
           <SectionLabel>其他</SectionLabel>
