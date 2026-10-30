@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { EASING } from "../_lib/page-transition";
 import {
-  consentCopy,
+  consentCopy as copy,
   declineConsent,
-  errorCopy,
   grantConsent,
-  useConsent,
 } from "../_lib/ai-consent";
 
 // 進入對話前的揭露與同意。照 App Store 5.1.2(i)：揭露要在 App 裡、
@@ -26,12 +24,8 @@ export default function AiConsentSheet({
   onAgree: () => void;
   onDecline: () => void;
 }) {
-  const vars = useConsent();
-  const copy = consentCopy(vars);
   const [frame, setFrame] = useState<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const [shake, setShake] = useState(0);
 
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
@@ -58,13 +52,7 @@ export default function AiConsentSheet({
   };
 
   const agree = () => {
-    // 儲存失敗時停在 Sheet，不關掉也不放行
-    if (!grantConsent()) {
-      setSaveError(true);
-      setShake((n) => n + 1);
-      return;
-    }
-    setSaveError(false);
+    grantConsent();
     close(onAgree);
   };
 
@@ -87,8 +75,14 @@ export default function AiConsentSheet({
           transition: `transform 300ms ${EASING}`,
         }}
       >
+        {/* 圖示用 Iconoir 的 spark-solid（單顆四角星），填品牌紅、底色回到淡紅。
+            AFFOGATO 只有複數的 sparks-solid，單顆的要從 Iconoir 拿，不過 AFFOGATO
+            本來就是以 Iconoir 為底，路徑畫法一致。
+            不放 Google 的 logo：Google 的商標規範禁止把品牌元素當成內容中最顯眼的
+            元素，也禁止暗示合作關係，而這裡正好兩條都會踩到。指名供應商這件事由
+            標題的文字負責，文字是規範明確允許的用法，審核要看的也是那一句 */}
         <div className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-[#fff1f1]">
-          <SparkIcon />
+          <img src="/figma/v13-spark-solid.svg" alt="" className="size-6" />
         </div>
 
         {/* 標題直接就是揭露本身：一眼看到重點，不用讀完內文才知道發生什麼事 */}
@@ -96,11 +90,9 @@ export default function AiConsentSheet({
           {copy.title}
         </p>
 
-        <div className="mt-4 flex flex-col gap-3">
-          <Line>{copy.what}</Line>
-          <Line>{copy.scope}</Line>
-          <Line>{copy.revoke}</Line>
-        </div>
+        <p className="mt-4 text-[14.5px] leading-[1.75] text-[#4a5565]">
+          {copy.body}
+        </p>
 
         {/* 連到隱私政策裡「第三方 AI 處理」那一段的錨點，不是只連到首頁 */}
         <button
@@ -109,16 +101,6 @@ export default function AiConsentSheet({
         >
           {copy.policy}
         </button>
-
-        {saveError && (
-          <p
-            key={shake}
-            className="mt-4 rounded-xl bg-[#fff1f1] px-3 py-2.5 text-[13.5px] leading-[1.5] text-[#c81e1e]"
-            style={{ animation: "fadeIn 200ms ease" }}
-          >
-            {errorCopy.save}
-          </p>
-        )}
 
         <div className="mt-6 flex flex-col gap-2">
           <button
@@ -141,30 +123,3 @@ export default function AiConsentSheet({
   );
 }
 
-function Line({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex gap-2.5">
-      <span className="mt-[9px] size-1 shrink-0 rounded-full bg-[#c8cdd3]" />
-      <p className="text-[14.5px] leading-[1.75] text-[#4a5565]">{children}</p>
-    </div>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#ff3b3b"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M10 4.5c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Z" />
-      <path d="M18 3v4M16 5h4" />
-    </svg>
-  );
-}

@@ -56,12 +56,11 @@ import { PRODUCT_DETAILS } from "../_lib/product-details";
 import aiLoadingAnimation from "../_lib/ai-loading.json";
 import AiConsentSheet from "../_components/AiConsentSheet";
 import {
-  emptyStateCopy,
-  errorCopy,
   initConsentFromUrl,
+  inputPlaceholder,
   isConsented,
+  noticeCopy,
   readConsent,
-  retryLoadConsent,
   useConsent,
 } from "../_lib/ai-consent";
 
@@ -270,10 +269,12 @@ export default function V13HomePage() {
   // blocked：畫面上看得出來「還沒開啟」。在其他裝置關掉的那一種不算，
   // 這台還不知道，看起來跟正常一樣，要送訊息時才會被擋下來
   const consentBlocked =
-    consentVars.loadFailed ||
-    consentVars.consent === "unset" ||
-    consentVars.consent === "declined";
-  const consentCopyEmpty = emptyStateCopy(consentVars);
+    consentVars.consent === "unset" || consentVars.consent === "declined";
+  // 還沒問過的時候，首頁維持原樣：不放提示條，placeholder 也不提同意。
+  // 使用者還沒被問過，就不存在「被擋下來」這件事，先貼一張說明只會讓首頁
+  // 看起來壞掉。點輸入框會跳 Sheet，那時候才第一次講這件事。
+  // 按過「先不要」之後才需要解釋為什麼不能打字
+  const consentRefused = consentVars.consent === "declined";
   const [consentSheet, setConsentSheet] = useState(false);
   // 使用者已經打好字才被擋下來的話，同意之後直接幫他送出去，不用再打一次
   const pendingConsentSend = useRef<string | null>(null);
@@ -289,20 +290,7 @@ export default function V13HomePage() {
   };
   useEffect(() => {
     initConsentFromUrl();
-    // 大標那一格放了「AI 對話尚未開啟」時，「你可能想知道」先收起來，
-    // 跟放提醒時的規則一樣：同一時間只放一件事
-    const c = readConsent();
-    if (!isConsented(c) && c.consent !== "remote_off") setChipsOpen(false);
   }, []);
-  // gate=enter：一進聊天分頁就跳同意，使用者還沒做任何事。
-  // 按過「先不要」之後不再一直跳，改成由空狀態的按鈕自己打開
-  useEffect(() => {
-    if (splash !== "done") return;
-    if (consentVars.gate !== "enter") return;
-    if (consentVars.loadFailed) return;
-    if (consentVars.consent !== "unset") return;
-    setConsentSheet(true);
-  }, [splash, consentVars.gate, consentVars.consent, consentVars.loadFailed]);
   useEffect(() => {
     if (splash !== "show") return;
     const q = new URLSearchParams(window.location.search);
@@ -916,7 +904,6 @@ export default function V13HomePage() {
     // 要補送那一句時，拿到的會是同意之前的那份 closure
     const now = readConsent();
     if (!isConsented(now)) {
-      if (now.loadFailed) return;
       if (now.consent === "remote_off") {
         setRemoteNotice(true);
         return;
@@ -1125,24 +1112,10 @@ export default function V13HomePage() {
   };
 
   // 大標欄位這次要放什麼：提醒（後端給的那一則）優先，其次是改版的「歡迎回來」
-  // 沒同意時，首頁大標換成「AI 對話尚未開啟」，按鈕打開同一張 Sheet，
-  // 不另外做一張簡化版。這一格同一時間只放一件事，所以同意優先於提醒
-  const hero = consentVars.loadFailed
-    ? {
-        // 讀不到同意狀態就當作未同意，不能當作已同意放行
-        title: consentCopyEmpty.title,
-        sub: errorCopy.load,
-        cta: "再試一次",
-        onCta: retryLoadConsent,
-      }
-    : consentBlocked
-    ? {
-        title: consentCopyEmpty.title,
-        sub: consentCopyEmpty.sub,
-        cta: consentCopyEmpty.cta,
-        onCta: () => askConsent(null),
-      }
-    : reminder
+  // 同意與否不動這一格。打招呼語是進 App 的第一句話，被「尚未開啟」蓋掉的話，
+  // 還沒同意的人每次打開都像進到一個壞掉的畫面。沒同意的說明改成貼著輸入列講，
+  // 就在真正被擋住的地方
+  const hero = reminder
     ? {
         title: REMINDERS[reminder].title,
         sub: REMINDERS[reminder].sub,
@@ -1162,27 +1135,21 @@ export default function V13HomePage() {
         }
       : null;
 
-  // 輸入列上方的提示條：在其他裝置關掉最優先，接著是讀取失敗，
-  // 最後是對話已經展開、但同意被關掉的情況（首頁大標那組空狀態這時看不到）
+  // 輸入列上方的提示條：大標不再讓位給同意之後，這條就是「為什麼不能打字」的
+  // 唯一說明，所以首頁跟對話中都要在。順序是在其他裝置關掉最優先，
+  // 接著是讀取失敗，最後是還沒同意
   const consentNotice = remoteNotice
     ? {
-        text: errorCopy.remoteOff,
-        action: "重新開啟",
+        ...noticeCopy.remoteOff,
         onAction: () => {
           setRemoteNotice(false);
           // 被擋下來的那句話還在輸入框裡，重新同意之後直接幫他送出去
           askConsent(input.trim() || null);
         },
       }
-    : consentVars.loadFailed && chatOpen
-    ? { text: errorCopy.load, action: "再試一次", onAction: retryLoadConsent }
-    : consentBlocked && chatOpen
-    ? {
-        text: consentCopyEmpty.sub,
-        action: consentCopyEmpty.cta,
-        onAction: () => askConsent(null),
-      }
-    : null;
+    : consentRefused
+      ? { ...noticeCopy.blocked, onAction: () => askConsent(null) }
+      : null;
 
   const lastMessage = messages[messages.length - 1];
   const lastQuickReplies = !typing ? lastMessage?.quickReplies : undefined;
@@ -1728,19 +1695,29 @@ export default function V13HomePage() {
           </div>
         </div>
 
-        {/* 不能打字的時候，說明為什麼。對話已經展開時看不到首頁大標那組空狀態，
-            這條就是唯一的說明，所以一定要帶一顆回到同意的按鈕 */}
+        {/* 不能打字的時候，說明為什麼。緊貼在輸入列上方，講的就是正下方那一列
+            為什麼按不動，所以一定要帶一顆回到同意的按鈕。
+            樣式照 AFFOGATO 的 alert 元件（4039:1062，Mode=Light, cta=button）：
+            灰底圓角 16、左邊 20 的 info 圖示、標題 12/16 Semibold 疊內文 14/18、
+            右邊 bullet_button 36 高圓角 12 */}
         {consentNotice && (
           <div
-            className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3 shadow-[0px_4px_24px_0px_rgba(0,0,0,0.1)]"
+            className="flex items-center gap-2 rounded-2xl bg-[#f3f4f6] px-4 py-3"
             style={{ animation: "fadeIn 200ms ease" }}
           >
-            <p className="min-w-0 flex-1 text-[13.5px] leading-[1.5] text-[#4a5565]">
-              {consentNotice.text}
-            </p>
+            <img src="/figma/v13-info.svg" alt="" className="size-5 shrink-0" />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="text-[12px] font-semibold leading-4 text-[#1e2939]">
+                {consentNotice.title}
+              </p>
+              <p className="text-[14px] leading-[18px] text-[#1e2939]">
+                {consentNotice.body}
+              </p>
+            </div>
             <button
               onClick={consentNotice.onAction}
-              className="shrink-0 text-[13.5px] font-semibold text-brand"
+              className="flex h-9 shrink-0 items-center rounded-xl bg-brand px-4 text-[12px] font-semibold leading-4 text-white active:scale-[0.98]"
+              style={{ transition: "transform 150ms ease" }}
             >
               {consentNotice.action}
             </button>
@@ -1751,8 +1728,10 @@ export default function V13HomePage() {
             e.preventDefault();
             handleSend(input);
           }}
+          // 點輸入框才跳同意，在第一句話送出之前。一進分頁就跳的話，
+          // 使用者還沒想聊天就先被攔一次，而且那時候他還不知道這個功能是什麼
           onClick={() => {
-            if (consentBlocked && !consentVars.loadFailed) askConsent(null);
+            if (consentBlocked) askConsent(null);
           }}
           className="flex h-[52px] items-center gap-2 rounded-[999px] bg-white/90 px-3 py-2 shadow-[0px_4px_36px_0px_rgba(0,0,0,0.12)]"
         >
@@ -1762,9 +1741,7 @@ export default function V13HomePage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             readOnly={consentBlocked}
-            placeholder={
-              consentBlocked ? consentCopyEmpty.placeholder : "什麼都可以聊..."
-            }
+            placeholder={consentRefused ? inputPlaceholder : "什麼都可以聊..."}
             className="min-w-0 flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder:text-[#a1a6ab]"
           />
           <span className="flex size-9 shrink-0 items-center justify-center">
@@ -1828,12 +1805,14 @@ export default function V13HomePage() {
         />
       )}
 
+      {/* AFFOGATO 的 snackbar（Mode=Light）：#0C0E11 80%、圓角 8、內距 12/16、
+          Paragraph 16/24 白字、背景模糊 4。元件本身沒有圖示跟陰影，不自己加。 */}
       {toast && (
-        <div className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center px-4">
-          <p
-            className="rounded-full bg-gray-800/90 px-4 py-2 text-[13px] text-white shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
-            style={{ animation: "fadeIn 200ms ease" }}
-          >
+        <div
+          className="pointer-events-none absolute inset-x-0 z-40 flex justify-center px-4 top-[calc(env(safe-area-inset-top)+16px)] sm:top-16"
+          aria-live="polite"
+        >
+          <p className="snackbar-top rounded-lg bg-[#0c0e11]/80 px-4 py-3 text-[16px] leading-6 text-white backdrop-blur-[4px]">
             {toast}
           </p>
         </div>

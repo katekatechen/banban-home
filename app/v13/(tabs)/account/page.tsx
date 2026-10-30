@@ -270,7 +270,6 @@ export default function AccountPage() {
           <Row
             icon={img("/figma/icon-settings.svg")}
             title="偏好設定"
-            desc="AI 對話資料使用、通知、語言"
             onClick={() => router.push("/v13/preferences")}
           />
           <Divider />

@@ -9,7 +9,7 @@ import {
   initConsentFromUrl,
   isConsented,
   setConsentEnabled,
-  settingsCopy,
+  settingsCopy as copy,
   useConsent,
 } from "../_lib/ai-consent";
 
@@ -22,7 +22,6 @@ export default function PreferencesPage() {
   const router = useRouter();
   const { style, exit } = usePageSlide();
   const vars = useConsent();
-  const copy = settingsCopy(vars);
   const on = isConsented(vars);
   const [confirmOff, setConfirmOff] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -72,22 +71,12 @@ export default function PreferencesPage() {
           <Switch on={on} onToggle={toggle} label={copy.title} />
         </div>
 
-        <div className="px-5 pb-8 pt-1">
-          <p className="text-[12.5px] leading-[1.7] text-[#a1a6ab]">
-            {on && vars.receipt
-              ? `已於 ${vars.receipt.at} 同意，文案版本 ${vars.receipt.version}`
-              : "尚未同意，AI 對話目前不能使用。"}
-          </p>
-        </div>
-
         <div className="h-2 bg-[#f6f7f8]" />
 
         <p className="px-5 pb-2 pt-4 text-[12px] font-medium text-[#99a1af]">
           其他
         </p>
         <DummyRow title="推播通知" value="已開啟" />
-        <DummyRow title="語言" value="繁體中文" />
-        <DummyRow title="貨幣" value="TWD" />
       </div>
 
       {confirmOff && (
@@ -124,12 +113,14 @@ export default function PreferencesPage() {
         </div>
       )}
 
+      {/* AFFOGATO 的 snackbar（Mode=Light）：#0C0E11 80%、圓角 8、內距 12/16、
+          Paragraph 16/24 白字、背景模糊 4。照元件走，不自己加陰影或圖示。 */}
       {toast && (
-        <div className="pointer-events-none absolute inset-x-0 top-28 z-[60] flex justify-center px-4">
-          <p
-            className="rounded-full bg-gray-800/90 px-4 py-2 text-[13px] text-white shadow-[0_4px_16px_rgba(0,0,0,0.18)]"
-            style={{ animation: "fadeIn 200ms ease" }}
-          >
+        <div
+          className="pointer-events-none absolute inset-x-0 z-[60] flex justify-center px-4 top-[calc(env(safe-area-inset-top)+72px)] sm:top-28"
+          aria-live="polite"
+        >
+          <p className="snackbar-top rounded-lg bg-[#0c0e11]/80 px-4 py-3 text-[16px] leading-6 text-white backdrop-blur-[4px]">
             {toast}
           </p>
         </div>
