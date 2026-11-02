@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 
 // 光暈版首頁的底色：照 Figma「Chat-1」（1083:25414）的 bg-gradient（10/12 更新）。
@@ -41,16 +41,13 @@ export default function HomeGradient({
 }) {
   // 預設版（天空版）的紅色小飛機：停在畫面中段，平常輕輕浮動。
   // 載入、回首頁時從左下飛進定位；送出時往右上飛走（疊在白幕上面，看得到它飛走）
-  const [planeIn, setPlaneIn] = useState(!intro);
+  // 一律從左下開始：不管是第一次載入、從對話回首頁，還是點聊天 tab 回來，
+  // 飛機都重新飛進來一次，不會從右上倒退回定位、也不會直接出現在定位
+  const [planeIn, setPlaneIn] = useState(false);
   const [jump, setJump] = useState(false);
-  const first = useRef(true);
   useEffect(() => {
-    const isFirst = first.current;
-    first.current = false;
     if (covered) return;
-    // 切分頁回來（不播進場）：直接停在定位
-    if (isFirst && !intro) return;
-    // 回首頁：先瞬間搬回左下（不要從右上倒飛回來），下一幀再飛進來
+    // 先瞬間搬回左下（不要從右上倒飛回來），下一幀再飛進來
     setJump(true);
     setPlaneIn(false);
     let r2 = 0;
@@ -62,8 +59,6 @@ export default function HomeGradient({
       cancelAnimationFrame(r1);
       cancelAnimationFrame(r2);
     };
-    // intro 只看掛載當下
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [covered]);
   // 送出：按下去馬上往右上飛走（外層單一曲線，路線順暢），內層另外做側傾
   // （像滑翔翼遇到氣流調整角度，planeBank 動畫，globals.css），
