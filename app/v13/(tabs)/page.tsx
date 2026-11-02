@@ -6,7 +6,6 @@ import { createPortal } from "react-dom";
 import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
-import HomeSky, { CLOUD_MS } from "../_components/HomeSky";
 import HomeGradient, {
   GLOW_IS_DARK,
   GLOW_TEXT_ON_COLOR,
@@ -15,15 +14,9 @@ import HomeGradient, {
   PLANE_EXIT_MS,
 } from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
-import { knownHomeVariant, resolveHomeVariant } from "../_lib/home-variant";
 import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
 import Signup, { SIGNUP_EXIT_MS, SIGNUP_TOP } from "../_components/Signup";
-import {
-  SKY_THEMES,
-  greetingOf,
-  knownTime,
-  resolveTime,
-} from "../_lib/time-of-day";
+import { greetingOf, knownTime, resolveTime } from "../_lib/time-of-day";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
 import { EASING } from "../_lib/page-transition";
 import { setTopTint } from "../_lib/top-tint";
@@ -335,12 +328,6 @@ export default function V13HomePage() {
   useEffect(() => {
     setTime(resolveTime());
   }, []);
-  // 首頁插圖的版本（光暈版預設，?home=sky 切天空版），跟時段一樣掛載後才讀網址
-  const [variant, setVariant] = useState(() => knownHomeVariant() ?? "glow");
-  useEffect(() => {
-    setVariant(resolveHomeVariant());
-  }, []);
-  const glowHome = variant === "glow";
   // 光暈版：送出後約 0.28 秒（紙飛機剛消失）左上的 AIFIAN 字樣開始縮成 logo mark，
   // 約 0.8 秒變成 mark；
   // 回首頁時直接展開。掛載當下若已在對話中（切分頁回來）就直接是 mark，不播動畫
@@ -350,25 +337,21 @@ export default function V13HomePage() {
   useEffect(() => {
     const first = !logoMounted.current;
     logoMounted.current = true;
-    if (!chatOpen || first || !glowHome) {
+    if (!chatOpen || first) {
       setLogoMark(chatOpen);
       return;
     }
     const t = window.setTimeout(() => setLogoMark(true), LOGO_MORPH_DELAY_MS);
     return () => window.clearTimeout(t);
-  }, [chatOpen, glowHome]);
-  const skyTheme = SKY_THEMES[time.period];
-  // 光暈版是白到桃色的淡漸層：logo、招呼語用深色字，狀態列白色
-  // 光暈版底色是深色時（GLOW_IS_DARK）：logo、狀態列、招呼語、快捷問題改白色；
+  }, [chatOpen]);
+  // 底色是深色時（GLOW_IS_DARK）：logo、狀態列、招呼語、快捷問題改白色；
   // 現在是亮色漸層到白，維持深色字。進入對話後是白底，一律深色
   // 色光在上方時（GLOW_TEXT_ON_COLOR）：logo、狀態列、招呼語壓在色光上，改白字；
   // 快捷問題在下方白底上，維持深色
-  const glowDark = glowHome && GLOW_IS_DARK && !chatOpen;
-  const glowTopLight = glowHome && (GLOW_IS_DARK || GLOW_TEXT_ON_COLOR);
-  const lightHeader = glowHome
-    ? glowTopLight && !chatOpen
-    : skyTheme.lightHeader && !chatOpen;
-  const darkGreeting = glowHome ? !glowTopLight : skyTheme.darkGreeting;
+  const glowDark = GLOW_IS_DARK && !chatOpen;
+  const glowTopLight = GLOW_IS_DARK || GLOW_TEXT_ON_COLOR;
+  const lightHeader = glowTopLight && !chatOpen;
+  const darkGreeting = !glowTopLight;
   useEffect(() => {
     heroIntroPlayed = true;
   }, []);
@@ -862,12 +845,12 @@ export default function V13HomePage() {
       return;
     }
     if (!chatOpen) {
-      setTopTint(glowHome ? GLOW_TOP : skyTheme.top);
+      setTopTint(GLOW_TOP);
       return;
     }
-    const t = window.setTimeout(() => setTopTint(null), CLOUD_MS * 0.7);
+    const t = window.setTimeout(() => setTopTint(null), GRADIENT_EXIT_MS * 0.7);
     return () => window.clearTimeout(t);
-  }, [chatOpen, skyTheme.top, splash, glowHome, signup]);
+  }, [chatOpen, splash, signup]);
   useEffect(() => () => setTopTint(null), []);
 
   // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
@@ -1187,10 +1170,7 @@ export default function V13HomePage() {
         />
       )}
       {splash !== "done" && !signup && (
-        <Splash
-          leaving={splash === "leaving"}
-          variant={glowHome ? "glow" : "plain"}
-        />
+        <Splash leaving={splash === "leaving"} />
       )}
       {announce && returning && (
         <AnnouncementModal
@@ -1203,19 +1183,9 @@ export default function V13HomePage() {
         />
       )}
       {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
-      {/* 光暈版：米白底＋上方暖到冷的漸層光（照 Figma 1068:26391） */}
-      {splash !== "show" && glowHome && (
+      {/* 米白底＋上方暖到冷的漸層光（照 Figma 1068:26391） */}
+      {splash !== "show" && (
         <HomeGradient covered={chatOpen} intro={playIntro} />
-      )}
-      {splash !== "show" && !glowHome && (
-        <HomeSky
-          covered={chatOpen}
-          intro={playIntro}
-          theme={skyTheme}
-          planeHandoff={false}
-          pull={homeReveal}
-          pullDragging={homePull > 0}
-        />
       )}
 
       <div className="relative flex shrink-0 flex-col">
@@ -1232,13 +1202,7 @@ export default function V13HomePage() {
               className="block h-7 w-[95.44px]"
               // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色。
               // 光暈版：進入對話後的 logo mark 用品牌紅
-              color={
-                lightHeader
-                  ? "#ffffff"
-                  : glowHome && chatOpen
-                    ? "#ff3030"
-                    : "#1E2939"
-              }
+              color={lightHeader ? "#ffffff" : chatOpen ? "#ff3030" : "#1E2939"}
             />
           </button>
           <button
@@ -1359,9 +1323,7 @@ export default function V13HomePage() {
         {splash !== "show" && (
           <div
             aria-hidden={chatOpen}
-            className={`pointer-events-none absolute inset-x-0 top-full z-10 p-4 ${
-              glowHome ? "pt-8" : ""
-            }`}
+            className="pointer-events-none absolute inset-x-0 top-full z-10 p-4 pt-8"
             style={{
               opacity: chatOpen ? 0 : 1,
               // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
@@ -1372,8 +1334,8 @@ export default function V13HomePage() {
           >
             <div
               style={{
-                opacity: glowHome && chatOpen ? 0 : 1,
-                transition: `opacity ${glowHome && chatOpen ? 160 : MODE_TRANSITION_MS}ms ease`,
+                opacity: chatOpen ? 0 : 1,
+                transition: `opacity ${chatOpen ? 160 : MODE_TRANSITION_MS}ms ease`,
               }}
             >
               <div
@@ -1385,11 +1347,7 @@ export default function V13HomePage() {
                 }}
               >
                 <p
-                  className={
-                    glowHome
-                      ? "text-[26px] font-medium leading-[1.35] tracking-[-0.01em]"
-                      : "text-[24px] font-bold leading-[1.4]"
-                  }
+                  className="text-[26px] font-medium leading-[1.35] tracking-[-0.01em]"
                   style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
                 >
                   {hero ? hero.title : greetingOf(time.hour)}
@@ -1397,11 +1355,7 @@ export default function V13HomePage() {
                 <p
                   className="text-[14px] leading-[18px]"
                   style={{
-                    color: darkGreeting
-                      ? "#4a5565"
-                      : glowHome
-                        ? "rgba(255,255,255,0.85)"
-                        : "#ffffff",
+                    color: darkGreeting ? "#4a5565" : "rgba(255,255,255,0.85)",
                   }}
                 >
                   {hero ? hero.sub : "賺回饋，買東西，我都很在行"}
@@ -1443,10 +1397,8 @@ export default function V13HomePage() {
         style={{
           opacity: chatOpen ? 1 : 0,
           pointerEvents: chatOpen ? "auto" : "none",
-          // 送出後等雲朵（光暈版是紙飛機飛走、色光散開）把畫面讓出來，對話內容才淡入
-          transition: chatOpen
-            ? `${fade} ${glowHome ? PLANE_EXIT_MS * 0.75 : CLOUD_MS * 0.6}ms`
-            : fade,
+          // 送出後等紙飛機飛走、色光散開把畫面讓出來，對話內容才淡入
+          transition: chatOpen ? `${fade} ${PLANE_EXIT_MS * 0.75}ms` : fade,
         }}
       >
         {/* 浮動的「載入上次對話」：放在捲動區外面，才不會被頂部的淡出遮罩吃掉 */}
@@ -1606,7 +1558,7 @@ export default function V13HomePage() {
                   <button
                     key={q}
                     onClick={() => handleQuickReply(q)}
-                    className={glowHome ? CHIP_CLASS : CHIP_CLASS_SHADOW}
+                    className={CHIP_CLASS}
                   >
                     {q}
                   </button>
@@ -1731,13 +1683,7 @@ export default function V13HomePage() {
                           : "none",
                       }}
                       tabIndex={chipsOpen ? 0 : -1}
-                      className={
-                        glowDark
-                          ? CHIP_CLASS_DARK
-                          : glowHome
-                            ? CHIP_CLASS
-                            : CHIP_CLASS_SHADOW
-                      }
+                      className={glowDark ? CHIP_CLASS_DARK : CHIP_CLASS}
                     >
                       {s.label}
                     </button>
@@ -1880,9 +1826,6 @@ const CHIP_CLASS =
 // 光暈版首頁（深靛藍到紫的底）：半透明白的玻璃膠囊、白字
 const CHIP_CLASS_DARK =
   "max-w-full rounded-[999px] border border-white/30 bg-white/10 px-[14px] py-2 text-left text-[14px] leading-[18px] text-white backdrop-blur-[2px]";
-// 預設版（照 Figma 1017:3714）：不要邊框，改用淡淡的陰影浮在天空漸層上
-const CHIP_CLASS_SHADOW =
-  "max-w-full rounded-[999px] bg-white px-[14px] py-2 text-left text-[14px] leading-[18px] text-[#4a5461] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]";
 
 // 改版公告卡：照既有元件 AFFOGATO modal（Mode=Light）做，不另外設計新元件。
 // 上方 modol_image 328×226、右上關閉鈕；內容區上下 24、左右 16，

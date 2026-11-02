@@ -39,7 +39,7 @@ export default function HomeGradient({
   // 這次掛載要不要播載入動畫（光從下緣升起來）
   intro: boolean;
 }) {
-  // 預設版（天空版）的紅色小飛機：停在畫面中段，平常輕輕浮動。
+  // 紅色小飛機：停在畫面中段，平常輕輕浮動。
   // 載入、回首頁時從左下飛進定位；送出時往右上飛走（疊在白幕上面，看得到它飛走）
   // 一律從左下開始：不管是第一次載入、從對話回首頁，還是點聊天 tab 回來，
   // 飛機都重新飛進來一次，不會從右上倒退回定位、也不會直接出現在定位
@@ -119,7 +119,7 @@ export default function HomeGradient({
           </div>
         </div>
       </div>
-      {/* 小飛機：位置照天空版（Figma 948:44415，375 寬、往上偏 19px 的框） */}
+      {/* 小飛機：位置照 Figma 948:44415（375 寬、往上偏 19px 的框） */}
       <div className="absolute inset-x-0 top-[-19px] aspect-[375/620]">
         <div
           className="absolute left-[50.53%] top-[48.23%] w-[17.85%]"
@@ -188,8 +188,9 @@ export default function HomeGradient({
   );
 }
 
-// 光暈版首頁專用的簡化飛機：只留左翼、龍骨、右翼三塊，深淺兩個紅
-// （外形照 GliderSvg 的 600×488 座標，拿掉摺痕、厚度跟骨架；預設天空版的飛機不受影響）
+// 簡化的飛機：只留左翼、龍骨、右翼三塊，深淺兩個紅
+// （外形沿用原本天空版滑翔翼的 600×488 座標，拿掉摺痕、厚度跟骨架；
+//   那個元件 GliderSvg 隨天空版一起移除了，要找原圖去翻 git 紀錄）
 const NOSE = "595 3";
 function SimpleGlider({ className }: { className?: string }) {
   const light = "#ff4a4a";
