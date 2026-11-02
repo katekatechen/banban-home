@@ -1277,6 +1277,8 @@ export default function V13HomePage() {
             const p = homeReveal;
             // 0 到 0.4 只長一顆圓，0.4 之後才開始撐開成膠囊
             const expand = Math.max(0, Math.min(1, (p - 0.4) / 0.6));
+            // 箭頭前 20% 不轉，之後才從朝下轉到朝上
+            const turn = Math.max(0, Math.min(1, (p - 0.2) / 0.8));
             const ready = p >= 1;
             const dragging = homePull > 0 && !homeHistoryLoading;
             const label = homeHistoryLoading
@@ -1316,11 +1318,12 @@ export default function V13HomePage() {
                       viewBox="0 0 16 16"
                       fill="none"
                       className="size-5 shrink-0"
-                      // 箭頭跟著拉的進度連續轉：一開始朝下（跟手指同方向），
-                      // 拉滿剛好轉到朝上，旋轉本身就是進度。拖的時候不補間，
-                      // 才跟得上手指；放開或回彈時才用 transition 收尾
+                      // 箭頭跟著拉的進度轉，但前 20% 先不動（這段是膠囊自己
+                      // 浮出來的時間，箭頭一出現就在轉會太忙），0.2 之後才
+                      // 從朝下轉到朝上，拉滿剛好 180。拖的時候不補間才跟得上
+                      // 手指，放開或回彈時才用 transition 收尾
                       style={{
-                        transform: `rotate(${p * 180}deg)`,
+                        transform: `rotate(${turn * 180}deg)`,
                         transition: dragging
                           ? "none"
                           : `transform 200ms ${EASING}`,
