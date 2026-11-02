@@ -760,18 +760,30 @@ export default function V13HomePage() {
     setChipsOpen(true);
   };
 
-  // 首頁也能下拉叫出「載入上次對話」：手指往下拖（桌機是滾輪往上）時，
-  // 招呼語跟著被往下拉開、按鈕從上面慢慢浮出來；拉過臨界點放開就停住，
-  // 沒拉到就彈回去。往反方向推一下就收起來。點按鈕直接進對話、接上上次的紀錄
-  const HOME_PULL_TOUCH_PX = 110;
+  // 首頁下拉載入上次對話：拉的過程膠囊從一顆圓長成膠囊，文字跟著露出來，
+  // 拉滿時震動一下、文字換成「放開載入」，放開就直接載入，沒拉滿就彈回去。
+  // 臨界點比原本深（110 → 135），因為少了「停住再點一次」那層確認，
+  // 太淺會變成滑一下畫面就誤觸
+  const HOME_PULL_TOUCH_PX = 135;
   const HOME_PULL_WHEEL_PX = 260;
   const [homePull, setHomePull] = useState(0);
-  const [homeHistoryShown, setHomeHistoryShown] = useState(false);
   const [homeHistoryLoading, setHomeHistoryLoading] = useState(false);
   const homePullStartY = useRef<number | null>(null);
   const homeWheelPull = useRef(0);
   const homeWheelTimer = useRef<number | null>(null);
-  const homeReveal = homeHistoryShown || homeHistoryLoading ? 1 : homePull;
+  // 跨過臨界點才震、而且只震一次；退回臨界點以下才重新上膛，
+  // 不然手指在臨界點附近抖一下就會連續震
+  const homePullArmed = useRef(false);
+  const homeReveal = homeHistoryLoading ? 1 : homePull;
+
+  const armHomePull = (p: number) => {
+    if (p >= 1 && !homePullArmed.current) {
+      homePullArmed.current = true;
+      navigator.vibrate?.(18);
+    } else if (p < 1) {
+      homePullArmed.current = false;
+    }
+  };
 
   const homeTouchStart = (y: number) => {
     if (chatOpen) return;
@@ -780,34 +792,38 @@ export default function V13HomePage() {
   const homeTouchMove = (y: number) => {
     if (chatOpen || homePullStartY.current == null) return;
     const dy = y - homePullStartY.current;
-    if (homeHistoryShown) {
-      if (dy < -24) setHomeHistoryShown(false);
-      return;
-    }
     // 越拉越緊：超過臨界點之後就不再跟著手指走
-    setHomePull(Math.max(0, Math.min(1, dy / HOME_PULL_TOUCH_PX)));
+    const p = Math.max(0, Math.min(1, dy / HOME_PULL_TOUCH_PX));
+    armHomePull(p);
+    setHomePull(p);
   };
   const homeTouchEnd = () => {
     if (homePullStartY.current == null) return;
     homePullStartY.current = null;
-    if (homePull >= 1) setHomeHistoryShown(true);
+    const ready = homePull >= 1;
+    homePullArmed.current = false;
     setHomePull(0);
+    // 放開就載入，不再停住等第二次點擊
+    if (ready) loadHistoryFromHome();
   };
   const homeWheel = (deltaY: number) => {
     if (chatOpen || homeHistoryLoading) return;
     if (deltaY > 2) {
       homeWheelPull.current = 0;
+      homePullArmed.current = false;
       setHomePull(0);
-      if (homeHistoryShown) setHomeHistoryShown(false);
       return;
     }
-    if (deltaY >= 0 || homeHistoryShown) return;
+    if (deltaY >= 0) return;
     homeWheelPull.current += -deltaY;
     const p = Math.min(1, homeWheelPull.current / HOME_PULL_WHEEL_PX);
+    // 滾輪沒有「放開」這個動作，所以滾到臨界點就直接載入
     if (p >= 1) {
       homeWheelPull.current = 0;
+      homePullArmed.current = false;
       setHomePull(0);
-      setHomeHistoryShown(true);
+      navigator.vibrate?.(18);
+      loadHistoryFromHome();
       return;
     }
     setHomePull(p);
@@ -825,15 +841,14 @@ export default function V13HomePage() {
       setHistoryLoaded(true);
       setShowHistoryBtn(false);
       setHomeHistoryLoading(false);
-      setHomeHistoryShown(false);
       openChat();
     }, HISTORY_LOADING_MS);
     timersRef.current.push(t);
   };
-  // 進入對話（送出或點按鈕）後，首頁的按鈕跟下拉狀態都收掉
+  // 進入對話（送出或點按鈕）後，首頁的下拉狀態收掉
   useEffect(() => {
     if (!chatOpen) return;
-    setHomeHistoryShown(false);
+    homePullArmed.current = false;
     setHomePull(0);
   }, [chatOpen]);
 
@@ -1199,7 +1214,7 @@ export default function V13HomePage() {
           theme={skyTheme}
           planeHandoff={false}
           pull={homeReveal}
-          pullDragging={homePull > 0 && !homeHistoryShown}
+          pullDragging={homePull > 0}
         />
       )}
 
@@ -1254,51 +1269,81 @@ export default function V13HomePage() {
             )}
           </button>
         </div>
-        {/* 首頁下拉出現的「載入上次對話」：拉的過程跟著淡入、往下滑出來 */}
-        {!chatOpen && (
-          <div
-            className="pointer-events-none absolute inset-x-0 top-full z-20 flex justify-center pt-2"
-            style={{
-              opacity: homeReveal,
-              transform: `translateY(${(homeReveal - 1) * 16}px) scale(${0.92 + homeReveal * 0.08})`,
-              transition:
-                homePull > 0 && !homeHistoryShown
-                  ? "none"
-                  : `opacity 220ms ease, transform 300ms ${EASING}`,
-            }}
-          >
-            <button
-              onClick={loadHistoryFromHome}
-              tabIndex={homeHistoryShown ? 0 : -1}
-              className={`flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] text-gray-800 shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)] ${
-                homeHistoryShown || homeHistoryLoading
-                  ? "pointer-events-auto"
-                  : ""
-              }`}
-            >
-              {homeHistoryLoading ? (
-                <span className="size-3.5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
-              ) : (
-                <svg
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="size-3.5"
-                  // 還沒拉到臨界點時，時鐘箭頭跟著拉的進度轉，滿一圈就是到了
-                  style={{ transform: `rotate(${(homeReveal - 1) * 180}deg)` }}
+        {/* 首頁下拉的「載入上次對話」：進度感靠膠囊自己長出來，不外掛進度條。
+            前段只有一顆圓（時鐘跟著拉的進度轉滿一圈），後段才撐開成膠囊、
+            文字從裡面露出來；拉滿換成「放開載入」，放開就載入 */}
+        {!chatOpen &&
+          (() => {
+            const p = homeReveal;
+            // 0 到 0.4 只長一顆圓，0.4 之後才開始撐開成膠囊
+            const expand = Math.max(0, Math.min(1, (p - 0.4) / 0.6));
+            const ready = p >= 1;
+            const dragging = homePull > 0 && !homeHistoryLoading;
+            const label = homeHistoryLoading
+              ? "載入中…"
+              : ready
+                ? "放開載入"
+                : "載入上次對話";
+            return (
+              <div
+                className="pointer-events-none absolute inset-x-0 top-full z-20 flex justify-center pt-2"
+                style={{
+                  opacity: Math.min(1, p * 2.5),
+                  transform: `translateY(${(p - 1) * 16}px)`,
+                  transition: dragging
+                    ? "none"
+                    : `opacity 220ms ease, transform 300ms ${EASING}`,
+                }}
+                aria-live="polite"
+              >
+                <div
+                  className="flex h-9 items-center overflow-hidden rounded-full bg-white shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)]"
+                  style={{
+                    paddingLeft: 8 + 6 * expand,
+                    paddingRight: 8 + 8 * expand,
+                    gap: 6 * expand,
+                    // 拉滿的時候整顆微微放大，跟震動同一拍
+                    transform: `scale(${ready ? 1.04 : 1})`,
+                    transition: dragging
+                      ? `transform 160ms ${EASING}`
+                      : `transform 300ms ${EASING}`,
+                  }}
                 >
-                  <path
-                    d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2M8 5.2V8l1.8 1.2"
-                    stroke="#1e2939"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-              {homeHistoryLoading ? "載入中…" : "載入上次對話"}
-            </button>
-          </div>
-        )}
+                  {homeHistoryLoading ? (
+                    <span className="size-5 shrink-0 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+                  ) : (
+                    <svg
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      className="size-5 shrink-0"
+                      // 時鐘跟著拉的進度轉，轉滿一圈就是到臨界點了
+                      style={{ transform: `rotate(${(p - 1) * 360}deg)` }}
+                    >
+                      <path
+                        d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2M8 5.2V8l1.8 1.2"
+                        stroke="#1e2939"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  <span
+                    className="overflow-hidden whitespace-nowrap text-[13px] text-gray-800"
+                    style={{
+                      maxWidth: expand * 112,
+                      opacity: expand,
+                      transition: dragging
+                        ? "none"
+                        : `max-width 220ms ${EASING}, opacity 220ms ease`,
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         {/* 開場招呼語：疊在天空上，只在首頁出現，送出後淡出、讓雲蓋過去。
             外層管淡出，內層管載入時浮上來（animation 的 fill 會蓋掉 opacity，要分開兩層） */}
         {splash !== "show" && (
@@ -1312,9 +1357,7 @@ export default function V13HomePage() {
               // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
               transform: `translateY(${homeReveal * 52}px)`,
               transition:
-                homePull > 0 && !homeHistoryShown
-                  ? fade
-                  : `${fade}, transform 300ms ${EASING}`,
+                homePull > 0 ? fade : `${fade}, transform 300ms ${EASING}`,
             }}
           >
             <div
