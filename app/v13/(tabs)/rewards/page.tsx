@@ -17,18 +17,30 @@ import {
 } from "../../_lib/mock-data";
 
 // 今天增加的數字進頁面時從 0 往上跳，強調「還在即時累積」的感覺，
-// 跟下面靜態的總回饋餘額做出區隔——用 ease-out 讓它一開始跳得快、
-// 快到終值時放慢，不是等速跑到底
+// 跟下面靜態的總回饋餘額做出區隔，用 ease-out 讓它一開始跳得快、
+// 快到終值時放慢，不是等速跑到底。
+// 只跑這次開 App 的第一次：回饋分頁是獨立路由，每切一次 tab 就重新掛載，
+// 原本每次進來都從 0 跑一遍，來回切幾趟就只剩雜訊，也讓人以為數字真的變了。
+// 用模組層的旗標記住跑過了（重新整理才重置，demo 時還看得到），之後進來直接是終值。
+// 跑完補一下輕微震動，像數字落定的手感；中途離開沒跑完就不算跑過，下次再補給你看。
+let countUpPlayed = false;
+
 function useCountUp(target: number, durationMs = 900) {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(() => (countUpPlayed ? target : 0));
   useEffect(() => {
+    if (countUpPlayed) return;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const progress = Math.min((now - start) / durationMs, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(target * eased);
-      if (progress < 1) raf = requestAnimationFrame(tick);
+      if (progress < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        countUpPlayed = true;
+        navigator.vibrate?.(10);
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
