@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { EASING } from "../_lib/page-transition";
 
 // 光暈版首頁的底色：照 Figma「Chat-1」（1083:25414）的 bg-gradient（10/12 更新）。
@@ -45,7 +45,11 @@ export default function HomeGradient({
   // 飛機都重新飛進來一次，不會從右上倒退回定位、也不會直接出現在定位
   const [planeIn, setPlaneIn] = useState(false);
   const [jump, setJump] = useState(false);
-  useEffect(() => {
+  // 一定要 layout effect：covered 轉 false 的那一幀，planeIn 還是上一次的 true，
+  // 算出來的 transform 已經是定位、transition 也還開著，用一般的 useEffect 的話
+  // 瀏覽器會先把那一幀畫出去，飛機就從右上補間回定位（倒退），等 effect 跑完才
+  // 跳到左下。要趕在那一幀畫出去之前就搬好
+  useLayoutEffect(() => {
     if (covered) return;
     // 先瞬間搬回左下（不要從右上倒飛回來），下一幀再飛進來
     setJump(true);
