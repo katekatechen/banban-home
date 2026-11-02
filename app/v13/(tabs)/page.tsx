@@ -1270,8 +1270,8 @@ export default function V13HomePage() {
           </button>
         </div>
         {/* 首頁下拉的「載入上次對話」：進度感靠膠囊自己長出來，不外掛進度條。
-            前段只有一顆圓（時鐘跟著拉的進度轉滿一圈），後段才撐開成膠囊、
-            文字從裡面露出來；拉滿換成「放開載入」，放開就載入 */}
+            前段只有一顆圓（向下的箭頭），後段才撐開成膠囊、文字從裡面露出來；
+            拉滿時箭頭翻成朝上、文字換成「放開載入」，放開就載入 */}
         {!chatOpen &&
           (() => {
             const p = homeReveal;
@@ -1316,11 +1316,15 @@ export default function V13HomePage() {
                       viewBox="0 0 16 16"
                       fill="none"
                       className="size-5 shrink-0"
-                      // 時鐘跟著拉的進度轉，轉滿一圈就是到臨界點了
-                      style={{ transform: `rotate(${(p - 1) * 360}deg)` }}
+                      // 拉的時候箭頭朝下（跟手指同方向），到臨界點翻成朝上，
+                      // 跟震動、「放開載入」同一拍
+                      style={{
+                        transform: `rotate(${ready ? 180 : 0}deg)`,
+                        transition: `transform 200ms ${EASING}`,
+                      }}
                     >
                       <path
-                        d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2M8 5.2V8l1.8 1.2"
+                        d="M8 3v10M4.4 9.4 8 13l3.6-3.6"
                         stroke="#1e2939"
                         strokeWidth="1.4"
                         strokeLinecap="round"
