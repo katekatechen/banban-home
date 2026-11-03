@@ -158,6 +158,14 @@ export default function ProductSheet({
           />
 
           <div className="px-5 pb-6 pt-[18px]">
+            {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，
+                在這裡買並不適用。誤會是在看圖那一刻發生的，所以註記貼著圖放，
+                不等到頁尾的注意事項才講。沒有圖的商品不顯示 */}
+            {card.image && (
+              <p className="mb-2.5 text-[12px] leading-[1.5] text-[#a1a5ac]">
+                圖片活動優惠不適用於本站購買
+              </p>
+            )}
             <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
               {detail?.fullName ?? card.name}
             </p>
