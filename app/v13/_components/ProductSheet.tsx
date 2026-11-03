@@ -163,7 +163,7 @@ export default function ProductSheet({
                 不等到頁尾的注意事項才講。沒有圖的商品不顯示 */}
             {card.image && (
               <p className="mb-2 text-[11px] leading-[1.45] text-[#bcbfc5]">
-                圖片活動優惠不適用於本站購買
+                圖片活動優惠不適用於 AIFIAN 購買
               </p>
             )}
             <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
