@@ -158,14 +158,6 @@ export default function ProductSheet({
           />
 
           <div className="px-5 pb-6 pt-[18px]">
-            {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，
-                在這裡買並不適用。誤會是在看圖那一刻發生的，所以註記貼著圖放，
-                不等到頁尾的注意事項才講。沒有圖的商品不顯示 */}
-            {card.image && (
-              <p className="mb-2 text-[11px] leading-[1.45] text-[#bcbfc5]">
-                圖片活動優惠不適用於 AIFIAN 購買
-              </p>
-            )}
             <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
               {detail?.fullName ?? card.name}
             </p>
@@ -266,6 +258,16 @@ export default function ProductSheet({
                   )}
                 </div>
               </>
+            )}
+
+            {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
+                放在內容最後當小字附註，跟上面「AI 整理自社群公開討論」同一個層級：
+                需要時找得到，但不會在剛進頁面時就跳出來搶商品的注意力。
+                沒有圖的商品不顯示 */}
+            {card.image && (
+              <p className="mt-7 text-[11px] leading-[1.6] text-[#bcbfc5]">
+                圖片上的活動優惠不適用於 AIFIAN 購買
+              </p>
             )}
           </div>
         </div>
