@@ -18,6 +18,9 @@ const SWIPE_DIST = 44;
 // sheet 不升到頂，上面留這麼高的一條縫：看得到底下的對話還在，才像疊上去的一層；
 // 這條縫也是關閉的去處（點一下收起來），所以不另外放關閉鍵
 const SHEET_TOP_GAP = 72;
+// 頁面上的注意事項小字（圖片活動、AI 整理來源）共用同一組字級與灰，
+// 位置各自貼著它說明的東西，但看起來要是同一類的字
+const NOTE_CLASS = "text-[12px] leading-[1.6] text-[#a1a5ac]";
 
 type Phase = "show" | "out" | "in";
 
@@ -296,7 +299,7 @@ export default function ProductSheet({
                             </span>
                           ))}
                         </div>
-                        <p className="mt-3 text-[11.5px] text-[#a1a5ac]">
+                        <p className={`mt-3 ${NOTE_CLASS}`}>
                           AI 整理自社群公開討論，非逐字引用
                         </p>
                       </>
@@ -310,30 +313,14 @@ export default function ProductSheet({
               )}
 
               {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
-                放在內容最後，不壓在圖上、也不擋在商品資訊前面；拿掉底色，
-                改成一個提示 icon 加灰字，看得出是注意事項但不另外切一塊區域出來。
+                放在內容最後，不壓在圖上、也不擋在商品資訊前面。
+                頁面上的注意事項（這句跟「大家怎麼說」裡的 AI 說明）共用 NOTE_CLASS，
+                同一個字級跟灰，各自貼著它說明的東西，看起來才像同一類小字。
                 沒有圖的商品不顯示 */}
               {card.image && (
-                <div className="mt-6 flex items-start gap-1.5 text-[#a1a5ac]">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="mt-[3px] shrink-0"
-                    aria-hidden
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 16v-4M12 8h.01" />
-                  </svg>
-                  <p className="text-[12.5px] leading-[1.5]">
-                    圖片上的活動優惠不適用於 AIFIAN 購買
-                  </p>
-                </div>
+                <p className={`mt-6 ${NOTE_CLASS}`}>
+                  圖片上的活動優惠不適用於 AIFIAN 購買
+                </p>
               )}
             </div>
           </div>
