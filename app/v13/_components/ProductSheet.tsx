@@ -20,7 +20,7 @@ const SWIPE_DIST = 44;
 const SHEET_TOP_GAP = 72;
 // 頁面上的注意事項小字（圖片活動、AI 整理來源）共用同一組字級與灰，
 // 位置各自貼著它說明的東西，但看起來要是同一類的字
-const NOTE_CLASS = "text-[12px] leading-[1.6] text-[#a1a5ac]";
+const NOTE_CLASS = "text-[13px] leading-[1.6] text-[#a1a5ac]";
 
 // 注意事項小字：前面帶一個點，一眼看得出是條列的提醒。
 // 點跟文字分成兩欄，第二行會對齊第一行的文字，不會繞到點的下面
@@ -312,7 +312,7 @@ export default function ProductSheet({
                           {detail.reviewTags.map((t) => (
                             <span
                               key={t}
-                              className="rounded-full border border-[#e2e5e9] bg-white px-3.5 py-1.5 text-[12.5px] text-gray-800"
+                              className="rounded-full bg-[#f1f3f5] px-3.5 py-1.5 text-[12.5px] text-gray-800"
                             >
                               {t}
                             </span>
