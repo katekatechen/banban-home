@@ -146,16 +146,26 @@ export default function ProductSheet({
         className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
       >
         <div className="flex flex-col" style={contentStyle}>
-          <div
-            role="img"
-            aria-label={card.name}
-            className="aspect-square w-full shrink-0 bg-[#eef0f2] bg-cover bg-center"
-            style={
-              card.image
-                ? { backgroundImage: `url('${card.image}')` }
-                : undefined
-            }
-          />
+          <div className="relative shrink-0">
+            <div
+              role="img"
+              aria-label={card.name}
+              className="aspect-square w-full bg-[#eef0f2] bg-cover bg-center"
+              style={
+                card.image
+                  ? { backgroundImage: `url('${card.image}')` }
+                  : undefined
+              }
+            />
+            {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
+                註記就壓在圖的右下角，跟誤會的來源貼在一起。商品圖深淺不一，灰字會看不見，
+                所以用半透明深色膠囊加白字，壓在誰身上都讀得到。沒有圖的商品不顯示 */}
+            {card.image && (
+              <p className="absolute bottom-3 right-3 rounded-full bg-black/45 px-3 py-1 text-[12px] leading-[1.5] text-white backdrop-blur-[2px]">
+                圖片上的活動優惠不適用於 AIFIAN 購買
+              </p>
+            )}
+          </div>
 
           <div className="px-5 pb-6 pt-[18px]">
             <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
@@ -258,16 +268,6 @@ export default function ProductSheet({
                   )}
                 </div>
               </>
-            )}
-
-            {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
-                放在內容最後當小字附註，跟上面「AI 整理自社群公開討論」同一個層級：
-                需要時找得到，但不會在剛進頁面時就跳出來搶商品的注意力。
-                沒有圖的商品不顯示 */}
-            {card.image && (
-              <p className="mt-7 text-[11px] leading-[1.6] text-[#bcbfc5]">
-                圖片上的活動優惠不適用於 AIFIAN 購買
-              </p>
             )}
           </div>
         </div>
