@@ -297,7 +297,9 @@ export default function ProductSheet({
                     </div>
                   </div>
 
-                  <div className="mt-7 rounded-[16px] bg-[#f6f7f8] p-[18px]">
+                  {/* 白底灰線，跟上面那張重點卡同一種框，兩張才像同一套；
+                      內容來源的說明不放在卡裡，跟其他注意事項一起收到頁面最後 */}
+                  <div className="mt-7 rounded-[16px] border border-[#e8eaed] p-[18px]">
                     <p className="mb-3 text-[15px] font-bold text-gray-800">
                       大家怎麼說
                     </p>
@@ -316,9 +318,6 @@ export default function ProductSheet({
                             </span>
                           ))}
                         </div>
-                        <Note className="mt-3">
-                          AI 整理自社群公開討論，非逐字引用
-                        </Note>
                       </>
                     ) : (
                       <p className="text-[14px] leading-[1.7] text-[#a1a5ac]">
@@ -334,8 +333,13 @@ export default function ProductSheet({
                 頁面上的注意事項（這句跟「大家怎麼說」裡的 AI 說明）共用 Note，
                 同一個字級跟灰，各自貼著它說明的東西，看起來才像同一類小字。
                 沒有圖的商品不顯示 */}
-              {card.image && (
+              {detail?.reviewText && (
                 <Note className="mt-6">
+                  大家怎麼說由 AI 整理自社群公開討論，非逐字引用
+                </Note>
+              )}
+              {card.image && (
+                <Note className={detail?.reviewText ? "mt-1.5" : "mt-6"}>
                   圖片上的活動優惠不適用於 AIFIAN 購買
                 </Note>
               )}
