@@ -162,7 +162,7 @@ export default function ProductSheet({
                 在這裡買並不適用。誤會是在看圖那一刻發生的，所以註記貼著圖放，
                 不等到頁尾的注意事項才講。沒有圖的商品不顯示 */}
             {card.image && (
-              <p className="mb-2.5 text-[12px] leading-[1.5] text-[#a1a5ac]">
+              <p className="mb-2 text-[11px] leading-[1.45] text-[#bcbfc5]">
                 圖片活動優惠不適用於本站購買
               </p>
             )}
