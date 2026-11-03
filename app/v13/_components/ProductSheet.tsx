@@ -6,11 +6,18 @@ import type { RecCard } from "../_lib/chat-storage";
 import { EASING, PAGE_TRANSITION_MS } from "../_lib/page-transition";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
 
-// 商品細節頁：點商品卡之後從右邊推進來的整頁（不是 bottom sheet），
-// 進場／退場跟其他 push 頁面共用 usePageSlide 的那套滑動轉場。
+// 商品細節頁：有兩種開啟方式，由 present 決定。
+// 「push」是兌換分頁用的，從右邊推進來的整頁，跟其他 push 頁面共用同一套滑動轉場；
+// 「sheet」是對話裡點商品卡用的，從下往上升起的 bottom sheet：頂端收圓角、不會升到頂，
+// 上面留一條縫看得到底下的對話，沒有關閉鍵，往下滑或點上面那條縫就收起來。
+// 對話是一條連續的內容，從右邊推整頁會像離開對話去了別的地方，由下往上升起才像
+// 在同一個對話上面疊一層，關掉之後還在原來的位置。
 // 用 portal 掛到 v13 手機外框（#v13-frame）底下，不掛在首頁裡面——
 // 首頁被 TabTransition 的 transform 包著，自己的 z-index 再高也蓋不過 tabbar
 const SWIPE_DIST = 44;
+// sheet 不升到頂，上面留這麼高的一條縫：看得到底下的對話還在，才像疊上去的一層；
+// 這條縫也是關閉的去處（點一下收起來），所以不另外放關閉鍵
+const SHEET_TOP_GAP = 72;
 
 type Phase = "show" | "out" | "in";
 
@@ -18,6 +25,7 @@ export default function ProductSheet({
   cards,
   startIndex,
   addedIds,
+  present = "push",
   onToggleCart,
   onBuy,
   onAsk,
@@ -26,6 +34,8 @@ export default function ProductSheet({
   cards: RecCard[];
   startIndex: number;
   addedIds: string[];
+  // 從哪裡開：兌換分頁用 push（右進右出），對話裡用 sheet（下進下出）
+  present?: "push" | "sheet";
   onToggleCart: (card: RecCard) => void;
   onBuy: (card: RecCard) => void;
   // 「繼續聊」：關掉細節頁，帶著商品名稱回到對話
@@ -88,6 +98,7 @@ export default function ProductSheet({
   if (!frame) return null;
 
   const card = cards[index];
+  const isSheet = present === "sheet";
   const detail = PRODUCT_DETAILS[card.id];
   const added = addedIds.includes(card.id);
 
@@ -112,227 +123,281 @@ export default function ProductSheet({
           };
 
   return createPortal(
-    <div
-      onTouchStart={(e) => {
-        touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      }}
-      onTouchEnd={(e) => {
-        if (!touch.current) return;
-        const dx = e.changedTouches[0].clientX - touch.current.x;
-        const dy = e.changedTouches[0].clientY - touch.current.y;
-        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy))
-          nav(dx < 0 ? 1 : -1);
-        touch.current = null;
-      }}
-      className="absolute inset-0 z-50 flex flex-col overflow-hidden bg-white"
-      style={{
-        transform: entered && !closing ? "translateX(0)" : "translateX(100%)",
-        transition: entered
-          ? `transform ${PAGE_TRANSITION_MS}ms ${EASING}`
-          : "none",
-      }}
-    >
-      {/* 返回鍵：疊在商品圖上，白底加陰影才看得到 */}
-      <button
-        onClick={close}
-        aria-label="返回"
-        className="absolute left-4 top-4 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 shadow-[0_1px_4px_rgba(0,0,0,0.18)]"
-      >
-        <img src="/figma/nav-arrow-left.svg" alt="" className="size-5" />
-      </button>
-
+    <>
+      {/* sheet 的底幕：壓暗底下的對話，點一下（包含上面那條縫）就收起來 */}
+      {isSheet && (
+        <div
+          onClick={close}
+          aria-hidden
+          className="absolute inset-0 z-40 bg-black/25"
+          style={{
+            opacity: entered && !closing ? 1 : 0,
+            transition: `opacity ${PAGE_TRANSITION_MS}ms ${EASING}`,
+          }}
+        />
+      )}
       <div
-        ref={scrollRef}
-        className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        onTouchStart={(e) => {
+          touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }}
+        onTouchEnd={(e) => {
+          if (!touch.current) return;
+          const dx = e.changedTouches[0].clientX - touch.current.x;
+          const dy = e.changedTouches[0].clientY - touch.current.y;
+          touch.current = null;
+          // sheet 往下滑關掉：只認從最上面開始的下滑，不然會跟內容捲動打架
+          if (isSheet && dy > 70 && Math.abs(dy) > Math.abs(dx)) {
+            if ((scrollRef.current?.scrollTop ?? 0) <= 0) close();
+            return;
+          }
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy))
+            nav(dx < 0 ? 1 : -1);
+        }}
+        className={`absolute z-50 flex flex-col overflow-hidden bg-white ${
+          isSheet
+            ? "inset-x-0 bottom-0 rounded-t-[20px] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
+            : "inset-0"
+        }`}
+        style={{
+          top: isSheet ? SHEET_TOP_GAP : undefined,
+          transform:
+            entered && !closing
+              ? "translate(0, 0)"
+              : isSheet
+                ? "translateY(100%)"
+                : "translateX(100%)",
+          transition: entered
+            ? `transform ${PAGE_TRANSITION_MS}ms ${EASING}`
+            : "none",
+        }}
       >
-        <div className="flex flex-col" style={contentStyle}>
+        {/* push 的返回鍵：疊在商品圖上，白底加陰影才看得到。
+          sheet 沒有關閉鍵，改放一條把手，告訴人這層可以往下收 */}
+        {isSheet ? (
           <div
-            role="img"
-            aria-label={card.name}
-            className="aspect-square w-full shrink-0 bg-[#eef0f2] bg-cover bg-center"
-            style={
-              card.image
-                ? { backgroundImage: `url('${card.image}')` }
-                : undefined
-            }
+            aria-hidden
+            className="absolute left-1/2 top-2.5 z-10 h-1 w-10 -translate-x-1/2 rounded-full bg-white/70 shadow-[0_0_3px_rgba(0,0,0,0.25)]"
           />
+        ) : (
+          <button
+            onClick={close}
+            aria-label="返回"
+            className="absolute left-4 top-4 z-10 flex size-9 items-center justify-center rounded-full bg-white/90 shadow-[0_1px_4px_rgba(0,0,0,0.18)]"
+          >
+            <img src="/figma/nav-arrow-left.svg" alt="" className="size-5" />
+          </button>
+        )}
 
-          <div className="px-5 pb-6 pt-[18px]">
-            <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
-              {detail?.fullName ?? card.name}
-            </p>
-            <p className="mt-2.5 text-[24px] font-bold text-gray-800">
-              NT$ {card.price.toLocaleString()}
-            </p>
+        <div
+          ref={scrollRef}
+          className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        >
+          <div className="flex flex-col" style={contentStyle}>
+            <div
+              role="img"
+              aria-label={card.name}
+              className="aspect-square w-full shrink-0 bg-[#eef0f2] bg-cover bg-center"
+              style={
+                card.image
+                  ? { backgroundImage: `url('${card.image}')` }
+                  : undefined
+              }
+            />
 
-            {detail && (
-              <>
-                <div className="mt-7">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-[15px] font-bold text-gray-800">概覽</p>
-                    <p className="text-[12px] text-[#a1a5ac]">AI 整理</p>
-                  </div>
-                  <p className="whitespace-pre-line text-[14.5px] leading-[1.85] text-gray-800">
-                    {detail.overview}
-                  </p>
-                </div>
+            <div className="px-5 pb-6 pt-[18px]">
+              <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
+                {detail?.fullName ?? card.name}
+              </p>
+              <p className="mt-2.5 text-[24px] font-bold text-gray-800">
+                NT$ {card.price.toLocaleString()}
+              </p>
 
-                <div className="mt-7 border-t border-[#eef0f1] pt-6">
-                  <p className="mb-3.5 text-[15px] font-bold text-gray-800">
-                    規格
-                  </p>
-                  {detail.specs.map((row, i) => (
-                    <div
-                      key={row.label}
-                      className="flex rounded-[8px] px-1 py-2.5"
-                      style={{
-                        background: i % 2 ? "#f8f9fa" : "transparent",
-                      }}
-                    >
-                      <p className="w-[34%] shrink-0 text-[13.5px] text-[#a1a5ac]">
-                        {row.label}
+              {detail && (
+                <>
+                  <div className="mt-7">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[15px] font-bold text-gray-800">
+                        概覽
                       </p>
-                      <p className="flex-1 text-[13.5px] font-semibold text-gray-800">
-                        {row.value}
-                      </p>
+                      <p className="text-[12px] text-[#a1a5ac]">AI 整理</p>
                     </div>
-                  ))}
-                </div>
+                    <p className="whitespace-pre-line text-[14.5px] leading-[1.85] text-gray-800">
+                      {detail.overview}
+                    </p>
+                  </div>
 
-                <div className="mt-7 rounded-[16px] border border-[#e8eaed] p-[18px]">
-                  {detail.highlightSummary && (
-                    <>
-                      <p className="mb-3.5 text-[13.5px] text-[#a1a5ac]">
-                        {detail.highlightSummary}
-                      </p>
-                      <div className="mb-4 h-px bg-[#eef0f1]" />
-                    </>
-                  )}
-                  <div className="flex">
-                    {detail.highlights.map((h, i) => (
+                  <div className="mt-7 border-t border-[#eef0f1] pt-6">
+                    <p className="mb-3.5 text-[15px] font-bold text-gray-800">
+                      規格
+                    </p>
+                    {detail.specs.map((row, i) => (
                       <div
-                        key={h.title}
-                        className="min-w-0 flex-1 px-1.5"
+                        key={row.label}
+                        className="flex rounded-[8px] px-1 py-2.5"
                         style={{
-                          borderLeft: i === 0 ? "none" : "1px solid #eef0f1",
+                          background: i % 2 ? "#f8f9fa" : "transparent",
                         }}
                       >
-                        <p className="text-[13.5px] font-bold leading-[1.4] text-gray-800">
-                          {h.title}
+                        <p className="w-[34%] shrink-0 text-[13.5px] text-[#a1a5ac]">
+                          {row.label}
                         </p>
-                        <p className="mt-1.5 text-[12px] text-[#a1a5ac]">
-                          {h.sub}
+                        <p className="flex-1 text-[13.5px] font-semibold text-gray-800">
+                          {row.value}
                         </p>
                       </div>
                     ))}
                   </div>
-                </div>
 
-                <div className="mt-7 rounded-[16px] bg-[#f6f7f8] p-[18px]">
-                  <p className="mb-3 text-[15px] font-bold text-gray-800">
-                    大家怎麼說
-                  </p>
-                  {detail.reviewText ? (
-                    <>
-                      <p className="text-[14px] leading-[1.85] text-gray-800">
-                        {detail.reviewText}
-                      </p>
-                      <div className="mt-3.5 flex flex-wrap gap-2">
-                        {detail.reviewTags.map((t) => (
-                          <span
-                            key={t}
-                            className="rounded-full border border-[#e2e5e9] bg-white px-3.5 py-1.5 text-[12.5px] text-gray-800"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="mt-3 text-[11.5px] text-[#a1a5ac]">
-                        AI 整理自社群公開討論，非逐字引用
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-[14px] leading-[1.7] text-[#a1a5ac]">
-                      這個還沒人討論過，要不要第一個試試看
+                  <div className="mt-7 rounded-[16px] border border-[#e8eaed] p-[18px]">
+                    {detail.highlightSummary && (
+                      <>
+                        <p className="mb-3.5 text-[13.5px] text-[#a1a5ac]">
+                          {detail.highlightSummary}
+                        </p>
+                        <div className="mb-4 h-px bg-[#eef0f1]" />
+                      </>
+                    )}
+                    <div className="flex">
+                      {detail.highlights.map((h, i) => (
+                        <div
+                          key={h.title}
+                          className="min-w-0 flex-1 px-1.5"
+                          style={{
+                            borderLeft: i === 0 ? "none" : "1px solid #eef0f1",
+                          }}
+                        >
+                          <p className="text-[13.5px] font-bold leading-[1.4] text-gray-800">
+                            {h.title}
+                          </p>
+                          <p className="mt-1.5 text-[12px] text-[#a1a5ac]">
+                            {h.sub}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-7 rounded-[16px] bg-[#f6f7f8] p-[18px]">
+                    <p className="mb-3 text-[15px] font-bold text-gray-800">
+                      大家怎麼說
                     </p>
-                  )}
-                </div>
-              </>
-            )}
+                    {detail.reviewText ? (
+                      <>
+                        <p className="text-[14px] leading-[1.85] text-gray-800">
+                          {detail.reviewText}
+                        </p>
+                        <div className="mt-3.5 flex flex-wrap gap-2">
+                          {detail.reviewTags.map((t) => (
+                            <span
+                              key={t}
+                              className="rounded-full border border-[#e2e5e9] bg-white px-3.5 py-1.5 text-[12.5px] text-gray-800"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="mt-3 text-[11.5px] text-[#a1a5ac]">
+                          AI 整理自社群公開討論，非逐字引用
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[14px] leading-[1.7] text-[#a1a5ac]">
+                        這個還沒人討論過，要不要第一個試試看
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
-            {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
-                放在內容最後，不壓在圖上、也不擋在商品資訊前面；灰底黑字的區塊
-                （底色沿用「大家怎麼說」那塊），一眼看得出是注意事項，字也不會太淡。
+              {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
+                放在內容最後，不壓在圖上、也不擋在商品資訊前面；拿掉底色，
+                改成一個提示 icon 加灰字，看得出是注意事項但不另外切一塊區域出來。
                 沒有圖的商品不顯示 */}
-            {card.image && (
-              <div className="mt-6 rounded-[12px] bg-[#f6f7f8] px-4 py-3">
-                <p className="text-[12.5px] leading-[1.65] text-gray-800">
-                  圖片上的活動優惠不適用於 AIFIAN 購買
-                </p>
-              </div>
-            )}
+              {card.image && (
+                <div className="mt-6 flex items-start gap-1.5 text-[#a1a5ac]">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mt-[3px] shrink-0"
+                    aria-hidden
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  <p className="text-[12.5px] leading-[1.5]">
+                    圖片上的活動優惠不適用於 AIFIAN 購買
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 底部固定的操作列（照參考圖）：左邊文字按鈕「繼續聊」帶著這個商品回對話，
+        {/* 底部固定的操作列（照參考圖）：左邊文字按鈕「繼續聊」帶著這個商品回對話，
             右邊兩顆膠囊按鈕是加入購物車跟立即結帳 */}
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-[#eef0f1] bg-white px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
-        <button
-          onClick={() => onAsk(card)}
-          className="flex shrink-0 items-center gap-1 px-1.5 text-[15px] text-[#4a5565]"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M10 4.5c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Z" />
-            <path d="M18 3v4M16 5h4" />
-            <path d="M18.5 16.5v3M17 18h3" />
-          </svg>
-          繼續聊
-        </button>
-        {added ? (
+        <div className="flex shrink-0 items-center gap-2.5 border-t border-[#eef0f1] bg-white px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
           <button
-            onClick={() => onToggleCart(card)}
-            className="flex h-11 flex-1 items-center justify-center gap-1 rounded-full border-[1.5px] border-[#1f8a5b] bg-[rgba(31,138,91,0.08)] text-[15px] font-semibold text-[#1f8a5b]"
+            onClick={() => onAsk(card)}
+            className="flex shrink-0 items-center gap-1 px-1.5 text-[15px] text-[#4a5565]"
           >
             <svg
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.6"
+              strokeWidth="1.6"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M20 6 9 17l-5-5" />
+              <path d="M10 4.5c.6 3.6 2.4 5.4 6 6-3.6.6-5.4 2.4-6 6-.6-3.6-2.4-5.4-6-6 3.6-.6 5.4-2.4 6-6Z" />
+              <path d="M18 3v4M16 5h4" />
+              <path d="M18.5 16.5v3M17 18h3" />
             </svg>
-            已加入
+            繼續聊
           </button>
-        ) : (
+          {added ? (
+            <button
+              onClick={() => onToggleCart(card)}
+              className="flex h-11 flex-1 items-center justify-center gap-1 rounded-full border-[1.5px] border-[#1f8a5b] bg-[rgba(31,138,91,0.08)] text-[15px] font-semibold text-[#1f8a5b]"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              已加入
+            </button>
+          ) : (
+            <button
+              onClick={() => onToggleCart(card)}
+              className="flex h-11 flex-1 items-center justify-center rounded-full border-[1.5px] border-gray-800 text-[15px] font-semibold text-gray-800"
+            >
+              加入購物車
+            </button>
+          )}
           <button
-            onClick={() => onToggleCart(card)}
-            className="flex h-11 flex-1 items-center justify-center rounded-full border-[1.5px] border-gray-800 text-[15px] font-semibold text-gray-800"
+            onClick={() => onBuy(card)}
+            className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#ef4d4d] text-[15px] font-semibold text-white shadow-[0_4px_12px_rgba(239,77,77,0.35)]"
           >
-            加入購物車
+            立即結帳
           </button>
-        )}
-        <button
-          onClick={() => onBuy(card)}
-          className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#ef4d4d] text-[15px] font-semibold text-white shadow-[0_4px_12px_rgba(239,77,77,0.35)]"
-        >
-          立即結帳
-        </button>
+        </div>
       </div>
-    </div>,
+    </>,
     frame,
   );
 }

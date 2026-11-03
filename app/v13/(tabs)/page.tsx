@@ -1777,6 +1777,7 @@ export default function V13HomePage() {
           cards={sheet.cards}
           startIndex={sheet.index}
           addedIds={addedIds}
+          present="sheet"
           onToggleCart={toggleCartFromSheet}
           onBuy={buyFromSheet}
           onAsk={(card) => {
