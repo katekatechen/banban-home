@@ -22,6 +22,23 @@ const SHEET_TOP_GAP = 72;
 // 位置各自貼著它說明的東西，但看起來要是同一類的字
 const NOTE_CLASS = "text-[12px] leading-[1.6] text-[#a1a5ac]";
 
+// 注意事項小字：前面帶一個點，一眼看得出是條列的提醒。
+// 點跟文字分成兩欄，第二行會對齊第一行的文字，不會繞到點的下面
+function Note({
+  className = "",
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <p className={`flex gap-1.5 ${NOTE_CLASS} ${className}`}>
+      <span aria-hidden>•</span>
+      <span>{children}</span>
+    </p>
+  );
+}
+
 type Phase = "show" | "out" | "in";
 
 export default function ProductSheet({
@@ -299,9 +316,9 @@ export default function ProductSheet({
                             </span>
                           ))}
                         </div>
-                        <p className={`mt-3 ${NOTE_CLASS}`}>
+                        <Note className="mt-3">
                           AI 整理自社群公開討論，非逐字引用
-                        </p>
+                        </Note>
                       </>
                     ) : (
                       <p className="text-[14px] leading-[1.7] text-[#a1a5ac]">
@@ -314,13 +331,13 @@ export default function ProductSheet({
 
               {/* 商品圖多半直接取自來源網站，圖上常印著那邊的活動訊息，在這裡買並不適用。
                 放在內容最後，不壓在圖上、也不擋在商品資訊前面。
-                頁面上的注意事項（這句跟「大家怎麼說」裡的 AI 說明）共用 NOTE_CLASS，
+                頁面上的注意事項（這句跟「大家怎麼說」裡的 AI 說明）共用 Note，
                 同一個字級跟灰，各自貼著它說明的東西，看起來才像同一類小字。
                 沒有圖的商品不顯示 */}
               {card.image && (
-                <p className={`mt-6 ${NOTE_CLASS}`}>
+                <Note className="mt-6">
                   圖片上的活動優惠不適用於 AIFIAN 購買
-                </p>
+                </Note>
               )}
             </div>
           </div>
