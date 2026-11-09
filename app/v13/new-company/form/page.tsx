@@ -371,7 +371,7 @@ export default function CorpFormPage() {
 
         <Section
           title="負責人或代理人"
-          intro="可以是公司負責人，或公司授權的代理人。這支手機會作為企業帳號的聯絡方式"
+          intro="可以是公司負責人，或公司授權的代理人"
         >
           <Field label="姓名" helper="中文或英文姓名，需與證件相同">
             <input
