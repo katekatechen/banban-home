@@ -45,7 +45,7 @@ export const HOME_RESET_EVENT = "v13:home-reset";
 export default function TabBar() {
   const pathname = usePathname();
   const activeIndex = TABS.findIndex((tab) => tab.href === pathname);
-  // 目前是企業帳號身分：「帳號」icon 換成大樓（照 Figma D1 tabbar），在其他分頁也看得出身分
+  // 目前是企業帳號身分：「帳號」icon 換成大樓（照 Figma D1 tabbar；目前分頁用實心），在其他分頁也看得出身分
   const { corp, mode } = useCorp();
   const asCompany = mode === "company" && corp !== "none";
 
@@ -82,7 +82,9 @@ export default function TabBar() {
                 <img
                   src={
                     asCompany && tab.href === "/v13/account"
-                      ? "/figma/v13-tab-account-company.svg"
+                      ? active
+                        ? "/figma/v13-tab-account-company-active.svg"
+                        : "/figma/v13-tab-account-company.svg"
                       : active
                         ? tab.activeIcon
                         : tab.icon

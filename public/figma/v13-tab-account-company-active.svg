@@ -1,0 +1,14 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<mask id="windows" maskUnits="userSpaceOnUse" x="0" y="0" width="20" height="20">
+<rect width="20" height="20" fill="white"/>
+<rect x="7.6" y="6.75" width="1.5" height="1.5" rx="0.4" fill="black"/>
+<rect x="10.9" y="6.75" width="1.5" height="1.5" rx="0.4" fill="black"/>
+<rect x="7.6" y="10.08" width="1.5" height="1.5" rx="0.4" fill="black"/>
+<rect x="10.9" y="10.08" width="1.5" height="1.5" rx="0.4" fill="black"/>
+<rect x="7.6" y="13.42" width="1.5" height="1.5" rx="0.4" fill="black"/>
+<rect x="10.9" y="13.42" width="1.5" height="1.5" rx="0.4" fill="black"/>
+</mask>
+</defs>
+<path mask="url(#windows)" d="M5 16.9V4.76667C5 4.4353 5.26863 4.16667 5.6 4.16667H10V3.1C10 2.76863 10.2686 2.5 10.6 2.5H14.4C14.7314 2.5 15 2.76863 15 3.1V16.9C15 17.2314 14.7314 17.5 14.4 17.5H5.6C5.26863 17.5 5 17.2314 5 16.9Z" fill="#1E2939" stroke="#1E2939" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
