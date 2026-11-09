@@ -45,7 +45,7 @@ export const HOME_RESET_EVENT = "v13:home-reset";
 export default function TabBar() {
   const pathname = usePathname();
   const activeIndex = TABS.findIndex((tab) => tab.href === pathname);
-  // 目前是企業帳號身分：「帳號」icon 右上角加「企」角標，在其他分頁也看得出身分
+  // 目前是企業帳號身分：「帳號」icon 換成大樓（照 Figma D1 tabbar），在其他分頁也看得出身分
   const { corp, mode } = useCorp();
   const asCompany = mode === "company" && corp !== "none";
 
@@ -80,15 +80,16 @@ export default function TabBar() {
             >
               <span className="relative">
                 <img
-                  src={active ? tab.activeIcon : tab.icon}
+                  src={
+                    asCompany && tab.href === "/v13/account"
+                      ? "/figma/v13-tab-account-company.svg"
+                      : active
+                        ? tab.activeIcon
+                        : tab.icon
+                  }
                   alt=""
                   className="h-5 w-auto"
                 />
-                {asCompany && tab.href === "/v13/account" && (
-                  <span className="absolute -right-2.5 -top-1.5 rounded-lg border-[1.5px] border-white bg-[#1e2939] px-[3px] text-[9px] font-semibold leading-[11px] text-white">
-                    企
-                  </span>
-                )}
               </span>
               <span
                 className={`text-[10px] leading-[11px] text-gray-800 ${
