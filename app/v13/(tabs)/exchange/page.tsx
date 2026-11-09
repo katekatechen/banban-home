@@ -21,6 +21,7 @@ import {
   WISHES,
   WISHES_SOON,
 } from "../../_lib/mock-data";
+import { money0, rewardPrice } from "../../_lib/reward-price";
 
 // 導覽列浮在內容上面用漸層，不是佔自己一排空間的實色色塊，跟回饋分頁
 // 同一套做法：頭部實際內容高度桌機預覽（sm+）跟真手機瀏覽器（<sm）差了
@@ -271,6 +272,7 @@ export default function ExchangePage() {
           products={TRENDING_PRODUCTS}
           onOpen={(i) => setSheet({ cards: TRENDING_CARDS, index: i })}
           addedIds={addedIds}
+          cart={cart}
           onAddToCart={(p, from) => {
             if (addedIds.includes(p.id)) {
               setCart(removeFromCart(cart, p.id));
@@ -291,6 +293,7 @@ export default function ExchangePage() {
           products={RECOMMENDED_PRODUCTS}
           onOpen={(i) => setSheet({ cards: RECOMMENDED_CARDS, index: i })}
           addedIds={addedIds}
+          cart={cart}
           onAddToCart={(p, from) => {
             if (addedIds.includes(p.id)) {
               setCart(removeFromCart(cart, p.id));
@@ -417,6 +420,7 @@ export default function ExchangePage() {
           cards={sheet.cards}
           startIndex={sheet.index}
           addedIds={addedIds}
+          cart={cart}
           onToggleCart={(card) =>
             setCart(
               addedIds.includes(card.id)
@@ -481,6 +485,7 @@ function ProductRow({
   subtitle,
   products,
   addedIds,
+  cart,
   onOpen,
   onAddToCart,
 }: {
@@ -488,6 +493,7 @@ function ProductRow({
   subtitle: string;
   products: typeof TRENDING_PRODUCTS;
   addedIds: string[];
+  cart: CartItem[];
   onOpen: (index: number) => void;
   onAddToCart: (
     product: (typeof TRENDING_PRODUCTS)[number],
@@ -504,10 +510,9 @@ function ProductRow({
       </div>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
         {products.map((p, i) => {
-          // 折抵後要補的差額：回饋跟金額是 1:1，跟結帳頁同一套算法。
-          // 餘額帶小數（240.2），金額取整數顯示，跟結帳頁實際折抵的結果一致
-          const shortfall = Math.max(0, p.price - REWARD_BALANCE);
-          const fullyCovered = shortfall === 0;
+          // 折抵試算跟商品細節頁、對話商品卡共用 rewardPrice：
+          // 扣掉購物車裡其他商品已經佔掉的回饋，不會每件都說 0 元
+          const { shortfall, fullyCovered } = rewardPrice(p.price, cart, p.id);
           const added = addedIds.includes(p.id);
           return (
             // 卡片本身是可點的，但裡面還有一顆加入購物車按鈕，所以外層
@@ -592,10 +597,7 @@ function ProductRow({
                       fullyCovered ? "text-brand" : "text-gray-800"
                     }`}
                   >
-                    $
-                    {shortfall.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })}
+                    ${money0(shortfall)}
                   </p>
                 </div>
               </div>

@@ -40,7 +40,10 @@ export default function Checkout({
   const [frame, setFrame] = useState<HTMLElement | null>(null);
   const [deselected, setDeselected] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Record<string, string>>({});
-  const [points, setPoints] = useState("");
+  // null ＝ 還沒自己調過，預設就折到最大：從兌換頁的「折抵後 $0」一路點進來，
+  // 在結帳看到的還是同一個數字，不用自己記得按「全部折抵」。
+  // 自己輸入過之後才改用輸入的值，購物車再變動也不會偷偷蓋掉
+  const [points, setPoints] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<CartItem | null>(null);
   const [atBottom, setAtBottom] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -71,7 +74,11 @@ export default function Checkout({
   const freeShip = subtotal >= FREE_SHIP || subtotal === 0;
   const ship = freeShip ? 0 : SHIP_FEE;
   const total = subtotal + ship;
-  const reward = Math.min(parseInt(points, 10) || 0, REWARD_BALANCE, total);
+  const maxRedeem = Math.floor(Math.min(REWARD_BALANCE, total));
+  const reward =
+    points === null
+      ? maxRedeem
+      : Math.min(parseInt(points, 10) || 0, REWARD_BALANCE, total);
   const payable = total - reward;
 
   // 捲到最底、已經看得到金額明細時，底部操作列左邊的「實付」收起來，
@@ -392,7 +399,7 @@ export default function Checkout({
               </div>
               <div className="mt-3 flex gap-2.5">
                 <input
-                  value={points}
+                  value={points ?? String(maxRedeem)}
                   onChange={(e) =>
                     setPoints(e.target.value.replace(/[^\d]/g, ""))
                   }
@@ -401,9 +408,7 @@ export default function Checkout({
                   className="h-11 min-w-0 flex-1 rounded-[11px] border border-[#dfe2e6] bg-transparent px-3.5 text-[15px] text-gray-800 outline-none"
                 />
                 <button
-                  onClick={() =>
-                    setPoints(String(Math.floor(Math.min(REWARD_BALANCE, total))))
-                  }
+                  onClick={() => setPoints(String(maxRedeem))}
                   className="shrink-0 rounded-[11px] bg-[#f0f1f3] px-[15px] text-[14px] font-semibold text-gray-800"
                 >
                   全部折抵

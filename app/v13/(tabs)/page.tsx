@@ -45,6 +45,7 @@ import {
   WINE_HOLDINGS_TOTAL_VALUE,
   WINE_PICKS,
 } from "../_lib/mock-data";
+import { money0, rewardPrice } from "../_lib/reward-price";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
 import aiLoadingAnimation from "../_lib/ai-loading.json";
 import AiConsentSheet from "../_components/AiConsentSheet";
@@ -1521,6 +1522,7 @@ export default function V13HomePage() {
                   <ChatMessage
                     key={m.id}
                     message={m}
+                    cart={cart}
                     onAdd={addFromCard}
                     onBuy={buyFromSheet}
                     onOpen={(cards, index) => setSheet({ cards, index })}
@@ -1534,6 +1536,7 @@ export default function V13HomePage() {
               <ChatMessage
                 key={m.id}
                 message={m}
+                cart={cart}
                 onAdd={addFromCard}
                 onBuy={buyFromSheet}
                 onOpen={(cards, index) => setSheet({ cards, index })}
@@ -1777,6 +1780,7 @@ export default function V13HomePage() {
           cards={sheet.cards}
           startIndex={sheet.index}
           addedIds={addedIds}
+          cart={cart}
           present="sheet"
           onToggleCart={toggleCartFromSheet}
           onBuy={buyFromSheet}
@@ -2138,12 +2142,14 @@ function Dot({ delay }: { delay: string }) {
 
 function ChatMessage({
   message,
+  cart,
   onAdd,
   onBuy,
   onOpen,
   showDisclaimer,
 }: {
   message: Message;
+  cart: CartItem[];
   onAdd: (from: HTMLElement, card: RecCard) => void;
   onBuy: (card: RecCard) => void;
   onOpen: (cards: RecCard[], index: number) => void;
@@ -2174,6 +2180,7 @@ function ChatMessage({
             <ProductCard
               key={c.id}
               card={c}
+              cart={cart}
               onAdd={onAdd}
               onBuy={onBuy}
               onOpen={() => onOpen(cards, i)}
@@ -2196,15 +2203,19 @@ function ChatMessage({
 // 點卡片其他地方打開商品細節頁，兩顆按鈕各自擋掉冒泡
 function ProductCard({
   card,
+  cart,
   onAdd,
   onBuy,
   onOpen,
 }: {
   card: RecCard;
+  cart: CartItem[];
   onAdd: (from: HTMLElement, card: RecCard) => void;
   onBuy: (card: RecCard) => void;
   onOpen: () => void;
 }) {
+  // 折抵試算跟兌換列表、商品細節頁共用同一套，對話裡看到的價格跟點進去的一致
+  const priced = rewardPrice(card.price, cart, card.id);
   return (
     <div
       data-product-card
@@ -2240,9 +2251,21 @@ function ProductCard({
           )}
         </div>
         <div className="flex w-full flex-wrap items-center gap-2">
-          <p className="whitespace-nowrap text-[16px] font-semibold leading-6 text-gray-800">
-            NT${card.price.toLocaleString()}
-          </p>
+          <div className="flex flex-col gap-0.5">
+            <p className="whitespace-nowrap text-[12px] leading-4 text-[#4a5565]">
+              折抵後價格{" "}
+              <span className="line-through">
+                NT${card.price.toLocaleString()}
+              </span>
+            </p>
+            <p
+              className={`whitespace-nowrap text-[16px] font-semibold leading-6 ${
+                priced.fullyCovered ? "text-brand" : "text-gray-800"
+              }`}
+            >
+              NT${money0(priced.shortfall)}
+            </p>
+          </div>
           <div className="flex min-w-[104px] flex-1 items-center justify-end gap-2">
             <button
               onClick={(e) => {

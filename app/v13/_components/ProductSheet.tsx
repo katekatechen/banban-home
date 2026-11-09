@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { RecCard } from "../_lib/chat-storage";
+import type { CartItem, RecCard } from "../_lib/chat-storage";
 import { EASING, PAGE_TRANSITION_MS } from "../_lib/page-transition";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
+import { money0, rewardPrice } from "../_lib/reward-price";
 
 // 商品細節頁：有兩種開啟方式，由 present 決定。
 // 「push」是兌換分頁用的，從右邊推進來的整頁，跟其他 push 頁面共用同一套滑動轉場；
@@ -45,6 +46,7 @@ export default function ProductSheet({
   cards,
   startIndex,
   addedIds,
+  cart,
   present = "push",
   onToggleCart,
   onBuy,
@@ -54,6 +56,7 @@ export default function ProductSheet({
   cards: RecCard[];
   startIndex: number;
   addedIds: string[];
+  cart: CartItem[];
   // 從哪裡開：兌換分頁用 push（右進右出），對話裡用 sheet（下進下出）
   present?: "push" | "sheet";
   onToggleCart: (card: RecCard) => void;
@@ -118,6 +121,7 @@ export default function ProductSheet({
   if (!frame) return null;
 
   const card = cards[index];
+  const priced = rewardPrice(card.price, cart, card.id);
   const isSheet = present === "sheet";
   const detail = PRODUCT_DETAILS[card.id];
   const added = addedIds.includes(card.id);
@@ -228,9 +232,23 @@ export default function ProductSheet({
               <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
                 {detail?.fullName ?? card.name}
               </p>
-              <p className="mt-2.5 text-[24px] font-bold text-gray-800">
-                NT$ {card.price.toLocaleString()}
-              </p>
+              {/* 價格：跟兌換列表、對話商品卡同一套說法，原價加刪除線、下面是折抵後要付的，
+                  點進來不會又變回原價。試算扣掉購物車裡其他商品已經佔掉的回饋 */}
+              <div className="mt-2.5 flex flex-col gap-1">
+                <p className="text-[13px] leading-4 text-[#4a5565]">
+                  折抵後價格{" "}
+                  <span className="line-through">
+                    NT$ {card.price.toLocaleString()}
+                  </span>
+                </p>
+                <p
+                  className={`text-[24px] font-bold ${
+                    priced.fullyCovered ? "text-brand" : "text-gray-800"
+                  }`}
+                >
+                  NT$ {money0(priced.shortfall)}
+                </p>
+              </div>
 
               {detail && (
                 <>
