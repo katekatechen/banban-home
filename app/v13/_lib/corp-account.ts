@@ -44,7 +44,7 @@ export const EMPTY_DRAFT: CorpDraft = {
   backupPassbook: false,
 };
 
-// 送出後的申請資料（企業資料頁、申請已送出頁、帳號頁用）
+// 送出後的申請資料（申請已送出頁用）
 export type CorpProfile = {
   taxId: string;
   address: string;

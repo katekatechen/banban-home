@@ -8,7 +8,6 @@ import { UNREAD_NOTIFICATIONS } from "../../_lib/mock-data";
 import {
   AtIcon,
   BuildingIcon,
-  CheckCircleIcon,
   CheckCircleSolidIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -34,8 +33,7 @@ import { EASING } from "../../_lib/page-transition";
 // v13 帳號分頁＋法人帳戶（企業帳號），照 Figma「法人帳戶｜流程」(55:30085)。
 // - 標題就是目前的身分「個人帳號 ⌄／企業帳號 ⌄」，點標題打開切換選單
 // - 標題下面只放帳號資料：個人是 @ID 與加入時間；企業是公司名稱與管理者
-// - 企業帳號：header 深色；清單第一段是「企業驗證」與「企業資料」，
-//   審核狀態只看「企業驗證」那列，申請資料都收進「企業資料」
+// - 企業帳號：header 深色；清單第一段只有一列「企業資料」，右側顯示審核狀態
 
 const STATUS = {
   reviewing: { text: "審核中", color: "#00a6c4" },
@@ -94,7 +92,7 @@ const img = (src: string) => <img src={src} alt="" className="size-6" />;
 
 export default function AccountPage() {
   const router = useRouter();
-  const { corp, mode, toast, profile } = useCorp();
+  const { corp, mode, toast } = useCorp();
   const [sheetOpen, setSheetOpen] = useState(false);
   useEffect(() => initCorpFromUrl(), []);
 
@@ -179,22 +177,14 @@ export default function AccountPage() {
         <div className="flex flex-col gap-2 py-4">
           {company ? (
             <>
-              {corp === "verified" ? (
-                <Row
-                  icon={<CheckCircleIcon className="size-6" />}
-                  title="企業驗證"
-                  trailing={<Verified />}
-                />
-              ) : (
-                <Row
-                  icon={<CheckCircleIcon className="size-6" />}
-                  title="企業驗證"
-                  desc={
-                    corp === "reviewing"
-                      ? "預計 1 至 3 個工作天完成"
-                      : "存摺影像不清楚，請重新上傳"
-                  }
-                  trailing={
+              {/* 企業驗證與企業資料合併成一列：右側只顯示審核狀態 */}
+              <Row
+                icon={<BuildingIcon className="size-6" />}
+                title="企業資料"
+                trailing={
+                  corp === "verified" ? (
+                    <Verified />
+                  ) : (
                     <span
                       className="flex shrink-0 items-center gap-2 text-[16px] font-medium leading-6"
                       style={{ color: STATUS[corp as "reviewing" | "rejected"].color }}
@@ -206,16 +196,10 @@ export default function AccountPage() {
                         <ChevronRightIcon className="size-6 text-gray-800" />
                       )}
                     </span>
-                  }
-                  // demo：點一下模擬審核往下一步走
-                  onClick={advanceVerification}
-                />
-              )}
-              <Row
-                icon={<BuildingIcon className="size-6" />}
-                title="企業資料"
-                desc={`統編 ${profile.taxId}・聯絡人 ${profile.contactName}`}
-                onClick={() => router.push("/v13/company-info")}
+                  )
+                }
+                // demo：點一下模擬審核往下一步走（需補件 → 審核中 → 已驗證）
+                onClick={advanceVerification}
               />
               <Divider />
             </>
