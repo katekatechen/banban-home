@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ProductSheet from "../../_components/ProductSheet";
 import StatusBar from "../../_components/StatusBar";
+import Cart from "../../_components/Cart";
 import Checkout from "../../_components/Checkout";
 import {
   addToCart,
@@ -69,6 +70,8 @@ export default function ExchangePage() {
     saveCart(next);
   };
   const addedIds = cart.map((it) => it.card.id);
+  // 點右上角購物車先開購物車頁，從那裡才進結帳（跟現行 App 一樣）
+  const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const toastId = useRef(0);
@@ -237,7 +240,7 @@ export default function ExchangePage() {
               >
                 <button
                   aria-label="購物車"
-                  onClick={() => setCheckoutOpen(true)}
+                  onClick={() => setCartOpen(true)}
                   tabIndex={showCart ? 0 : -1}
                   className="relative ml-1.5 flex h-11 w-7 items-center justify-center transition-transform duration-[240ms] ease-[cubic-bezier(0.2,0.9,0.25,1)]"
                   style={{ transform: showCart ? "scale(1)" : "scale(0.4)" }}
@@ -439,6 +442,18 @@ export default function ExchangePage() {
             router.push("/v13");
           }}
           onClose={() => setSheet(null)}
+        />
+      )}
+
+      {cartOpen && (
+        <Cart
+          cart={cart}
+          onCartChange={setCart}
+          onCheckout={() => {
+            setCartOpen(false);
+            setCheckoutOpen(true);
+          }}
+          onClose={() => setCartOpen(false)}
         />
       )}
 

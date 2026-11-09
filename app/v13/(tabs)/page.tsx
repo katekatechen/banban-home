@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Cart from "../_components/Cart";
 import Checkout from "../_components/Checkout";
 import ProductSheet from "../_components/ProductSheet";
 import StatusBar from "../_components/StatusBar";
@@ -361,6 +362,8 @@ export default function V13HomePage() {
   const [cart, setCart] = useState<CartItem[]>(chat.cart);
   const cartCount = cartCountOf(cart);
   const addedIds = cart.map((it) => it.card.id);
+  // 點右上角購物車先開購物車頁，從那裡才進結帳（跟現行 App 一樣）
+  const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // 購物車是空的就不顯示右上角的購物車按鈕；第一件商品飛過去的途中先讓它
   // 淡入，商品才有地方落下（按鈕一直佔著位置、只是透明，飛行終點量得到）
@@ -1209,7 +1212,7 @@ export default function V13HomePage() {
           <button
             aria-label="購物車"
             tabIndex={showCart ? 0 : -1}
-            onClick={() => setCheckoutOpen(true)}
+            onClick={() => setCartOpen(true)}
             className="relative flex h-11 items-center rounded-[22px] bg-white px-4 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
             style={{
               opacity: showCart ? 1 : 0,
@@ -1761,6 +1764,18 @@ export default function V13HomePage() {
           </button>
         </form>
       </div>
+
+      {cartOpen && (
+        <Cart
+          cart={cart}
+          onCartChange={setCart}
+          onCheckout={() => {
+            setCartOpen(false);
+            setCheckoutOpen(true);
+          }}
+          onClose={() => setCartOpen(false)}
+        />
+      )}
 
       {checkoutOpen && (
         <Checkout
