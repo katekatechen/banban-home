@@ -123,7 +123,7 @@ export default function AccountPage() {
               <span className="text-[24px] font-medium leading-8">
                 {company ? "企業帳號" : "個人帳號"}
               </span>
-              <ChevronDownIcon className="size-5" />
+              <ChevronDownIcon className="size-5" strokeWidth={2.4} />
             </button>
             <button
               onClick={() => router.push("/v13/notifications")}

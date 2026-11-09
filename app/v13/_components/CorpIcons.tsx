@@ -89,9 +89,10 @@ export function AtIcon(p: P) {
     </svg>
   );
 }
-export function ChevronDownIcon(p: P) {
+// strokeWidth 是 24 格 viewBox 的單位；帳號頁標題的切換箭頭顯示 20px、Figma 線寬 2，所以傳 2.4
+export function ChevronDownIcon(p: P & { strokeWidth?: number }) {
   return (
-    <svg {...base(p)} strokeWidth={1.5}>
+    <svg {...base(p)} strokeWidth={p.strokeWidth ?? 1.5}>
       <path d="M6 9L12 15L18 9" />
     </svg>
   );
