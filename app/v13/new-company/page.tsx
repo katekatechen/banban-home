@@ -36,18 +36,18 @@ export default function NewCompanyPage() {
           <h1 className="text-[24px] font-medium leading-8 text-gray-800">
             以公司名義使用 AIFIAN
           </h1>
-          <p className="text-[14px] leading-5 text-[#4a5565]">
+          <p className="text-[16px] leading-6 text-[#4a5565]">
             企業帳號和個人帳號分開管理，付款、交易紀錄與合約都以公司為主體。
           </p>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl bg-gray-000 p-4">
-          <p className="text-[14px] font-semibold leading-5 text-gray-800">
+          <p className="text-[16px] font-semibold leading-6 text-gray-800">
             企業帳號可以
           </p>
           {["以公司名義付款與收款", "企業酒類買賣合約", "個人與企業的交易紀錄分開"].map(
             (t) => (
-              <p key={t} className="flex items-center gap-2 text-[14px] leading-5 text-[#364153]">
+              <p key={t} className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]">
                 <CheckIcon className="size-5 shrink-0 text-[#16a34a]" />
                 {t}
               </p>
@@ -56,11 +56,11 @@ export default function NewCompanyPage() {
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl bg-gray-000 p-4">
-          <p className="text-[14px] font-semibold leading-5 text-gray-800">
+          <p className="text-[16px] font-semibold leading-6 text-gray-800">
             需要準備
           </p>
           {["負責人或代理人手機驗證", "公司統一編號與地址", "公司存摺（戶名需為公司戶）"].map((t) => (
-            <p key={t} className="flex items-center gap-2 text-[14px] leading-5 text-[#364153]">
+            <p key={t} className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]">
               <span className="flex size-5 shrink-0 items-center justify-center">
                 <span className="size-[17px] rounded-full border-[1.5px] border-[#d1d5dc]" />
               </span>
@@ -69,7 +69,7 @@ export default function NewCompanyPage() {
           ))}
         </div>
 
-        <p className="flex items-center gap-1.5 text-[13px] leading-[18px] text-[#6a7282]">
+        <p className="flex items-center gap-1.5 text-[14px] leading-[18px] text-[#6a7282]">
           <ClockIcon className="size-4 shrink-0" />
           填寫約 5 分鐘，審核約 1 至 3 個工作天
         </p>

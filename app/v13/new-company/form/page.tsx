@@ -45,13 +45,13 @@ function Field({
 }) {
   return (
     <label className="flex min-w-0 flex-1 flex-col gap-1">
-      <span className="text-[14px] font-medium leading-5 text-gray-800">{label}</span>
+      <span className="text-[16px] leading-6 text-gray-800">{label}</span>
       <span className="flex items-center border-b border-[#d1d5dc] focus-within:border-gray-800">
         {children}
       </span>
       {helper && (
         <span
-          className="text-[13px] leading-[18px]"
+          className="text-[14px] leading-[18px]"
           style={{ color: helperColor ?? "#6a7282" }}
         >
           {helper}
@@ -62,7 +62,7 @@ function Field({
 }
 
 const inputCls =
-  "min-w-0 flex-1 bg-transparent py-2 text-[22px] leading-8 text-gray-800 outline-none placeholder:text-[#d1d5dc]";
+  "min-w-0 flex-1 bg-transparent py-2 text-[24px] leading-8 text-gray-800 outline-none placeholder:text-[#d1d5dc]";
 
 function Select({
   value,
@@ -108,8 +108,8 @@ function Section({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <h2 className="text-[20px] font-medium leading-7 text-gray-800">{title}</h2>
-        <p className="text-[14px] leading-5 text-[#6a7282]">{intro}</p>
+        <h2 className="text-[24px] font-medium leading-8 text-gray-800">{title}</h2>
+        <p className="text-[16px] leading-6 text-[#6a7282]">{intro}</p>
       </div>
       {children}
     </section>
@@ -133,14 +133,14 @@ function FileCard({
         <MediaImageIcon className="size-6 text-[#99a1af]" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[14px] font-medium leading-5 text-gray-800">{title}</span>
-        <span className="truncate text-[13px] leading-[18px] text-[#6a7282]">{file}</span>
-        <span className="text-[13px] font-medium leading-[18px] text-[#16a34a]">已上傳</span>
+        <span className="text-[14px] font-medium leading-[18px] text-gray-800">{title}</span>
+        <span className="truncate text-[14px] leading-[18px] text-[#6a7282]">{file}</span>
+        <span className="text-[14px] font-medium leading-[18px] text-[#16a34a]">已上傳</span>
       </span>
       <button
         type="button"
         onClick={onAction}
-        className="shrink-0 text-[14px] font-medium leading-5 text-[#007595]"
+        className="shrink-0 text-[16px] font-semibold leading-6 text-[#007595]"
       >
         {action}
       </button>
@@ -417,12 +417,12 @@ export default function CorpFormPage() {
 
           {d.otpSent && (
             <div className="flex flex-col gap-2">
-              <span className="text-[14px] font-medium leading-5 text-gray-800">驗證碼</span>
+              <span className="text-[16px] leading-6 text-gray-800">驗證碼</span>
               <div className="relative flex gap-2" onClick={() => otpRef.current?.focus()}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <span
                     key={i}
-                    className="flex h-[52px] flex-1 items-center justify-center rounded-xl border text-[22px] font-medium text-gray-800"
+                    className="flex h-[52px] flex-1 items-center justify-center rounded-xl border text-[20px] font-semibold leading-6 text-gray-800"
                     style={{
                       borderColor:
                         !phoneVerified && i === d.otp.length ? "#1e2939" : "#e5e7eb",
@@ -446,7 +446,7 @@ export default function CorpFormPage() {
                 />
               </div>
               <p
-                className="text-[13px] leading-[18px]"
+                className="text-[14px] leading-[18px]"
                 style={{ color: phoneVerified ? "#16a34a" : "#6a7282" }}
               >
                 {phoneVerified
@@ -456,7 +456,7 @@ export default function CorpFormPage() {
               {!phoneVerified && (
                 <button
                   type="button"
-                  className="self-start text-[14px] font-medium leading-5 text-[#007595]"
+                  className="self-start text-[16px] leading-6 text-[#007595]"
                 >
                   收不到驗證碼？
                 </button>
@@ -470,7 +470,7 @@ export default function CorpFormPage() {
           intro="戶名須為公司戶（含「股份有限公司」或「有限公司」字樣），不接受個人戶。"
         >
           <div className="flex flex-col gap-3">
-            <span className="text-[14px] font-medium leading-5 text-gray-800">主要存摺</span>
+            <span className="text-[14px] font-medium leading-[18px] text-gray-800">主要存摺</span>
             {d.passbook ? (
               <FileCard
                 title="存摺封面"
@@ -516,7 +516,7 @@ export default function CorpFormPage() {
                 增加備用存摺（選填）
               </button>
             )}
-            <p className="text-[13px] leading-[18px] text-[#6a7282]">
+            <p className="text-[14px] leading-[18px] text-[#6a7282]">
               可拍照或從相簿選擇，支援 JPG／PNG／HEIC，10 MB 以內
             </p>
           </div>
@@ -532,7 +532,7 @@ export default function CorpFormPage() {
           送出申請
         </button>
         {remaining > 0 && (
-          <p className="text-[13px] leading-[18px] text-[#6a7282]">還有 {remaining} 項未填寫</p>
+          <p className="text-[14px] leading-[18px] text-[#6a7282]">還有 {remaining} 項未填寫</p>
         )}
       </div>
 
