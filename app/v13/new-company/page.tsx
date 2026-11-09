@@ -48,7 +48,7 @@ export default function NewCompanyPage() {
           {["以公司名義付款與收款", "企業酒類買賣合約", "個人與企業的交易紀錄分開"].map(
             (t) => (
               <p key={t} className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]">
-                <CheckIcon className="size-5 shrink-0 text-[#16a34a]" />
+                <CheckIcon className="size-5 shrink-0 text-[#00b8db]" />
                 {t}
               </p>
             ),
