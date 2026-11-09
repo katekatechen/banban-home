@@ -10,54 +10,51 @@ import {
   BuildingIcon,
   CheckCircleIcon,
   CheckCircleSolidIcon,
-  CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  CopyIcon,
   InfoIcon,
   PlusIcon,
+  RefreshCircularIcon,
+  ShoppingBagIcon,
 } from "../../_components/CorpIcons";
 import {
   COMPANY_NAME,
+  MANAGER_NAME,
   PERSONAL_HANDLE,
   advanceVerification,
   initCorpFromUrl,
-  switchMode,
+  requestSwitch,
+  showToast,
   useCorp,
-  type CorpStatus,
+  type AccountMode,
 } from "../../_lib/corp-account";
 import { EASING } from "../../_lib/page-transition";
 
-// v13 帳號分頁＋法人帳戶（企業帳號），照 Figma「法人帳戶｜情境完稿」(1062:24469)。
-// 個人、企業兩種身分共用同一個選單結構：企業帳號 → 帳號設定 → 其他。
-// - 還沒有企業帳號：個人選單不放新增入口，點帳號名稱打開切換選單才看得到「新增企業帳號」
-// - 已有企業帳號：切換選單只剩兩個帳號可選（一個自然人只能對應一個法人）
-// - 企業帳號：header 深色，驗證通過前不顯示法人合約、企業資料
+// v13 帳號分頁＋法人帳戶（企業帳號），照 Figma「法人帳戶｜流程」(55:30085)。
+// - 標題就是目前的身分「個人帳號 ⌄／企業帳號 ⌄」，點標題打開切換選單
+// - 標題下面只放帳號資料：個人是 @ID 與加入時間；企業是公司名稱與管理者
+// - 企業帳號：header 深色；清單第一段是「企業驗證」與「企業資料」，
+//   審核狀態只看「企業驗證」那列，申請資料都收進「企業資料」
 
-const TEAL = "#007595";
-
-const STATUS_LABEL: Record<Exclude<CorpStatus, "none">, { text: string; color: string }> = {
-  unverified: { text: "未完成", color: TEAL },
-  reviewing: { text: "審核中", color: "#2b7fff" },
-  rejected: { text: "需補件", color: "#ff3b3b" },
+const STATUS = {
+  reviewing: { text: "審核中", color: "#00a6c4" },
+  rejected: { text: "需補件", color: "#e7000b" },
   verified: { text: "已驗證", color: "#4a5565" },
-};
+} as const;
 
 function Row({
   icon,
   title,
   desc,
-  label,
-  labelColor,
-  verified = false,
+  trailing,
   onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   desc?: string;
-  label?: string;
-  labelColor?: string;
-  // 右邊是「已驗證 ✓」而不是箭頭
-  verified?: boolean;
+  // 右側內容；沒給就是箭頭
+  trailing?: React.ReactNode;
   onClick?: () => void;
 }) {
   return (
@@ -78,60 +75,58 @@ function Row({
           </span>
         )}
       </span>
-      {label && (
-        <span
-          className={`shrink-0 text-[16px] leading-6 ${labelColor ? "font-medium" : ""}`}
-          style={{ color: labelColor ?? "#4a5565" }}
-        >
-          {label}
-        </span>
-      )}
-      {verified ? (
-        <img src="/figma/icon-security-pass.svg" alt="" className="size-6 shrink-0" />
-      ) : (
-        <ChevronRightIcon className="size-6 shrink-0 text-gray-800" />
-      )}
+      {trailing ?? <ChevronRightIcon className="size-6 shrink-0 text-gray-800" />}
     </button>
   );
 }
 
-function SectionLabel({ children }: { children: string }) {
-  return (
-    <p className="px-4 pt-2 text-[14px] leading-[18px] text-[#6a7282]">
-      {children}
-    </p>
-  );
-}
+// 「已驗證 ✓」
+const Verified = () => (
+  <span className="flex shrink-0 items-center gap-2 text-[16px] leading-6 text-[#4a5565]">
+    已驗證
+    <img src="/figma/icon-security-pass.svg" alt="" className="size-6" />
+  </span>
+);
 
-const Divider = () => <div className="h-px shrink-0 bg-[#f7f7f7]" />;
+const Divider = () => <div className="mx-0 h-px shrink-0 bg-[#f3f4f6]" />;
 
 const img = (src: string) => <img src={src} alt="" className="size-6" />;
 
 export default function AccountPage() {
   const router = useRouter();
-  const { corp, mode, toast } = useCorp();
+  const { corp, mode, toast, profile } = useCorp();
   const [sheetOpen, setSheetOpen] = useState(false);
   useEffect(() => initCorpFromUrl(), []);
 
   const company = mode === "company" && corp !== "none";
-  const status = corp === "none" ? null : STATUS_LABEL[corp];
+  const fg = company ? "#ffffff" : "#1e2939";
+
+  const copyHandle = () => {
+    navigator.clipboard?.writeText(PERSONAL_HANDLE).catch(() => {});
+    showToast("已複製 ID");
+  };
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-white">
       <div className="flex-1 overflow-y-auto overscroll-contain pb-[calc(env(safe-area-inset-bottom)+88px)] sm:pb-[110px]">
-        {/* header：企業帳號是深色底（照 Figma B1 1062:24953） */}
+        {/* header：個人是淺灰底，企業是深色底 */}
         <div
           className="transition-colors duration-300"
-          style={{ background: company ? "#1e2939" : "#ffffff" }}
+          style={{ background: company ? "#1e2939" : "#f3f4f6" }}
         >
           <StatusBar light={company} />
           <div className="flex h-11 items-center justify-between px-4">
-            <p
-              className="text-[24px] font-medium leading-8 transition-colors duration-300"
-              style={{ color: company ? "#ffffff" : "#1e2939" }}
+            {/* 標題就是切換入口 */}
+            <button
+              onClick={() => setSheetOpen(true)}
+              className="flex items-center gap-1 transition-colors duration-300"
+              style={{ color: fg }}
             >
-              帳號
-            </p>
+              <span className="text-[24px] font-medium leading-8">
+                {company ? "企業帳號" : "個人帳號"}
+              </span>
+              <ChevronDownIcon className="size-5" />
+            </button>
             <button
               onClick={() => router.push("/v13/notifications")}
               aria-label="通知"
@@ -146,57 +141,49 @@ export default function AccountPage() {
             </button>
           </div>
 
-          {/* 帳號切換器：點名稱打開「切換帳號」 */}
+          {/* 帳號資料：不負責切換 */}
           <div className="flex flex-col gap-2 px-4 pb-4 pt-6">
-            <button
-              onClick={() => setSheetOpen(true)}
-              className="flex items-center gap-2 self-start"
-              style={{ color: company ? "#ffffff" : "#1e2939" }}
-            >
-              <span className="flex items-center gap-1">
-                {company ? (
-                  <BuildingIcon className="size-5" />
-                ) : (
-                  <AtIcon className="size-5" />
-                )}
-                <span className="text-[16px] font-semibold leading-6">
-                  {company ? COMPANY_NAME : PERSONAL_HANDLE}
-                </span>
-              </span>
-              <ChevronDownIcon className="size-4" />
-            </button>
-            <div className="flex items-center gap-2">
-              {company ? (
-                <span
-                  className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[12px] font-medium leading-4 text-white"
-                  style={{ background: TEAL }}
-                >
-                  {corp === "verified" && <CheckIcon className="size-3" />}
-                  {corp === "verified" ? "企業帳號・已驗證" : "企業帳號"}
-                </span>
-              ) : (
-                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[12px] font-medium leading-4 text-[#4a5565]">
-                  個人帳號
-                </span>
-              )}
-              <span className="text-[14px] leading-[18px] text-[#6a7282]">
-                {company ? `管理者 @${PERSONAL_HANDLE}` : "2023 年 5 月加入"}
-              </span>
-            </div>
+            {company ? (
+              <>
+                <p className="flex items-center gap-1 text-white">
+                  <BuildingIcon className="size-5 shrink-0" />
+                  <span className="text-[16px] font-semibold leading-6">
+                    {COMPANY_NAME}
+                  </span>
+                </p>
+                <p className="text-[14px] leading-[18px] text-[#d1d5dc]">
+                  管理者 {MANAGER_NAME}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="flex items-center gap-2 text-gray-800">
+                  <span className="flex items-center gap-1">
+                    <AtIcon className="size-5 shrink-0" />
+                    <span className="text-[16px] font-semibold leading-6">
+                      {PERSONAL_HANDLE}
+                    </span>
+                  </span>
+                  <button onClick={copyHandle} aria-label="複製 ID" className="-m-1 p-1">
+                    <CopyIcon className="size-4" />
+                  </button>
+                </p>
+                <p className="text-[14px] leading-[18px] text-[#99a1af]">
+                  2023 年 5 月加入
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 py-4">
-          {/* 企業帳號：個人身分在已有企業帳號時才出現；企業身分顯示驗證與企業功能 */}
           {company ? (
             <>
-              <SectionLabel>企業帳號</SectionLabel>
               {corp === "verified" ? (
                 <Row
                   icon={<CheckCircleIcon className="size-6" />}
                   title="企業驗證"
-                  label="已驗證"
-                  verified
+                  trailing={<Verified />}
                 />
               ) : (
                 <Row
@@ -205,54 +192,44 @@ export default function AccountPage() {
                   desc={
                     corp === "reviewing"
                       ? "預計 1 至 3 個工作天完成"
-                      : corp === "rejected"
-                        ? "公司登記文件不清楚，請重新上傳"
-                        : "完成驗證後即可簽署法人合約"
+                      : "存摺影像不清楚，請重新上傳"
                   }
-                  label={status!.text}
-                  labelColor={status!.color}
+                  trailing={
+                    <span
+                      className="flex shrink-0 items-center gap-2 text-[16px] font-medium leading-6"
+                      style={{ color: STATUS[corp as "reviewing" | "rejected"].color }}
+                    >
+                      {STATUS[corp as "reviewing" | "rejected"].text}
+                      {corp === "reviewing" ? (
+                        <RefreshCircularIcon className="size-6" />
+                      ) : (
+                        <ChevronRightIcon className="size-6 text-gray-800" />
+                      )}
+                    </span>
+                  }
+                  // demo：點一下模擬審核往下一步走
                   onClick={advanceVerification}
                 />
               )}
-              {corp === "verified" && (
-                <>
-                  <Row
-                    icon={img("/figma/icon-page.svg")}
-                    title="法人合約"
-                    label="1 份待簽署"
-                    labelColor="#ff3b3b"
-                  />
-                  <Row icon={<BuildingIcon className="size-6" />} title="企業資料" />
-                </>
-              )}
+              <Row
+                icon={<BuildingIcon className="size-6" />}
+                title="企業資料"
+                desc={`統編 ${profile.taxId}・聯絡人 ${profile.contactName}`}
+                onClick={() => router.push("/v13/company-info")}
+              />
               <Divider />
             </>
           ) : (
-            corp !== "none" && (
-              <>
-                <SectionLabel>企業帳號</SectionLabel>
-                <Row
-                  icon={<BuildingIcon className="size-6" />}
-                  title={COMPANY_NAME}
-                  desc="點一下切換至企業帳號"
-                  label={corp === "unverified" ? "驗證未完成" : status!.text}
-                  labelColor={corp === "verified" ? undefined : status!.color}
-                  onClick={() => switchMode("company")}
-                />
-                <Divider />
-              </>
-            )
+            <Row
+              icon={img("/figma/icon-verified-user.svg")}
+              title="身分驗證"
+              trailing={<Verified />}
+            />
           )}
 
-          <SectionLabel>帳號設定</SectionLabel>
-          <Row
-            icon={img("/figma/icon-verified-user.svg")}
-            title={company ? "負責人身分驗證" : "身分驗證"}
-            label="已驗證"
-            verified
-          />
           <Row icon={img("/figma/icon-shield-check.svg")} title="帳號與安全性" />
           <Row icon={img("/figma/icon-wallet.svg")} title="收款與付款" />
+          <Row icon={<ShoppingBagIcon className="size-6" />} title="訂單紀錄" />
           {!company && (
             <Row
               icon={img("/figma/icon-clipboard-check.svg")}
@@ -274,18 +251,17 @@ export default function AccountPage() {
           />
           <Divider />
 
-          <SectionLabel>其他</SectionLabel>
           <Row icon={img("/figma/icon-page.svg")} title="條款及隱私權" />
           <Row icon={img("/figma/icon-lightbulb.svg")} title="我有使用建議" />
 
-          <div className="grid grid-cols-2 gap-4 px-4 pb-2 pt-4">
+          <div className="grid grid-cols-2 gap-4 px-4 pb-2 pt-2">
             {[
               ["/figma/icon-book-solid.svg", "幫助中心"],
               ["/figma/icon-contact-babu.svg", "聯絡我們"],
             ].map(([icon, label]) => (
               <button
                 key={label}
-                className="flex flex-col items-center gap-4 rounded-lg border border-gray-200 p-4"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-4 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.06)]"
               >
                 <img src={icon} alt="" className="size-6" />
                 <span className="text-[16px] font-medium leading-6 text-gray-800">
@@ -294,22 +270,24 @@ export default function AccountPage() {
               </button>
             ))}
           </div>
+          <p className="px-4 pt-2 text-[14px] leading-[18px] text-gray-800">
+            版本 10.5.0
+          </p>
         </div>
       </div>
 
-      {/* snackbar：固定在 tabbar 上方，不跟著捲 */}
+      {/* 頂部 snackbar（AFFOGATO Mode=Light）：從上面滑下來，蓋在標題列上 */}
       <div
-        className="pointer-events-none absolute inset-x-0 z-30 flex justify-center bottom-[calc(env(safe-area-inset-bottom)+83px)] sm:bottom-[105px]"
+        className="pointer-events-none absolute inset-x-0 z-30 flex justify-center px-4 top-[calc(env(safe-area-inset-top)+4px)] sm:top-[48px]"
         aria-live="polite"
       >
         {toast && (
-          <div
+          <p
             key={toast.id}
-            className="corp-toast flex items-center gap-2 rounded-full bg-[#1e2939] px-4 py-2.5 text-[14px] font-medium leading-5 text-white shadow-[0px_4px_16px_rgba(0,0,0,0.12)]"
+            className="snackbar-top rounded-lg bg-[#0c0e11]/80 px-4 py-3 text-[16px] leading-6 text-white backdrop-blur-[4px]"
           >
-            <CheckCircleIcon className="size-5" />
             {toast.text}
-          </div>
+          </p>
         )}
       </div>
 
@@ -326,6 +304,8 @@ function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
   // 關閉時先播完滑下去的動畫才卸載
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
+  // 正在切換到哪個帳號：選項顯示「切換中…」，其他選項先鎖住
+  const [switching, setSwitching] = useState<AccountMode | null>(null);
   useEffect(() => setFrame(document.getElementById("v13-frame")), []);
   useEffect(() => {
     if (open) {
@@ -342,61 +322,81 @@ function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
 
   if (!frame || !mounted) return null;
   const hasCompany = corp !== "none";
-  const companyStatus =
-    corp === "none"
-      ? null
-      : corp === "verified"
-        ? { text: "已驗證", color: "#16a34a" }
-        : corp === "unverified"
-          ? { text: "驗證未完成", color: TEAL }
-          : STATUS_LABEL[corp];
 
-  const pick = (m: "personal" | "company") => {
+  const pick = async (m: AccountMode) => {
+    if (switching) return;
+    if (m === mode) {
+      onClose();
+      return;
+    }
+    setSwitching(m);
+    const ok = await requestSwitch(m);
+    setSwitching(null);
     onClose();
-    window.setTimeout(() => switchMode(m), 200);
+    // 成功或失敗都是選單收起後，從上方滑入 snackbar；失敗就停在原本的帳號
+    window.setTimeout(
+      () =>
+        showToast(
+          ok
+            ? m === "company"
+              ? "已切換至企業帳號"
+              : "已切換至個人帳號"
+            : "切換失敗，請稍後再試",
+        ),
+      200,
+    );
   };
 
   const Option = ({
     name,
     meta,
-    selected,
-    onClick,
+    value,
   }: {
     name: string;
-    meta: React.ReactNode;
-    selected: boolean;
-    onClick: () => void;
-  }) => (
-    <button
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left"
-      style={{
-        background: selected ? "#fff5f5" : "#ffffff",
-        borderColor: selected ? "#ff3b3b" : "#e5e7eb",
-      }}
-    >
-      <span className="flex flex-1 flex-col gap-0.5">
-        <span className="text-[16px] font-medium leading-6 text-gray-800">
-          {name}
+    meta: string;
+    value: AccountMode;
+  }) => {
+    const selected = mode === value && !switching;
+    const loading = switching === value;
+    const dimmed = switching !== null && !loading;
+    return (
+      <button
+        onClick={() => pick(value)}
+        disabled={switching !== null}
+        className="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-opacity"
+        style={{
+          borderColor: selected || loading ? "#1e2939" : "#e5e7eb",
+          opacity: dimmed ? 0.4 : 1,
+        }}
+      >
+        <span className="flex flex-1 flex-col gap-0.5">
+          <span className="text-[16px] font-medium leading-6 text-gray-800">
+            {name}
+          </span>
+          <span className="text-[14px] leading-[18px] text-[#6a7282]">
+            {meta}
+            {loading && (
+              <span className="font-medium text-gray-800">・切換中…</span>
+            )}
+          </span>
         </span>
-        <span className="flex items-center gap-1 text-[14px] leading-[18px] text-[#6a7282]">
-          {meta}
-        </span>
-      </span>
-      {selected ? (
-        <CheckCircleSolidIcon className="size-6 text-[#ff3b3b]" />
-      ) : (
-        <span className="size-[22px] rounded-full border-[1.5px] border-[#d1d5dc]" />
-      )}
-    </button>
-  );
+        {loading ? (
+          <span className="size-[22px] animate-spin rounded-full border-2 border-[#d1d5dc] border-t-[#1e2939]" />
+        ) : selected ? (
+          <CheckCircleSolidIcon className="size-6 text-[#ff3b3b]" />
+        ) : (
+          <span className="size-[22px] rounded-full border-[1.5px] border-[#d1d5dc]" />
+        )}
+      </button>
+    );
+  };
 
   return createPortal(
     <div className="absolute inset-0 z-[70]">
       <div
         className="absolute inset-0 bg-[#111827]/40"
         style={{ opacity: shown ? 1 : 0, transition: "opacity 250ms ease" }}
-        onClick={onClose}
+        onClick={() => !switching && onClose()}
       />
       <div
         className="absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-t-3xl bg-white pb-[calc(env(safe-area-inset-bottom)+24px)] pt-2 sm:pb-[34px]"
@@ -410,26 +410,9 @@ function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
           切換帳號
         </p>
         <div className="flex flex-col gap-2 px-4">
-          <Option
-            name={PERSONAL_HANDLE}
-            meta="個人帳號"
-            selected={mode === "personal"}
-            onClick={() => pick("personal")}
-          />
+          <Option name="個人帳號" meta={`@${PERSONAL_HANDLE}`} value="personal" />
           {hasCompany && (
-            <Option
-              name={COMPANY_NAME}
-              meta={
-                <>
-                  企業帳號・
-                  <span className="font-medium" style={{ color: companyStatus!.color }}>
-                    {companyStatus!.text}
-                  </span>
-                </>
-              }
-              selected={mode === "company"}
-              onClick={() => pick("company")}
-            />
+            <Option name="企業帳號" meta={COMPANY_NAME} value="company" />
           )}
         </div>
         {/* 一個自然人只能對應一個法人：已經有企業帳號就不再出現新增 */}
@@ -439,16 +422,11 @@ function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
               onClose();
               router.push("/v13/new-company");
             }}
-            className="flex items-center gap-4 py-3 pl-8 pr-4 text-left"
+            className="flex items-center gap-4 px-4 py-3 text-left"
           >
             <PlusIcon className="size-6 text-gray-800" />
-            <span className="flex flex-1 flex-col gap-1">
-              <span className="text-[16px] font-medium leading-6 text-gray-800">
-                新增企業帳號
-              </span>
-              <span className="text-[14px] leading-[18px] text-[#6a7282]">
-                以公司名義交易、簽署法人合約
-              </span>
+            <span className="flex-1 text-[16px] font-medium leading-6 text-gray-800">
+              新增企業帳號
             </span>
             <ChevronRightIcon className="size-6 text-gray-800" />
           </button>
@@ -457,9 +435,7 @@ function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
           <div className="flex gap-2 rounded-lg bg-gray-100 p-3">
             <InfoIcon className="mt-px size-4 shrink-0 text-[#99a1af]" />
             <p className="text-[13px] leading-[18px] text-[#4a5565]">
-              {hasCompany
-                ? "一個個人帳號只能建立一個企業帳號。切換後，付款、交易紀錄與合約都會以所選帳號為主體。"
-                : "切換後，付款、交易紀錄與合約都會以所選帳號為主體。"}
+              切換後，付款、交易紀錄都會以所選帳號為主體。
             </p>
           </div>
         </div>

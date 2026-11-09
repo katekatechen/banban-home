@@ -1,31 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import StatusBar from "../_components/StatusBar";
-import {
-  BuildingIcon,
-  CheckCircleSolidIcon,
-  CheckIcon,
-  ClockIcon,
-} from "../_components/CorpIcons";
-import { createCompany } from "../_lib/corp-account";
+import { BuildingIcon, CheckIcon, ClockIcon } from "../_components/CorpIcons";
 import { usePageSlide } from "../_lib/page-transition";
 
-// 新增企業帳號的說明頁（照 Figma A3 1063:29053）：先講清楚是什麼、能做什麼、要準備什麼，
-// 再讓使用者開始建立。這版不做表單，按「開始建立」模擬建立完成，直接切到企業帳號
+// 新增企業帳號的說明頁（照 Figma A3）：先講清楚是什麼、能做什麼、要準備什麼。
+// 按「開始建立」直接進入單頁表單；送出申請後才建立企業帳號，
+// 避免只是點進來看看，就多了一個無法刪除的企業帳號
 export default function NewCompanyPage() {
   const router = useRouter();
   const { style, exit } = usePageSlide();
-  const [creating, setCreating] = useState(false);
-
-  const start = () => {
-    setCreating(true);
-    window.setTimeout(() => {
-      createCompany();
-      exit(() => router.back());
-    }, 900);
-  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white" style={style}>
@@ -60,7 +45,7 @@ export default function NewCompanyPage() {
           <p className="text-[14px] font-semibold leading-5 text-gray-800">
             企業帳號可以
           </p>
-          {["以公司名義付款與收款", "簽署法人合約", "個人與企業的交易紀錄分開"].map(
+          {["以公司名義付款與收款", "企業酒類買賣合約", "個人與企業的交易紀錄分開"].map(
             (t) => (
               <p key={t} className="flex items-center gap-2 text-[14px] leading-5 text-[#364153]">
                 <CheckIcon className="size-5 shrink-0 text-[#16a34a]" />
@@ -74,14 +59,7 @@ export default function NewCompanyPage() {
           <p className="text-[14px] font-semibold leading-5 text-gray-800">
             需要準備
           </p>
-          <p className="flex items-center gap-2 text-[14px] leading-5 text-[#364153]">
-            <CheckCircleSolidIcon className="size-5 shrink-0 text-[#16a34a]" />
-            <span className="flex-1">負責人身分驗證</span>
-            <span className="text-[12px] font-medium leading-4 text-[#16a34a]">
-              已完成
-            </span>
-          </p>
-          {["公司統一編號", "公司登記文件（照片或 PDF）"].map((t) => (
+          {["負責人或代理人手機驗證", "公司統一編號與地址", "公司存摺（戶名需為公司戶）"].map((t) => (
             <p key={t} className="flex items-center gap-2 text-[14px] leading-5 text-[#364153]">
               <span className="flex size-5 shrink-0 items-center justify-center">
                 <span className="size-[17px] rounded-full border-[1.5px] border-[#d1d5dc]" />
@@ -99,19 +77,11 @@ export default function NewCompanyPage() {
 
       <div className="flex shrink-0 flex-col items-center gap-2 border-t border-gray-100 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3 sm:pb-[34px]">
         <button
-          onClick={start}
-          disabled={creating}
-          className="flex h-12 w-full items-center justify-center rounded-2xl bg-brand text-[16px] font-semibold text-white disabled:opacity-80"
+          onClick={() => router.push("/v13/new-company/form")}
+          className="flex h-12 w-full items-center justify-center rounded-2xl bg-brand text-[16px] font-semibold text-white"
         >
-          {creating ? (
-            <span className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-          ) : (
-            "開始建立"
-          )}
+          開始建立
         </button>
-        <p className="text-[12px] leading-4 text-[#6a7282]">
-          可以中途離開，進度會自動保存
-        </p>
       </div>
     </div>
   );
