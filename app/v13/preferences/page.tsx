@@ -51,12 +51,15 @@ export default function PreferencesPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white" style={style}>
+    <div
+      className="flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <BackHeader title="偏好設定" onBack={() => exit(() => router.back())} />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <p className="px-5 pb-2 pt-4 text-[12px] font-medium text-[#99a1af]">
+        <p className="px-5 pb-2 pt-4 text-[13px] font-medium text-[#99a1af]">
           資料使用
         </p>
         <div className="flex items-start gap-4 px-5 py-3">
@@ -73,7 +76,7 @@ export default function PreferencesPage() {
 
         <div className="h-2 bg-[#f6f7f8]" />
 
-        <p className="px-5 pb-2 pt-4 text-[12px] font-medium text-[#99a1af]">
+        <p className="px-5 pb-2 pt-4 text-[13px] font-medium text-[#99a1af]">
           其他
         </p>
         <DummyRow title="推播通知" value="已開啟" />

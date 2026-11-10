@@ -108,7 +108,9 @@ function Section({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <h2 className="text-[24px] font-medium leading-8 text-gray-800">{title}</h2>
+        <h2 className="text-[24px] font-medium leading-8 text-gray-800">
+          {title}
+        </h2>
         <p className="text-[16px] leading-6 text-[#6a7282]">{intro}</p>
       </div>
       {children}
@@ -133,9 +135,15 @@ function FileCard({
         <MediaImageIcon className="size-6 text-[#99a1af]" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[14px] font-medium leading-[18px] text-gray-800">{title}</span>
-        <span className="truncate text-[14px] leading-[18px] text-[#6a7282]">{file}</span>
-        <span className="text-[14px] font-medium leading-[18px] text-[#16a34a]">已上傳</span>
+        <span className="text-[14px] font-medium leading-[18px] text-gray-800">
+          {title}
+        </span>
+        <span className="truncate text-[14px] leading-[18px] text-[#6a7282]">
+          {file}
+        </span>
+        <span className="text-[14px] font-medium leading-[18px] text-[#16a34a]">
+          已上傳
+        </span>
       </span>
       <button
         type="button"
@@ -174,9 +182,14 @@ function Dialog({
   if (!open) return null;
   return (
     <div className="absolute inset-0 z-[80] flex items-center justify-center px-6">
-      <div className="absolute inset-0 bg-[#111827]/40" onClick={onDismiss ?? onCancel} />
+      <div
+        className="absolute inset-0 bg-[#111827]/40"
+        onClick={onDismiss ?? onCancel}
+      />
       <div className="relative flex w-full max-w-[328px] flex-col gap-4 rounded-3xl bg-white p-6">
-        <p className="text-center text-[20px] font-medium leading-7 text-gray-800">{title}</p>
+        <p className="text-center text-[20px] font-medium leading-7 text-gray-800">
+          {title}
+        </p>
         <p className="text-[16px] leading-6 text-[#364153]">{body}</p>
         <div className="flex gap-3 pt-2">
           <button
@@ -249,7 +262,8 @@ export default function CorpFormPage() {
   ].filter((ok) => !ok).length;
 
   const dirty =
-    !!(d.taxId || d.email || d.city || d.address || d.name || d.phone) || d.passbook;
+    !!(d.taxId || d.email || d.city || d.address || d.name || d.phone) ||
+    d.passbook;
 
   const back = () => {
     if (dirty) setDialog("leave");
@@ -271,7 +285,9 @@ export default function CorpFormPage() {
   const upload = (which: "main" | "backup") => {
     setUploading(which);
     window.setTimeout(() => {
-      updateDraft(which === "main" ? { passbook: true } : { backupPassbook: true });
+      updateDraft(
+        which === "main" ? { passbook: true } : { backupPassbook: true },
+      );
       setUploading(null);
     }, 800);
   };
@@ -290,7 +306,10 @@ export default function CorpFormPage() {
   };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white" style={style}>
+    <div
+      className="relative flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <div className="relative flex h-11 shrink-0 items-center justify-center px-4">
         <button
@@ -300,11 +319,16 @@ export default function CorpFormPage() {
         >
           <img src="/figma/nav-arrow-left.svg" alt="" className="size-5" />
         </button>
-        <p className="text-[17px] font-semibold leading-6 text-gray-800">企業驗證</p>
+        <p className="text-[17px] font-semibold leading-6 text-gray-800">
+          企業驗證
+        </p>
       </div>
 
       <div className="flex flex-1 flex-col gap-10 overflow-y-auto px-4 pb-8 pt-6">
-        <Section title="公司資料" intro="請填寫公司登記上的資料，審核結果會寄到聯絡 Email。">
+        <Section
+          title="公司資料"
+          intro="請填寫公司登記上的資料，審核結果會寄到聯絡 Email。"
+        >
           <Field
             label="統一編號"
             helper={
@@ -320,7 +344,9 @@ export default function CorpFormPage() {
               inputMode="numeric"
               value={d.taxId}
               onChange={(e) =>
-                updateDraft({ taxId: e.target.value.replace(/\D/g, "").slice(0, 8) })
+                updateDraft({
+                  taxId: e.target.value.replace(/\D/g, "").slice(0, 8),
+                })
               }
               placeholder="12345678"
               className={inputCls}
@@ -329,7 +355,9 @@ export default function CorpFormPage() {
           <Field
             label="聯絡 Email"
             helper={
-              d.email && !emailOk ? "Email 格式不正確" : "審核結果會寄到這個 Email"
+              d.email && !emailOk
+                ? "Email 格式不正確"
+                : "審核結果會寄到這個 Email"
             }
             helperColor={d.email && !emailOk ? "#e7000b" : undefined}
           >
@@ -397,7 +425,11 @@ export default function CorpFormPage() {
                 value={d.phone}
                 disabled={phoneVerified}
                 onChange={(e) =>
-                  updateDraft({ phone: formatPhone(e.target.value), otpSent: false, otp: "" })
+                  updateDraft({
+                    phone: formatPhone(e.target.value),
+                    otpSent: false,
+                    otp: "",
+                  })
                 }
                 placeholder="0912 345 678"
                 className={inputCls}
@@ -410,23 +442,35 @@ export default function CorpFormPage() {
                 disabled={phoneDigits.length < 10 || countdown > 0}
                 className="mb-[18px] h-12 shrink-0 rounded-full bg-brand px-4 text-[16px] font-semibold text-white disabled:bg-gray-100 disabled:text-[#99a1af]"
               >
-                {d.otpSent ? (countdown > 0 ? "已寄送" : "重新寄送") : "傳送驗證碼"}
+                {d.otpSent
+                  ? countdown > 0
+                    ? "已寄送"
+                    : "重新寄送"
+                  : "傳送驗證碼"}
               </button>
             )}
           </div>
 
           {d.otpSent && (
             <div className="flex flex-col gap-2">
-              <span className="text-[16px] leading-6 text-gray-800">驗證碼</span>
-              <div className="relative flex gap-2" onClick={() => otpRef.current?.focus()}>
+              <span className="text-[16px] leading-6 text-gray-800">
+                驗證碼
+              </span>
+              <div
+                className="relative flex gap-2"
+                onClick={() => otpRef.current?.focus()}
+              >
                 {Array.from({ length: 6 }).map((_, i) => (
                   <span
                     key={i}
                     className="flex h-[52px] flex-1 items-center justify-center rounded-xl border text-[20px] font-semibold leading-6 text-gray-800"
                     style={{
                       borderColor:
-                        !phoneVerified && i === d.otp.length ? "#1e2939" : "#e5e7eb",
-                      borderWidth: !phoneVerified && i === d.otp.length ? 1.5 : 1,
+                        !phoneVerified && i === d.otp.length
+                          ? "#1e2939"
+                          : "#e5e7eb",
+                      borderWidth:
+                        !phoneVerified && i === d.otp.length ? 1.5 : 1,
                     }}
                   >
                     {d.otp[i] ?? ""}
@@ -439,7 +483,9 @@ export default function CorpFormPage() {
                   value={d.otp}
                   disabled={phoneVerified}
                   onChange={(e) =>
-                    updateDraft({ otp: e.target.value.replace(/\D/g, "").slice(0, 6) })
+                    updateDraft({
+                      otp: e.target.value.replace(/\D/g, "").slice(0, 6),
+                    })
                   }
                   className="absolute inset-0 opacity-0"
                   aria-label="驗證碼"
@@ -470,7 +516,9 @@ export default function CorpFormPage() {
           intro="戶名須為公司戶（含「股份有限公司」或「有限公司」字樣），不接受個人戶。"
         >
           <div className="flex flex-col gap-3">
-            <span className="text-[14px] font-medium leading-[18px] text-gray-800">主要存摺</span>
+            <span className="text-[14px] font-medium leading-[18px] text-gray-800">
+              主要存摺
+            </span>
             {d.passbook ? (
               <FileCard
                 title="存摺封面"
@@ -532,7 +580,9 @@ export default function CorpFormPage() {
           送出申請
         </button>
         {remaining > 0 && (
-          <p className="text-[14px] leading-[18px] text-[#6a7282]">還有 {remaining} 項未填寫</p>
+          <p className="text-[14px] leading-[18px] text-[#6a7282]">
+            還有 {remaining} 項未填寫
+          </p>
         )}
       </div>
 

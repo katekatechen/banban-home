@@ -73,7 +73,9 @@ function Row({
           </span>
         )}
       </span>
-      {trailing ?? <ChevronRightIcon className="size-6 shrink-0 text-gray-800" />}
+      {trailing ?? (
+        <ChevronRightIcon className="size-6 shrink-0 text-gray-800" />
+      )}
     </button>
   );
 }
@@ -132,7 +134,7 @@ export default function AccountPage() {
             >
               <img src="/figma/bell.svg" alt="" className="size-5" />
               {UNREAD_NOTIFICATIONS > 0 && (
-                <span className="absolute left-[20.5px] top-1.5 rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000">
+                <span className="absolute left-[20.5px] top-1.5 rounded-[20px] bg-brand px-1 py-0.5 text-[13px] font-bold leading-3 text-gray-000">
                   {UNREAD_NOTIFICATIONS}
                 </span>
               )}
@@ -162,7 +164,11 @@ export default function AccountPage() {
                       {PERSONAL_HANDLE}
                     </span>
                   </span>
-                  <button onClick={copyHandle} aria-label="複製 ID" className="-m-1 p-1">
+                  <button
+                    onClick={copyHandle}
+                    aria-label="複製 ID"
+                    className="-m-1 p-1"
+                  >
                     <CopyIcon className="size-4" />
                   </button>
                 </p>
@@ -187,7 +193,9 @@ export default function AccountPage() {
                   ) : (
                     <span
                       className="flex shrink-0 items-center gap-2 text-[16px] font-medium leading-6"
-                      style={{ color: STATUS[corp as "reviewing" | "rejected"].color }}
+                      style={{
+                        color: STATUS[corp as "reviewing" | "rejected"].color,
+                      }}
                     >
                       {STATUS[corp as "reviewing" | "rejected"].text}
                       {corp === "reviewing" ? (
@@ -211,7 +219,10 @@ export default function AccountPage() {
             />
           )}
 
-          <Row icon={img("/figma/icon-shield-check.svg")} title="帳號與安全性" />
+          <Row
+            icon={img("/figma/icon-shield-check.svg")}
+            title="帳號與安全性"
+          />
           <Row icon={img("/figma/icon-wallet.svg")} title="收款與付款" />
           <Row icon={<ShoppingBagIcon className="size-6" />} title="訂單紀錄" />
           {!company && (
@@ -221,7 +232,10 @@ export default function AccountPage() {
               onClick={() => router.push("/v13/collection")}
             />
           )}
-          <Row icon={img("/figma/icon-clipboard-check.svg")} title="歷史交易紀錄" />
+          <Row
+            icon={img("/figma/icon-clipboard-check.svg")}
+            title="歷史交易紀錄"
+          />
           {!company && (
             <>
               <Row icon={img("/figma/icon-community.svg")} title="推薦好友" />
@@ -281,7 +295,13 @@ export default function AccountPage() {
 }
 
 // 切換帳號 bottom sheet：掛到 #v13-frame，才蓋得過 tabbar
-function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function SwitchSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const { corp, mode } = useCorp();
   const [frame, setFrame] = useState<HTMLElement | null>(null);
@@ -394,7 +414,11 @@ function SwitchSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
           切換帳號
         </p>
         <div className="flex flex-col gap-2 px-4">
-          <Option name="個人帳號" meta={`@${PERSONAL_HANDLE}`} value="personal" />
+          <Option
+            name="個人帳號"
+            meta={`@${PERSONAL_HANDLE}`}
+            value="personal"
+          />
           {hasCompany && (
             <Option name="企業帳號" meta={COMPANY_NAME} value="company" />
           )}

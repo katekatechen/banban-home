@@ -257,7 +257,7 @@ export default function ProductSheet({
                       <p className="text-[15px] font-bold text-gray-800">
                         概覽
                       </p>
-                      <p className="text-[12px] text-[#a1a5ac]">AI 整理</p>
+                      <p className="text-[13px] text-[#a1a5ac]">AI 整理</p>
                     </div>
                     <p className="whitespace-pre-line text-[14.5px] leading-[1.85] text-gray-800">
                       {detail.overview}
@@ -307,7 +307,7 @@ export default function ProductSheet({
                           <p className="text-[13.5px] font-bold leading-[1.4] text-gray-800">
                             {h.title}
                           </p>
-                          <p className="mt-1.5 text-[12px] text-[#a1a5ac]">
+                          <p className="mt-1.5 text-[13px] text-[#a1a5ac]">
                             {h.sub}
                           </p>
                         </div>
@@ -330,7 +330,7 @@ export default function ProductSheet({
                           {detail.reviewTags.map((t) => (
                             <span
                               key={t}
-                              className="rounded-full bg-[#f1f3f5] px-3.5 py-1.5 text-[12.5px] text-gray-800"
+                              className="rounded-full bg-[#f1f3f5] px-3.5 py-1.5 text-[13px] text-gray-800"
                             >
                               {t}
                             </span>

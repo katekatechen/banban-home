@@ -13,7 +13,10 @@ export default function NewCompanyPage() {
   const { style, exit } = usePageSlide();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white" style={style}>
+    <div
+      className="flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <div className="relative flex h-11 shrink-0 items-center justify-center px-4">
         <button
@@ -45,22 +48,34 @@ export default function NewCompanyPage() {
           <p className="text-[16px] font-semibold leading-6 text-gray-800">
             企業帳號可以
           </p>
-          {["以公司名義付款與收款", "企業酒類買賣合約", "個人與企業的交易紀錄分開"].map(
-            (t) => (
-              <p key={t} className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]">
-                <CheckIcon className="size-5 shrink-0 text-[#00b8db]" />
-                {t}
-              </p>
-            ),
-          )}
+          {[
+            "以公司名義付款與收款",
+            "企業酒類買賣合約",
+            "個人與企業的交易紀錄分開",
+          ].map((t) => (
+            <p
+              key={t}
+              className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]"
+            >
+              <CheckIcon className="size-5 shrink-0 text-[#00b8db]" />
+              {t}
+            </p>
+          ))}
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl bg-gray-000 p-4">
           <p className="text-[16px] font-semibold leading-6 text-gray-800">
             需要準備
           </p>
-          {["負責人或代理人手機驗證", "公司統一編號與地址", "公司存摺（戶名需為公司戶）"].map((t) => (
-            <p key={t} className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]">
+          {[
+            "負責人或代理人手機驗證",
+            "公司統一編號與地址",
+            "公司存摺（戶名需為公司戶）",
+          ].map((t) => (
+            <p
+              key={t}
+              className="flex items-center gap-2 text-[16px] leading-6 text-[#364153]"
+            >
               <span className="flex size-5 shrink-0 items-center justify-center">
                 <span className="size-[17px] rounded-full border-[1.5px] border-[#d1d5dc]" />
               </span>

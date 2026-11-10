@@ -14,7 +14,10 @@ export default function CollectionPage() {
   const { style, exit } = usePageSlide();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white" style={style}>
+    <div
+      className="flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <div className="relative flex h-11 shrink-0 items-center px-4">
         <button
@@ -54,7 +57,7 @@ export default function CollectionPage() {
               <p className="line-clamp-1 text-[14px] font-medium text-gray-800">
                 {h.name}
               </p>
-              <p className="text-[12px] tracking-[0.12px] text-[#6a7282]">
+              <p className="text-[13px] tracking-[0.12px] text-[#6a7282]">
                 x{h.qty.toLocaleString()}
               </p>
             </div>
@@ -62,7 +65,7 @@ export default function CollectionPage() {
               <p className="text-[14px] font-semibold text-gray-800">
                 ${h.currentValue.toLocaleString()}
               </p>
-              <p className="text-[12px] font-semibold tracking-[0.12px] text-[#06c292]">
+              <p className="text-[13px] font-semibold tracking-[0.12px] text-[#06c292]">
                 +{h.changePct}%
               </p>
             </div>

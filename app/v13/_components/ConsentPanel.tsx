@@ -31,13 +31,13 @@ export default function ConsentPanel() {
   return (
     <div className="pointer-events-none fixed left-4 top-4 z-[200] hidden w-[236px] flex-col sm:flex">
       <div className="pointer-events-auto overflow-hidden rounded-2xl bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.14)] backdrop-blur">
-        <p className="px-3.5 py-2.5 text-[12px] font-semibold tracking-wide text-gray-800">
+        <p className="px-3.5 py-2.5 text-[13px] font-semibold tracking-wide text-gray-800">
           第三方 AI 同意・狀態切換
         </p>
 
         <div className="flex flex-col gap-3 border-t border-[#eef0f1] px-3.5 pb-3.5 pt-3">
           <div className="flex flex-col gap-1.5">
-            <p className="text-[11px] font-semibold text-gray-800">
+            <p className="text-[13px] font-semibold text-gray-800">
               同意狀態
               <span className="ml-1.5 font-normal text-[#a1a6ab]">
                 unset 是還沒問過
@@ -48,7 +48,7 @@ export default function ConsentPanel() {
                 <button
                   key={v}
                   onClick={() => setConsentState(v)}
-                  className="rounded-full px-2.5 py-1 text-[11px] leading-[1.4] transition-colors"
+                  className="rounded-full px-2.5 py-1 text-[13px] leading-[1.4] transition-colors"
                   style={{
                     background: vars.consent === v ? "#ff3b3b" : "#f3f4f6",
                     color: vars.consent === v ? "#ffffff" : "#4a5565",
@@ -61,7 +61,7 @@ export default function ConsentPanel() {
           </div>
 
           <div className="border-t border-[#eef0f1] pt-2.5">
-            <p className="text-[10.5px] leading-[1.6] text-[#a1a6ab]">
+            <p className="text-[13px] leading-[1.6] text-[#a1a6ab]">
               供應商 {PROVIDER}・App 直接送
               <br />
               文案版本 {CONSENT_COPY_VERSION}

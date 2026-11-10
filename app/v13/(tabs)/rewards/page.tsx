@@ -167,7 +167,7 @@ export default function RewardsTabPage() {
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[12px] leading-4 text-gray-400">
+                  <div className="flex items-center justify-between text-[13px] leading-4 text-gray-400">
                     <div className="flex items-center gap-1">
                       <img
                         src="/figma/v13-dot-fresh.svg"
@@ -223,13 +223,13 @@ export default function RewardsTabPage() {
                       className="size-full object-cover"
                     />
                     {w.tag && (
-                      <span className="absolute left-3 top-3 flex h-[22px] items-center rounded-[10px] bg-[rgba(27,31,38,0.6)] px-2 text-[12px] font-semibold leading-4 tracking-[0.12px] text-gray-000">
+                      <span className="absolute left-3 top-3 flex h-[22px] items-center rounded-[10px] bg-[rgba(27,31,38,0.6)] px-2 text-[13px] font-semibold leading-4 tracking-[0.12px] text-gray-000">
                         {w.tag}
                       </span>
                     )}
                   </div>
                   <div className="flex flex-col gap-1 px-2 py-3">
-                    <p className="text-[12px] leading-4 tracking-[0.12px] text-gray-500">
+                    <p className="text-[13px] leading-4 tracking-[0.12px] text-gray-500">
                       {w.subtitle}
                     </p>
                     <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">
@@ -317,7 +317,7 @@ export default function RewardsTabPage() {
                   alt=""
                   className="pointer-events-none absolute left-[calc(50%-111.54px)] top-[calc(50%-18.22px)] h-[326.691px] w-[327.11px] max-w-none -translate-x-1/2 -translate-y-1/2 mix-blend-difference"
                 />
-                <p className="absolute left-4 top-4 text-[10px] leading-[1.48] tracking-[0.8px] text-white">
+                <p className="absolute left-4 top-4 text-[13px] leading-[1.48] tracking-[0.8px] text-white">
                   <span className="font-black">AIFIAN ✦</span>
                   <br />
                   MEMBER ONLY

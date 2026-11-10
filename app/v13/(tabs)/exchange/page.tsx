@@ -252,7 +252,7 @@ export default function ExchangePage() {
                     className="size-5"
                   />
                   {cart.length > 0 && (
-                    <span className="absolute right-0 top-0.5 min-w-4 rounded-[20px] bg-brand px-1 py-0.5 text-center text-[12px] font-bold leading-3 text-gray-000">
+                    <span className="absolute right-0 top-0.5 min-w-4 rounded-[20px] bg-brand px-1 py-0.5 text-center text-[13px] font-bold leading-4 text-gray-000">
                       {cart.length}
                     </span>
                   )}
@@ -601,7 +601,7 @@ function ProductRow({
                   {p.name}
                 </p>
                 <div className="flex flex-col gap-1">
-                  <p className="text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
+                  <p className="text-[13px] leading-[18px] tracking-[0.12px] text-[#4a5565]">
                     折抵後價格{" "}
                     <span className="line-through">
                       ${p.price.toLocaleString()}

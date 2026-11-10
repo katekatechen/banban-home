@@ -61,10 +61,7 @@ export default function TabTransition({
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => setEntering(true));
     });
-    const timer = setTimeout(
-      () => setOutgoing(null),
-      PAGE_TRANSITION_MS + 30,
-    );
+    const timer = setTimeout(() => setOutgoing(null), PAGE_TRANSITION_MS + 30);
     return () => {
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
@@ -73,9 +70,13 @@ export default function TabTransition({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  const enterFrom = direction === "right" ? "translateX(100%)" : "translateX(-100%)";
-  const exitTo = direction === "right" ? "translateX(-100%)" : "translateX(100%)";
-  const transition = entering ? `transform ${PAGE_TRANSITION_MS}ms ${EASING}` : "none";
+  const enterFrom =
+    direction === "right" ? "translateX(100%)" : "translateX(-100%)";
+  const exitTo =
+    direction === "right" ? "translateX(-100%)" : "translateX(100%)";
+  const transition = entering
+    ? `transform ${PAGE_TRANSITION_MS}ms ${EASING}`
+    : "none";
 
   return (
     <div className="relative h-full w-full overflow-hidden">
@@ -92,7 +93,11 @@ export default function TabTransition({
         key={current.key}
         className="absolute inset-0"
         style={{
-          transform: outgoing ? (entering ? "translateX(0)" : enterFrom) : "translateX(0)",
+          transform: outgoing
+            ? entering
+              ? "translateX(0)"
+              : enterFrom
+            : "translateX(0)",
           transition: outgoing ? transition : "none",
         }}
       >

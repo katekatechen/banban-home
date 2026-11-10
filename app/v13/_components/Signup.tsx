@@ -311,45 +311,45 @@ function AirFlow() {
             } as React.CSSProperties
           }
         >
-        <span
-          className="signup-air-tick block"
-          style={
-            {
-              "--delay": t.delay,
-              "--d": t.dur,
-            } as React.CSSProperties
-          }
-        >
           <span
-            className="signup-air-gust"
+            className="signup-air-tick block"
             style={
               {
-                "--gust": AIR_GUSTS[i].gust,
-                "--gust-lag": AIR_GUSTS[i].lag,
-                "--px": AIR_GUSTS[i].px,
-                "--py": AIR_GUSTS[i].py,
+                "--delay": t.delay,
+                "--d": t.dur,
               } as React.CSSProperties
             }
           >
-            <svg
-              className="signup-air-sway"
-              width={t.size}
-              height={t.size}
-              viewBox="-5 -5 10 10"
-              fill="none"
-              style={{ "--sway-delay": t.swayDelay } as React.CSSProperties}
+            <span
+              className="signup-air-gust"
+              style={
+                {
+                  "--gust": AIR_GUSTS[i].gust,
+                  "--gust-lag": AIR_GUSTS[i].lag,
+                  "--px": AIR_GUSTS[i].px,
+                  "--py": AIR_GUSTS[i].py,
+                } as React.CSSProperties
+              }
             >
-              <path
-                d="M -4,3 L 0,-4 L 4,3"
-                stroke={t.color}
-                strokeWidth={t.stroke}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                transform="rotate(45)"
-              />
-            </svg>
+              <svg
+                className="signup-air-sway"
+                width={t.size}
+                height={t.size}
+                viewBox="-5 -5 10 10"
+                fill="none"
+                style={{ "--sway-delay": t.swayDelay } as React.CSSProperties}
+              >
+                <path
+                  d="M -4,3 L 0,-4 L 4,3"
+                  stroke={t.color}
+                  strokeWidth={t.stroke}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  transform="rotate(45)"
+                />
+              </svg>
+            </span>
           </span>
-        </span>
         </span>
       ))}
     </div>
@@ -560,8 +560,16 @@ const PLANE_MOVES: Record<string, [Keyframe[], KeyframeAnimationOptions]> = {
   deliver: [
     [
       { transform: "translate(0, 0)", opacity: 1 },
-      { transform: "translate(150px, -70px) rotate(-10deg) scale(0.8)", opacity: 0, offset: 0.42 },
-      { transform: "translate(-170px, 18px) scale(0.85)", opacity: 0, offset: 0.46 },
+      {
+        transform: "translate(150px, -70px) rotate(-10deg) scale(0.8)",
+        opacity: 0,
+        offset: 0.42,
+      },
+      {
+        transform: "translate(-170px, 18px) scale(0.85)",
+        opacity: 0,
+        offset: 0.46,
+      },
       { transform: "translate(0, 0)", opacity: 1 },
     ],
     { duration: 950, easing: "ease-in-out" },
@@ -619,7 +627,9 @@ function Cta({
       onClick={onClick}
       disabled={!ready}
       className={`flex h-12 w-full items-center justify-center rounded-2xl text-[16px] leading-6 font-semibold transition-[background-color,color,transform] duration-300 active:scale-[0.98] ${
-        ready ? "signup-cta-ready bg-[#ff3b3b] text-white" : "bg-gray-200 text-gray-400"
+        ready
+          ? "signup-cta-ready bg-[#ff3b3b] text-white"
+          : "bg-gray-200 text-gray-400"
       }`}
     >
       {label}
@@ -721,7 +731,9 @@ function TitleZh() {
           {line === ZH_PLANE ? (
             <>
               <span className="signup-title-ink block">AIFIAN</span>
-              <span className="signup-title-ink block">{ZH_PLANE.replace("AIFIAN ", "")}</span>
+              <span className="signup-title-ink block">
+                {ZH_PLANE.replace("AIFIAN ", "")}
+              </span>
             </>
           ) : (
             <span className="signup-title-ink block">{line}</span>
@@ -815,7 +827,9 @@ export default function Signup({
   const [formTop, setFormTop] = useState(129);
   const [collapse, setCollapse] = useState({ dx: 0, dy: 0 });
   const [otp, setOtp] = useState("");
-  const [otpState, setOtpState] = useState<"idle" | "verifying" | "error">("idle");
+  const [otpState, setOtpState] = useState<"idle" | "verifying" | "error">(
+    "idle",
+  );
   const [otpFocused, setOtpFocused] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [pw, setPw] = useState("");
@@ -856,7 +870,12 @@ export default function Signup({
         dx: s.left + MARK_LEFT + w - (c.left + c.width / 2) - FACE_OFF_X,
         // 漸層區往下多延伸了 24px 墊在 sheet 的圓角後面，記號要以 sheet 上緣為準
         dy:
-          s.bottom - CORNER - MARK_ABOVE_PANEL - h - (c.top + c.height / 2) - FACE_OFF_Y,
+          s.bottom -
+          CORNER -
+          MARK_ABOVE_PANEL -
+          h -
+          (c.top + c.height / 2) -
+          FACE_OFF_Y,
       });
     };
     measure();
@@ -888,7 +907,10 @@ export default function Signup({
   // 驗證碼重新傳送的倒數：每次進到驗證碼都從 60 秒開始
   useEffect(() => {
     if (pane !== "otp") return;
-    const t = window.setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000);
+    const t = window.setInterval(
+      () => setCountdown((c) => Math.max(0, c - 1)),
+      1000,
+    );
     return () => window.clearInterval(t);
   }, [pane]);
 
@@ -903,16 +925,20 @@ export default function Signup({
 
   const move = (name: keyof typeof PLANE_MOVES) => {
     const el = planeMoveRef.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return null;
     const [kf, opts] = PLANE_MOVES[name];
     return el.animate(kf, opts);
   };
   // 錯誤時色光短暫偏暖
   const warm = () =>
-    warmRef.current?.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 0 }], {
-      duration: 700,
-      easing: "ease-out",
-    });
+    warmRef.current?.animate(
+      [{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 0 }],
+      {
+        duration: 700,
+        easing: "ease-out",
+      },
+    );
 
   const switchPane = (next: Pane, d: Dir) => {
     const from = paneRef.current;
@@ -1029,15 +1055,25 @@ export default function Signup({
         >
           <div className="flex w-full flex-col gap-6">
             {/* 中文版照 Figma 1422:7526 置中 */}
-            <p className={`w-full text-[16px] leading-6 text-gray-800 ${zh ? "text-center" : ""}`}>
+            <p
+              className={`w-full text-[16px] leading-6 text-gray-800 ${zh ? "text-center" : ""}`}
+            >
               {t.start}
             </p>
             <div className="flex w-full flex-col">
               <div className="flex w-full items-start gap-2">
                 <div className="flex w-[83px] shrink-0 items-center gap-1 border-b border-gray-800 py-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/v13/signup-flag-tw.svg" alt="" width={20} height={20} />
-                  <span className="text-[24px] leading-8 text-gray-800" style={{ fontFamily: SF_PRO }}>
+                  <img
+                    src="/v13/signup-flag-tw.svg"
+                    alt=""
+                    width={20}
+                    height={20}
+                  />
+                  <span
+                    className="text-[24px] leading-8 text-gray-800"
+                    style={{ fontFamily: SF_PRO }}
+                  >
                     +886
                   </span>
                 </div>
@@ -1091,7 +1127,9 @@ export default function Signup({
                       disabled={!valid}
                       tabIndex={ctaOpen ? 0 : -1}
                       className={`flex h-12 w-full items-center justify-center rounded-2xl text-[16px] leading-6 font-bold transition-[background-color,color,transform] duration-300 active:scale-[0.98] ${
-                        valid ? "signup-cta-ready bg-[#ff3b3b] text-white" : "bg-gray-200 text-gray-400"
+                        valid
+                          ? "signup-cta-ready bg-[#ff3b3b] text-white"
+                          : "bg-gray-200 text-gray-400"
                       }`}
                     >
                       使用手機繼續
@@ -1101,7 +1139,9 @@ export default function Signup({
               </div>
 
               <div className="mt-2 flex w-full justify-center py-2">
-                <p className="text-[14px] leading-[18px] text-gray-800">{t.or}</p>
+                <p className="text-[14px] leading-[18px] text-gray-800">
+                  {t.or}
+                </p>
               </div>
               <div className="mt-2 flex w-full gap-2">
                 <button
@@ -1110,7 +1150,12 @@ export default function Signup({
                   className="flex h-12 flex-1 items-center justify-center rounded-2xl border border-gray-800 bg-gray-800 transition-transform active:scale-[0.97]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/v13/signup-apple.svg" alt="" width={20} height={24} />
+                  <img
+                    src="/v13/signup-apple.svg"
+                    alt=""
+                    width={20}
+                    height={24}
+                  />
                 </button>
                 <button
                   type="button"
@@ -1118,21 +1163,33 @@ export default function Signup({
                   className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-gray-100 transition-transform active:scale-[0.97]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/v13/signup-google.svg" alt="" width={24} height={24} />
+                  <img
+                    src="/v13/signup-google.svg"
+                    alt=""
+                    width={24}
+                    height={24}
+                  />
                 </button>
               </div>
             </div>
           </div>
           {zh ? (
-            <p className="min-h-11 w-full text-center text-[12px] leading-4 text-[#4a5565]">
-              繼續即表示你同意 AIFIAN 的 <span className="font-bold">服務條款</span> 與{" "}
+            <p className="min-h-11 w-full text-center text-[13px] leading-4 text-[#4a5565]">
+              繼續即表示你同意 AIFIAN 的{" "}
+              <span className="font-bold">服務條款</span> 與{" "}
               <span className="font-bold">隱私權政策</span>
             </p>
           ) : (
-            <p className="min-h-11 w-full text-center text-[12px] leading-4 tracking-[0.12px] text-[#4a5565]">
+            <p className="min-h-11 w-full text-center text-[13px] leading-4 tracking-[0.12px] text-[#4a5565]">
               By continuing, you agree to AIFIAN&apos;s{" "}
-              <span className="font-semibold whitespace-nowrap">Terms of Service</span> and{" "}
-              <span className="font-semibold whitespace-nowrap">Privacy Policy</span> .
+              <span className="font-semibold whitespace-nowrap">
+                Terms of Service
+              </span>{" "}
+              and{" "}
+              <span className="font-semibold whitespace-nowrap">
+                Privacy Policy
+              </span>{" "}
+              .
             </p>
           )}
         </div>
@@ -1144,7 +1201,9 @@ export default function Signup({
         <div className="flex flex-col gap-6 px-4 pt-6">
           <StepHeader zh={zh} title={t.otpTitle} sub={t.otpSub(phoneText)} />
           {/* 一個看不見的輸入框蓋在 6 格上：簡訊自動帶入（one-time-code）跟貼上都能用 */}
-          <label className={`relative flex w-full gap-2 ${otpState === "error" ? "signup-shake" : ""}`}>
+          <label
+            className={`relative flex w-full gap-2 ${otpState === "error" ? "signup-shake" : ""}`}
+          >
             <span className="sr-only">驗證碼</span>
             {Array.from({ length: 6 }, (_, i) => {
               const ch = otp[i] ?? "";
@@ -1167,7 +1226,9 @@ export default function Signup({
                   }}
                 >
                   {ch}
-                  {on && <span className="signup-caret h-7 w-[2px] rounded-[1px] bg-[#ff3b3b]" />}
+                  {on && (
+                    <span className="signup-caret h-7 w-[2px] rounded-[1px] bg-[#ff3b3b]" />
+                  )}
                 </span>
               );
             })}
@@ -1191,7 +1252,9 @@ export default function Signup({
               <>
                 <span className="text-[#6a7282]">{t.noCode}</span>
                 {countdown > 0 ? (
-                  <span className="font-semibold text-gray-400">{t.resendIn(countdown)}</span>
+                  <span className="font-semibold text-gray-400">
+                    {t.resendIn(countdown)}
+                  </span>
                 ) : (
                   <button
                     type="button"
@@ -1217,7 +1280,12 @@ export default function Signup({
         <div className="flex flex-col gap-6 px-4 pt-6">
           <StepHeader zh={zh} title={t.pwTitle} sub={t.pwSub} />
           <div className="flex w-full flex-col gap-3">
-            <PasswordField value={pw} onChange={onPw} onEnter={() => finish(pwReady)} inputRef={pwRef} />
+            <PasswordField
+              value={pw}
+              onChange={onPw}
+              onEnter={() => finish(pwReady)}
+              inputRef={pwRef}
+            />
             <div className="flex flex-col gap-1.5">
               {t.rules.map((r, i) => (
                 <div
@@ -1242,7 +1310,11 @@ export default function Signup({
               ))}
             </div>
           </div>
-          <Cta label={t.create} ready={pwReady} onClick={() => finish(pwReady)} />
+          <Cta
+            label={t.create}
+            ready={pwReady}
+            onClick={() => finish(pwReady)}
+          />
         </div>
       );
 
@@ -1250,18 +1322,32 @@ export default function Signup({
       <div className="flex flex-col gap-6 px-4 pt-6">
         <StepHeader zh={zh} title={t.loginTitle} sub={t.loginSub(phoneText)} />
         <div className="flex w-full flex-col items-end gap-3">
-          <PasswordField value={pw} onChange={onPw} onEnter={login} inputRef={pwRef} />
-          <button type="button" className="text-[14px] leading-5 font-semibold text-gray-800">
+          <PasswordField
+            value={pw}
+            onChange={onPw}
+            onEnter={login}
+            inputRef={pwRef}
+          />
+          <button
+            type="button"
+            className="text-[14px] leading-5 font-semibold text-gray-800"
+          >
             {t.forgot}
           </button>
         </div>
-        <Cta label={t.login} ready={pw.length > 0 && otpState !== "verifying"} onClick={login} />
+        <Cta
+          label={t.login}
+          ready={pw.length > 0 && otpState !== "verifying"}
+          onClick={login}
+        />
       </div>
     );
   };
 
   // 紙飛機的位置：1-1 在原地；收合後縮小移到漸層帶中央；離場往右上飛走
-  const base = form ? { ...collapse, s: PLANE_FORM_SCALE } : { dx: 0, dy: 0, s: 1 };
+  const base = form
+    ? { ...collapse, s: PLANE_FORM_SCALE }
+    : { dx: 0, dy: 0, s: 1 };
   const flying = leaving || exiting;
   const planeTransform = flying
     ? `translate(${base.dx + 140}px, ${base.dy - 200}px) scale(${base.s * 0.8})`
@@ -1281,15 +1367,23 @@ export default function Signup({
     >
       {/* 漸層鋪滿整個畫面（底下平常被表單蓋住，最後送出、表單推出畫面時才露出來），
           縮放仍以 1-1 漸層區的高度為準，構圖跟原本一樣 */}
-      <div aria-hidden className="absolute inset-0 overflow-hidden bg-[#ff2a2e]">
-        <Bands leaving={leaving} coverHeight={frozenSkyH ?? rootH - phoneH + CORNER} />
+      <div
+        aria-hidden
+        className="absolute inset-0 overflow-hidden bg-[#ff2a2e]"
+      >
+        <Bands
+          leaving={leaving}
+          coverHeight={frozenSkyH ?? rootH - phoneH + CORNER}
+        />
       </div>
       {/* 上半部：氣流、紙飛機、logo、標語。往下多延伸 24px 墊在 sheet 的圓角後面 */}
       <div
         ref={skyRef}
         className="absolute inset-x-0 top-0 flex flex-col overflow-hidden"
         style={
-          frozenSkyH != null ? { height: frozenSkyH } : { bottom: phoneH - CORNER }
+          frozenSkyH != null
+            ? { height: frozenSkyH }
+            : { bottom: phoneH - CORNER }
         }
       >
         <AirFlow />
@@ -1298,7 +1392,11 @@ export default function Signup({
           ref={warmRef}
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-0"
-          style={{ background: "radial-gradient(120% 80% at 50% 20%, #ff9a3c 0%, rgba(255,154,60,0) 70%)", mixBlendMode: "screen" }}
+          style={{
+            background:
+              "radial-gradient(120% 80% at 50% 20%, #ff9a3c 0%, rgba(255,154,60,0) 70%)",
+            mixBlendMode: "screen",
+          }}
         />
         <div className="relative">
           <StatusBar />
@@ -1362,101 +1460,110 @@ export default function Signup({
             }}
           >
             <div ref={planeMoveRef}>
-            <div ref={craftRef} className="relative h-[79.696px] w-[67.9px]">
-              {/* 航跡：座標原點放在機身中心（不是外框中心），
+              <div ref={craftRef} className="relative h-[79.696px] w-[67.9px]">
+                {/* 航跡：座標原點放在機身中心（不是外框中心），
                   線才會接在紙飛機身上，而不是往下插進影子 */}
-              <svg
-                aria-hidden
-                className="signup-trail pointer-events-none absolute"
-                style={{ left: FACE_CX - 200, top: FACE_CY - 200 }}
-                width={400}
-                height={400}
-                viewBox="-200 -200 400 400"
-                fill="none"
-              >
-                <defs>
-                  <linearGradient id="signup-trail-fade" x1="0" y1="1" x2="1" y2="0">
-                    {/* 兩端都收掉：航跡不再接到紙飛機身上，
+                <svg
+                  aria-hidden
+                  className="signup-trail pointer-events-none absolute"
+                  style={{ left: FACE_CX - 200, top: FACE_CY - 200 }}
+                  width={400}
+                  height={400}
+                  viewBox="-200 -200 400 400"
+                  fill="none"
+                >
+                  <defs>
+                    <linearGradient
+                      id="signup-trail-fade"
+                      x1="0"
+                      y1="1"
+                      x2="1"
+                      y2="0"
+                    >
+                      {/* 兩端都收掉：航跡不再接到紙飛機身上，
                         前端要是停在最亮的地方會像被切斷 */}
-                    <stop offset="0%" stopColor="#fff" stopOpacity="0" />
-                    <stop offset="55%" stopColor="#fff" stopOpacity="0.4" />
-                    <stop offset="86%" stopColor="#fff" stopOpacity="0.85" />
-                    <stop offset="100%" stopColor="#fff" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d={(() => {
-                    // 起點同樣換算到機身中心這個原點上
-                    const x0 = start.dx + FACE_OFF_X - FACE_DX;
-                    const y0 = start.dy + FACE_OFF_Y - FACE_DY;
-                    const cx = x0 * 0.46;
-                    const cy = y0 * 0.38;
-                    // 用 de Casteljau 從同一條二次曲線切前段出來，
-                    // 這樣縮短之後的弧度跟原本那條完全一致
-                    const t = TRAIL_END;
-                    const ax = x0 + (cx - x0) * t;
-                    const ay = y0 + (cy - y0) * t;
-                    const ex = ax + (cx * (1 - t) - ax) * t;
-                    const ey = ay + (cy * (1 - t) - ay) * t;
-                    return `M${x0.toFixed(1)},${y0.toFixed(1)} Q${ax.toFixed(1)},${ay.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
-                  })()}
-                  className="signup-trail-line"
-                  pathLength={1}
-                  stroke="url(#signup-trail-fade)"
-                  strokeLinecap="round"
-                  strokeDasharray={1}
-                />
-              </svg>
-
-              {/* 起飛：位移＋放大 → 繞航行軸滾一圈 → 記號與紙飛機交接 */}
-              <div
-                className="signup-takeoff absolute inset-0"
-                style={
-                  {
-                    "--tx": `${start.dx.toFixed(1)}px`,
-                    "--ty": `${start.dy.toFixed(1)}px`,
-                  } as React.CSSProperties
-                }
-              >
-                <SpinEchoes />
-                <div className="signup-takeoff-roll absolute inset-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/v13/signup-mark.svg"
-                    alt=""
-                    className="signup-takeoff-mark absolute top-[-1.8px] h-[58px] w-[66.63px] max-w-none"
-                    style={{ left: 1.135 }}
+                      <stop offset="0%" stopColor="#fff" stopOpacity="0" />
+                      <stop offset="55%" stopColor="#fff" stopOpacity="0.4" />
+                      <stop offset="86%" stopColor="#fff" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d={(() => {
+                      // 起點同樣換算到機身中心這個原點上
+                      const x0 = start.dx + FACE_OFF_X - FACE_DX;
+                      const y0 = start.dy + FACE_OFF_Y - FACE_DY;
+                      const cx = x0 * 0.46;
+                      const cy = y0 * 0.38;
+                      // 用 de Casteljau 從同一條二次曲線切前段出來，
+                      // 這樣縮短之後的弧度跟原本那條完全一致
+                      const t = TRAIL_END;
+                      const ax = x0 + (cx - x0) * t;
+                      const ay = y0 + (cy - y0) * t;
+                      const ex = ax + (cx * (1 - t) - ax) * t;
+                      const ey = ay + (cy * (1 - t) - ay) * t;
+                      return `M${x0.toFixed(1)},${y0.toFixed(1)} Q${ax.toFixed(1)},${ay.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+                    })()}
+                    className="signup-trail-line"
+                    pathLength={1}
+                    stroke="url(#signup-trail-fade)"
+                    strokeLinecap="round"
+                    strokeDasharray={1}
                   />
-                  <div className="signup-takeoff-plane absolute inset-0">
+                </svg>
+
+                {/* 起飛：位移＋放大 → 繞航行軸滾一圈 → 記號與紙飛機交接 */}
+                <div
+                  className="signup-takeoff absolute inset-0"
+                  style={
+                    {
+                      "--tx": `${start.dx.toFixed(1)}px`,
+                      "--ty": `${start.dy.toFixed(1)}px`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <SpinEchoes />
+                  <div className="signup-takeoff-roll absolute inset-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {/* 影子不是紙飛機的輪廓，是 ∧ 記號：飛的是紙飛機，
+                    <img
+                      src="/v13/signup-mark.svg"
+                      alt=""
+                      className="signup-takeoff-mark absolute top-[-1.8px] h-[58px] w-[66.63px] max-w-none"
+                      style={{ left: 1.135 }}
+                    />
+                    <div className="signup-takeoff-plane absolute inset-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {/* 影子不是紙飛機的輪廓，是 ∧ 記號：飛的是紙飛機，
                         落在地上的影子卻還是 AIFIAN。記號先轉到跟機頭同一個
                         航向（48 度，跟起飛時那段轉向同一個角度），再做地面的
                         縱向壓縮，不然會變成畫面上第二個貼著的 logo。
                         形狀另外用 8px 的同色描邊往外撐厚：影子要是一團量體，
                         細細一條 ∧ 看起來只像畫上去的線。
                         收合到漸層帶之後影子拿掉（Figma signup-1-2 只有機身） */}
-                    <div
-                      className="absolute inset-0"
-                      style={{ opacity: form ? 0 : 1, transition: "opacity 250ms ease" }}
-                    >
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          opacity: form ? 0 : 1,
+                          transition: "opacity 250ms ease",
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/v13/signup-mark-shadow.svg"
+                          alt=""
+                          className="signup-plane-shadow absolute top-[46px] left-[4px] h-[45.965px] w-[59.279px]"
+                        />
+                      </div>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src="/v13/signup-mark-shadow.svg"
+                        src="/v13/signup-plane.svg"
                         alt=""
-                        className="signup-plane-shadow absolute top-[46px] left-[4px] h-[45.965px] w-[59.279px]"
+                        className="signup-plane-float absolute top-0 left-px h-[54.4px] w-[66.9px]"
                       />
                     </div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/v13/signup-plane.svg"
-                      alt=""
-                      className="signup-plane-float absolute top-0 left-px h-[54.4px] w-[66.9px]"
-                    />
                   </div>
                 </div>
               </div>
-            </div>
             </div>
           </div>
           {/* 標題：置中、寬度 232.4 自然斷行，跟紙飛機當成同一組一起置中
@@ -1482,7 +1589,9 @@ export default function Signup({
               <TitleZh />
             ) : (
               <>
-                <span className="signup-title-line signup-title-ink">Invest in Yourself</span>
+                <span className="signup-title-line signup-title-ink">
+                  Invest in Yourself
+                </span>
                 <TitleLine2 />
               </>
             )}
@@ -1501,14 +1610,17 @@ export default function Signup({
           transition: exiting
             ? `top ${EXIT_MS}ms ${EXIT_EASE}`
             : leaving
-            ? "transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 250ms ease"
-            : moving
-              ? `top ${BEAT1_MS}ms ${EASE_OUT}`
-              : "none",
+              ? "transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), opacity 250ms ease"
+              : moving
+                ? `top ${BEAT1_MS}ms ${EASE_OUT}`
+                : "none",
         }}
       >
         <div className="relative">
-          <div key={pane} className={prev ? `signup-pane-in-${dir}` : undefined}>
+          <div
+            key={pane}
+            className={prev ? `signup-pane-in-${dir}` : undefined}
+          >
             {renderPane(pane)}
           </div>
           {prev && (

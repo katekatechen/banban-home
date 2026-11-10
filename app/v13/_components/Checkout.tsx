@@ -416,7 +416,7 @@ export default function Checkout({
                   Visa ···· {CARD_LAST}
                 </span>
               </div>
-              <p className="mt-3 flex items-start gap-[7px] text-[12px] leading-[1.5] text-[#a1a5ac]">
+              <p className="mt-3 flex items-start gap-[7px] text-[13px] leading-[1.5] text-[#a1a5ac]">
                 <svg
                   width="14"
                   height="14"
@@ -450,7 +450,7 @@ export default function Checkout({
                 </span>
               </div>
               {!freeShip && subtotal > 0 && (
-                <p className="mt-2 text-[12px] text-[#a1a5ac]">
+                <p className="mt-2 text-[13px] text-[#a1a5ac]">
                   再買 {money(FREE_SHIP - subtotal)} 即可免運
                 </p>
               )}
@@ -488,7 +488,7 @@ export default function Checkout({
                 "max-width 320ms cubic-bezier(.2,0,.2,1), opacity 240ms ease",
             }}
           >
-            <p className="whitespace-nowrap text-[12px] text-[#a1a5ac]">
+            <p className="whitespace-nowrap text-[13px] text-[#a1a5ac]">
               實付 · 含運費 {money(ship)}
             </p>
             <p className="mt-[3px] whitespace-nowrap text-[22px] font-bold text-gray-800">

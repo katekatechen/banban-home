@@ -20,7 +20,10 @@ export default function NotificationsPage() {
     : NOTIFICATIONS;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white" style={style}>
+    <div
+      className="flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <BackHeader title="通知" onBack={() => exit(() => router.back())} />
 
@@ -29,7 +32,7 @@ export default function NotificationsPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] transition-colors ${
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] transition-colors ${
               filter === f
                 ? "border-gray-800 bg-gray-800 text-white"
                 : "border-gray-200 text-gray-600"
@@ -41,8 +44,8 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex shrink-0 items-center justify-between px-5 pb-3">
-        <p className="text-[12px] text-gray-400">今天</p>
-        <label className="flex items-center gap-2 text-[12.5px] text-gray-500">
+        <p className="text-[13px] text-gray-400">今天</p>
+        <label className="flex items-center gap-2 text-[13px] text-gray-500">
           僅顯示未讀
           <button
             onClick={() => setUnreadOnly((v) => !v)}
@@ -74,11 +77,11 @@ export default function NotificationsPage() {
                   <p className="line-clamp-1 text-[13.5px] font-semibold text-gray-900">
                     {n.title}
                   </p>
-                  <span className="shrink-0 text-[11px] text-gray-300">
+                  <span className="shrink-0 text-[13px] text-gray-300">
                     {n.time}
                   </span>
                 </div>
-                <p className="mt-0.5 line-clamp-2 text-[12.5px] leading-[18px] text-gray-500">
+                <p className="mt-0.5 line-clamp-2 text-[13px] leading-[18px] text-gray-500">
                   {n.body}
                 </p>
               </div>

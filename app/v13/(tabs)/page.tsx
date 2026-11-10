@@ -1230,7 +1230,7 @@ export default function V13HomePage() {
             {cartCount > 0 && (
               <span
                 ref={badgeRef}
-                className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[12px] font-bold leading-3 text-gray-000"
+                className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[13px] font-bold leading-4 text-gray-000"
               >
                 {cartCount}
               </span>
@@ -1712,7 +1712,7 @@ export default function V13HomePage() {
           >
             <img src="/figma/v13-info.svg" alt="" className="size-5 shrink-0" />
             <div className="flex min-w-0 flex-1 flex-col">
-              <p className="text-[12px] font-semibold leading-4 text-[#1e2939]">
+              <p className="text-[13px] font-semibold leading-[18px] text-[#1e2939]">
                 {consentNotice.title}
               </p>
               <p className="text-[14px] leading-[18px] text-[#1e2939]">
@@ -1721,7 +1721,7 @@ export default function V13HomePage() {
             </div>
             <button
               onClick={consentNotice.onAction}
-              className="flex h-9 shrink-0 items-center rounded-xl bg-brand px-4 text-[12px] font-semibold leading-4 text-white active:scale-[0.98]"
+              className="flex h-9 shrink-0 items-center rounded-xl bg-brand px-4 text-[13px] font-semibold leading-[18px] text-white active:scale-[0.98]"
               style={{ transition: "transform 150ms ease" }}
             >
               {consentNotice.action}
@@ -2084,7 +2084,7 @@ function DateDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="h-px flex-1 bg-gray-100" />
-      <span className="text-[12px] text-[#a1a5af]">{label}</span>
+      <span className="text-[13px] text-[#a1a5af]">{label}</span>
       <span className="h-px flex-1 bg-gray-100" />
     </div>
   );
@@ -2204,7 +2204,7 @@ function ChatMessage({
         </div>
       )}
       {showDisclaimer && (
-        <p className="text-[12px] text-[#a1a5af]">
+        <p className="text-[13px] text-[#a1a5af]">
           AIFIAN 是 AI，有時可能會出錯。
         </p>
       )}
@@ -2267,7 +2267,7 @@ function ProductCard({
         </div>
         <div className="flex w-full flex-wrap items-center gap-2">
           <div className="flex flex-col gap-0.5">
-            <p className="whitespace-nowrap text-[12px] leading-4 text-[#4a5565]">
+            <p className="whitespace-nowrap text-[13px] leading-[18px] text-[#4a5565]">
               折抵後價格{" "}
               <span className="line-through">
                 NT${card.price.toLocaleString()}

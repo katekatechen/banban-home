@@ -62,7 +62,10 @@ export default function RewardHistoryPage() {
   const { style, exit } = usePageSlide();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white" style={style}>
+    <div
+      className="flex h-full flex-col overflow-hidden bg-white"
+      style={style}
+    >
       <StatusBar />
       <div className="relative flex shrink-0 items-center justify-center px-4 pb-3 pt-1">
         <button
@@ -96,20 +99,20 @@ export default function RewardHistoryPage() {
               .{REWARD_BALANCE_DECIMAL}
             </span>
           </p>
-          <p className="text-[12.5px] text-gray-400">
+          <p className="text-[13px] text-gray-400">
             ≈ ${REWARD_BALANCE.toLocaleString()} TWD
           </p>
         </div>
 
         <div className="flex shrink-0 divide-x divide-gray-100 border-y border-gray-100 py-4">
           <div className="flex-1 text-center">
-            <p className="text-[12px] text-gray-400">今日回饋率</p>
+            <p className="text-[13px] text-gray-400">今日回饋率</p>
             <p className="mt-1 text-[16px] font-bold text-gray-900">
               {TODAY_REWARD_RATE_PCT}%
             </p>
           </div>
           <div className="flex-1 text-center">
-            <p className="text-[12px] text-gray-400">總累積回饋</p>
+            <p className="text-[13px] text-gray-400">總累積回饋</p>
             <p className="mt-1 text-[16px] font-bold text-gray-900">
               {TOTAL_ACCUMULATED_REWARD.toLocaleString()}
             </p>
@@ -122,11 +125,15 @@ export default function RewardHistoryPage() {
             <p className="text-[14px] font-semibold text-gray-800">
               交易處理中
             </p>
-            <p className="text-[12px] text-gray-400">
+            <p className="text-[13px] text-gray-400">
               含轉出申請、訂單折抵的回饋
             </p>
           </div>
-          <svg viewBox="0 0 16 16" fill="none" className="size-4 shrink-0 text-gray-300">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            className="size-4 shrink-0 text-gray-300"
+          >
             <path
               d="M6 3.5L10.5 8L6 12.5"
               stroke="currentColor"
@@ -139,7 +146,7 @@ export default function RewardHistoryPage() {
 
         {REWARD_HISTORY.map((group) => (
           <div key={group.month}>
-            <p className="px-5 pb-1 pt-4 text-[12.5px] font-medium text-gray-400">
+            <p className="px-5 pb-1 pt-4 text-[13px] font-medium text-gray-400">
               {group.month}
             </p>
             <div className="flex flex-col divide-y divide-gray-100">
@@ -153,7 +160,7 @@ export default function RewardHistoryPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] text-gray-800">{txn.label}</p>
-                    <p className="mt-0.5 text-[11.5px] text-gray-400">
+                    <p className="mt-0.5 text-[13px] text-gray-400">
                       {txn.time}
                     </p>
                   </div>

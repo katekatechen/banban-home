@@ -90,7 +90,7 @@ export default function WineSelectPage() {
               <img src={c.icon} alt="" className="size-10" />
             </span>
             <span
-              className={`text-[12px] tracking-[0.12px] ${
+              className={`text-[13px] tracking-[0.12px] ${
                 category === c.key
                   ? "font-semibold text-[#1b1f26]"
                   : "text-[#6b7483]"
@@ -112,13 +112,13 @@ export default function WineSelectPage() {
               <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f6f7f8]">
                 <img src={p.image} alt="" className="size-full object-cover" />
                 {p.tag && (
-                  <span className="absolute right-2 top-2 rounded-[10px] bg-gray-800 px-2 py-1 text-[12px] font-semibold text-white">
+                  <span className="absolute right-2 top-2 rounded-[10px] bg-gray-800 px-2 py-1 text-[13px] font-semibold text-white">
                     {p.tag}
                   </span>
                 )}
               </div>
               <div className="flex flex-col gap-1 px-0 py-3">
-                <p className="text-[12px] tracking-wide text-gray-500">
+                <p className="text-[13px] tracking-wide text-gray-500">
                   {p.subtitle}
                 </p>
                 <p className="line-clamp-2 h-9 text-[14px] font-medium text-gray-800">
