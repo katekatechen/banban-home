@@ -78,34 +78,46 @@ export default function Cart({
             購物車是空的
           </p>
         ) : (
-          cart.map((it) => (
+          cart.map((it, i) => (
             <div
               key={it.card.id}
-              className="flex items-center gap-2.5 px-4 py-3"
+              className="flex items-start gap-3 px-4 py-3.5"
+              style={{
+                borderTop: i === 0 ? "none" : "1px solid #f0f2f4",
+              }}
             >
               <div
                 role="img"
                 aria-label={it.card.name}
-                className="size-11 shrink-0 rounded-[8px] bg-[#f0f2f4] bg-cover bg-center"
+                className="size-12 shrink-0 rounded-[8px] bg-[#f0f2f4] bg-cover bg-center"
                 style={{
                   backgroundImage: it.card.image
                     ? `url('${it.card.image}')`
                     : undefined,
                 }}
               />
-              {/* 商品名稱最多三行，現行版的品名常常很長（含括號規格） */}
-              <p className="line-clamp-3 min-w-0 flex-1 text-[15px] font-semibold leading-[1.35] text-gray-800">
-                {it.card.name}
-              </p>
-              <p className="shrink-0 text-[15px] text-gray-800">
-                {money(it.card.price * it.qty)}
-              </p>
-              <button
-                onClick={() => onCartChange(removeFromCart(cart, it.card.id))}
-                className="shrink-0 text-[15px] text-[#ff5050]"
-              >
-                移除
-              </button>
+              {/* 品名自己一行、金額自己一行：現行版的品名很長（常含括號規格），
+                  跟金額擠在同一列的話，品名被壓到剩一半寬、四五個字就斷一次，
+                  金額也會被推成每一列都不同的起點，一排看下來是歪的。
+                  拆成上下之後品名有整行可用，金額全部對齊同一個左緣 */}
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 text-[15px] font-semibold leading-[1.4] text-gray-800">
+                  {it.card.name}
+                </p>
+                <div className="mt-1.5 flex items-center justify-between gap-3">
+                  <p className="text-[15px] text-gray-800">
+                    {money(it.card.price * it.qty)}
+                  </p>
+                  <button
+                    onClick={() =>
+                      onCartChange(removeFromCart(cart, it.card.id))
+                    }
+                    className="shrink-0 text-[15px] text-[#ff5050]"
+                  >
+                    移除
+                  </button>
+                </div>
+              </div>
             </div>
           ))
         )}
