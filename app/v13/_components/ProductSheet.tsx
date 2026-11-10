@@ -48,6 +48,7 @@ export default function ProductSheet({
   addedIds,
   cart,
   present = "push",
+  z = 50,
   onToggleCart,
   onBuy,
   onAsk,
@@ -59,6 +60,8 @@ export default function ProductSheet({
   cart: CartItem[];
   // 從哪裡開：兌換分頁用 push（右進右出），對話裡用 sheet（下進下出）
   present?: "push" | "sheet";
+  // 疊在哪一層：從購物車頁點進來時要蓋過購物車，所以可以往上調
+  z?: number;
   onToggleCart: (card: RecCard) => void;
   onBuy: (card: RecCard) => void;
   // 「繼續聊」：關掉細節頁，帶著商品名稱回到對話
@@ -153,8 +156,9 @@ export default function ProductSheet({
         <div
           onClick={close}
           aria-hidden
-          className="absolute inset-0 z-40 bg-black/25"
+          className="absolute inset-0 bg-black/25"
           style={{
+            zIndex: z - 10,
             opacity: entered && !closing ? 1 : 0,
             transition: `opacity ${PAGE_TRANSITION_MS}ms ${EASING}`,
           }}
@@ -177,12 +181,13 @@ export default function ProductSheet({
           if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy))
             nav(dx < 0 ? 1 : -1);
         }}
-        className={`absolute z-50 flex flex-col overflow-hidden bg-white ${
+        className={`absolute flex flex-col overflow-hidden bg-white ${
           isSheet
             ? "inset-x-0 bottom-0 rounded-t-[20px] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
             : "inset-0"
         }`}
         style={{
+          zIndex: z,
           top: isSheet ? SHEET_TOP_GAP : undefined,
           transform:
             entered && !closing

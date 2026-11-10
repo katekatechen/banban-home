@@ -1,0 +1,2314 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Cart from "../_components/Cart";
+import Checkout from "../_components/Checkout";
+import ProductSheet from "../_components/ProductSheet";
+import StatusBar from "../_components/StatusBar";
+import HomeGradient, {
+  GLOW_IS_DARK,
+  GLOW_TEXT_ON_COLOR,
+  GLOW_TOP,
+  GRADIENT_EXIT_MS,
+  PLANE_EXIT_MS,
+} from "../_components/HomeGradient";
+import LogoMorph from "../_components/LogoMorph";
+import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
+import Signup, { SIGNUP_EXIT_MS, SIGNUP_TOP } from "../_components/Signup";
+import { greetingOf, knownTime, resolveTime } from "../_lib/time-of-day";
+import { HOME_RESET_EVENT } from "../_components/TabBar";
+import { EASING } from "../_lib/page-transition";
+import { setTopTint } from "../_lib/top-tint";
+import {
+  genId,
+  loadChat,
+  addToCart,
+  cartCountOf,
+  removeFromCart,
+  saveChat,
+  takePendingPrompt,
+  type CartItem,
+  type Message,
+  type RecCard,
+  type Stage,
+} from "../_lib/chat-storage";
+import {
+  AI_SELECT_CAPACITY,
+  AI_SELECT_HOLDING,
+  RATE_FORECAST_POOL,
+  RECOMMENDED_PRODUCTS,
+  REWARD_BALANCE,
+  TRENDING_PRODUCTS,
+  WINE_HOLDINGS,
+  WINE_HOLDINGS_TOTAL_CHANGE_PCT,
+  WINE_HOLDINGS_TOTAL_VALUE,
+  WINE_PICKS,
+} from "../_lib/mock-data";
+import { money0, rewardPrice } from "../_lib/reward-price";
+import { PRODUCT_DETAILS } from "../_lib/product-details";
+import aiLoadingAnimation from "../_lib/ai-loading.json";
+import AiConsentSheet from "../_components/AiConsentSheet";
+import {
+  initConsentFromUrl,
+  inputPlaceholder,
+  isConsented,
+  noticeCopy,
+  readConsent,
+  useConsent,
+} from "../_lib/ai-consent";
+
+// v14 首頁＝聊天分頁，照 Figma 948:44415（首頁）跟 981:24621（對話中）。
+// 點輸入框本身不會有任何變化，送出第一句話之後才原地展開對話：插圖淡出、
+// 上方冒出購物車、中間換成對話內容，「你可能想知道」收成一行，
+// 輸入框跟 tabbar 留在原位，不換頁。
+// 對話邏輯沿用 v12 對話頁那套關鍵字判斷，只是搬進首頁裡原地展開
+
+// 換一批：標籤不是瞬間換掉，是舊的依序消失、新的再依序出現。三個狀態
+// 靠同一個 phase 驅動所有標籤的 style，用 transition 縮寫裡的 delay
+// 做出「依序」的效果
+type SuggestionPhase = "idle" | "exiting" | "entering-start" | "entering";
+const ITEM_STAGGER_MS = 60;
+const ITEM_DURATION_MS = 200;
+const MODE_TRANSITION_MS = 300;
+const FLY_TO_CART_MS = 650;
+
+// 送出後把提問錨到畫面頂端時，上面要留夠，避開捲動區頂部 16px 的淡出遮罩
+const ANCHOR_TOP_PAD = 24;
+// 底部補空白時在內容結尾之後再多留一段，不要剛好卡死
+const ANCHOR_BOTTOM_GAP = 24;
+
+// 前三個是 Figma 上的原文案，首頁一打開就照這三個排，換一批才洗牌
+// 首頁的載入動畫（天空淡入、雲升起）只在打開頁面後第一次看到首頁時播，
+// 切去其他分頁再切回來就不重播
+let heroIntroPlayed = false;
+
+const SUGGESTION_POOL = [
+  { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
+  {
+    key: "is-cash",
+    prompt: "AIFIAN 的回饋是現金嗎",
+    label: "AIFIAN 的回饋是現金嗎",
+  },
+  {
+    key: "restock-noodles",
+    prompt: "推薦幾款好吃的乾拌麵給我",
+    label: "上次買的乾拌麵吃完了嗎？要不要補貨",
+  },
+  {
+    key: "mid-autumn",
+    prompt: "推薦適合中秋烤肉喝的酒",
+    label: "中秋烤肉想喝點什麼嗎？",
+  },
+  {
+    key: "daily-reward",
+    prompt: "我想看智能選品",
+    label: "你的每日回饋突破 100 元！再買點智能選品？",
+  },
+];
+
+// 既有用戶更新後第一次打開（網址 ?returning）：首頁招呼語換成「歡迎回來」，
+// 再給一個「看看新的 AIFIAN」打開改版公告卡（可以左右滑的幾則引導）；
+// 建議也換成改版後最常見的問題。
+// 有沒有每日回饋看到的都一樣，不分眾
+// 切分頁再回來時沿用，不用再讀一次網址
+let returningUser = false;
+
+// 首頁大標欄位：同一時間只放一件事。要放哪一則由後端排好序給一則，前端只負責顯示；
+// 有放東西（大標下方有 CTA）時「你可能想知道」收合。prototype 用網址 ?reminder= 切換情境
+type ReminderKey = "pay" | "kyc" | "referral";
+let reminderKey: ReminderKey | null = null;
+const REMINDERS: Record<
+  ReminderKey,
+  { title: string; sub: string; cta: string; href?: string; toast?: string }
+> = {
+  pay: {
+    title: "有一筆訂單還沒付款",
+    sub: "今天 23:59 前付款，用掉的回饋會先幫你保留",
+    cta: "去付款",
+    toast: "示意：前往這筆訂單的付款頁",
+  },
+  kyc: {
+    title: "身分驗證還沒通過",
+    sub: "補上資料，就能繼續買賣跟提領",
+    cta: "重新驗證",
+    href: "/v14/account",
+  },
+  referral: {
+    title: "你有 100 回饋可以領",
+    sub: "完成身分驗證、持有智能選品 7 天就入帳",
+    cta: "去驗證",
+    href: "/v14/account",
+  },
+};
+
+const RETURNING_SUGGESTIONS: typeof SUGGESTION_POOL = [
+  {
+    key: "what-changed",
+    prompt: "AIFIAN 改了什麼？",
+    label: "AIFIAN 改了什麼？",
+  },
+  {
+    key: "earn-more",
+    prompt: "今天還能多賺什麼？",
+    label: "今天還能多賺什麼？",
+  },
+  {
+    key: "spend-rewards",
+    prompt: "我的回饋可以換什麼？",
+    label: "我的回饋可以換什麼？",
+  },
+];
+
+// 「繼續聊」可能從對話裡或兌換頁的任一張商品卡回來，這裡把所有商品攤平成同一份清單
+const askableCards = (): RecCard[] => [
+  ...NOODLE_PICKS,
+  ...WINE_PICKS.map((p) => ({
+    id: p.id,
+    name: p.name,
+    subtitle: p.subtitle,
+    price: p.price,
+    image: p.image,
+  })),
+  ...[...TRENDING_PRODUCTS, ...RECOMMENDED_PRODUCTS].map((p) => ({
+    id: p.id,
+    name: p.name,
+    subtitle: p.subtitle,
+    price: p.price,
+    image: "image" in p ? p.image : undefined,
+  })),
+];
+
+const NOODLE_PICKS: RecCard[] = [
+  {
+    id: "dashixiong",
+    name: "大師兄銷魂麻辣粗麵",
+    subtitle: "排隊名店的快煮版，麻辣醬熬足十小時",
+    price: 129,
+    image: "/figma/v14-product-dashixiong.jpg",
+  },
+  {
+    id: "laotao",
+    name: "老饕乾拌麵 麻醬蒜香",
+    subtitle: "芝麻醬濃郁、蒜香不嗆，不吃辣也能吃",
+    price: 99,
+    image: "/products/coke-zero.jpg",
+  },
+  {
+    id: "jinjiazhuang",
+    name: "金家莊 蒜辣拌麵",
+    subtitle: "大量蒜末配微辣辣油，寬麵條有口感",
+    price: 109,
+    image: "/products/kinmen-58.jpg",
+  },
+];
+
+// 上次對話的假資料：對話中往上滑會冒出「載入上次對話」，點了才接到目前對話上面。
+// id 用負數，跟目前對話 genId() 發的正數 id 不會撞
+const PREVIOUS_CHAT_DATE = "9 月 28 日";
+const PREVIOUS_CHAT: Message[] = [
+  { id: -1, role: "user", text: "這個月的回饋怎麼算？" },
+  {
+    id: -2,
+    role: "bot",
+    text: "你這個月的回饋主要來自智能選酒的每日回饋，每天自動累積，不用另外領。到目前為止已經累積 451 點，月底會一起入帳。",
+  },
+  { id: -3, role: "user", text: "幫我找一支送禮的酒，預算 1,000 以內" },
+  {
+    id: -4,
+    role: "bot",
+    text: "送禮的話這支很穩，包裝有質感，價格也剛好在預算內：",
+    cards: [
+      {
+        id: WINE_PICKS[0].id,
+        name: WINE_PICKS[0].name,
+        subtitle: WINE_PICKS[0].subtitle,
+        price: WINE_PICKS[0].price,
+        image: WINE_PICKS[0].image,
+      },
+    ],
+  },
+];
+const HISTORY_LOADING_MS = 700;
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export default function V13HomePage() {
+  const router = useRouter();
+  const [chat] = useState(loadChat);
+  const [chatOpen, setChatOpen] = useState(chat.open);
+  const [playIntro] = useState(() => !chat.open && !heroIntroPlayed);
+  // 開場畫面：跟首頁進場動畫一樣，只在打開頁面後第一次看到首頁時出現。
+  // show（停 2 秒）→ leaving（淡出，同時首頁開始進場）→ done
+  const [splash, setSplash] = useState<"show" | "leaving" | "done">(() =>
+    playIntro ? "show" : "done",
+  );
+  // 網址加 ?signup：開場畫面換成註冊頁，停在那裡等使用者按「使用手機繼續」，
+  // 之後跟開場畫面一樣進入 leaving（首頁開始進場）→ done
+  const [signup, setSignup] = useState(false);
+  const [returning, setReturning] = useState(returningUser);
+  const [reminder, setReminder] = useState<ReminderKey | null>(reminderKey);
+  // 點「看看新的 AIFIAN」才打開的改版公告卡
+  const [announce, setAnnounce] = useState(false);
+  // 第三方 AI 的揭露與同意：沒同意之前不能把對話送出去。
+  // 變數（供應商、什麼時候跳、說明二用哪版、模擬哪個錯誤）都在 _lib/ai-consent.ts
+  const consentVars = useConsent();
+  // blocked：畫面上看得出來「還沒開啟」。在其他裝置關掉的那一種不算，
+  // 這台還不知道，看起來跟正常一樣，要送訊息時才會被擋下來
+  const consentBlocked =
+    consentVars.consent === "unset" || consentVars.consent === "declined";
+  // 還沒問過的時候，首頁維持原樣：不放提示條，placeholder 也不提同意。
+  // 使用者還沒被問過，就不存在「被擋下來」這件事，先貼一張說明只會讓首頁
+  // 看起來壞掉。點輸入框會跳 Sheet，那時候才第一次講這件事。
+  // 按過「先不要」之後才需要解釋為什麼不能打字
+  const consentRefused = consentVars.consent === "declined";
+  const [consentSheet, setConsentSheet] = useState(false);
+  // 使用者已經打好字才被擋下來的話，同意之後直接幫他送出去，不用再打一次
+  const pendingConsentSend = useRef<string | null>(null);
+  // 在其他裝置關掉、這台還想送訊息時，輸入列上方出現的提醒
+  const [remoteNotice, setRemoteNotice] = useState(false);
+  const askConsent = (pending: string | null) => {
+    pendingConsentSend.current = pending;
+    setConsentSheet(true);
+  };
+  const continueFromSignup = () => {
+    setSplash("leaving");
+    window.setTimeout(() => setSplash("done"), SIGNUP_EXIT_MS + 60);
+  };
+  useEffect(() => {
+    initConsentFromUrl();
+  }, []);
+  useEffect(() => {
+    if (splash !== "show") return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.has("returning")) {
+      returningUser = true;
+      setReturning(true);
+      setSuggestions(RETURNING_SUGGESTIONS);
+      setChipsOpen(false);
+    }
+    const r = q.get("reminder");
+    if (r === "pay" || r === "kyc" || r === "referral") {
+      reminderKey = r;
+      setReminder(r);
+      setChipsOpen(false);
+    }
+    if (q.has("signup")) {
+      setSignup(true);
+      return;
+    }
+    const t1 = window.setTimeout(() => setSplash("leaving"), SPLASH_HOLD_MS);
+    const t2 = window.setTimeout(
+      () => setSplash("done"),
+      SPLASH_HOLD_MS + SPLASH_EXIT_MS + 60,
+    );
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // 首頁插圖的時段（清晨／白天／黃昏／夜晚）。第一次載入時伺服器不知道使用者的時間，
+  // 先用白天畫，掛載後才換成真正的時段（天空這時還是全白、正要淡入，看不出切換）；
+  // 切分頁回來直接沿用算過的時段
+  const [time, setTime] = useState(
+    () =>
+      knownTime() ?? {
+        period: "day" as const,
+        greet: "day" as const,
+        hour: 12,
+      },
+  );
+  useEffect(() => {
+    setTime(resolveTime());
+  }, []);
+  // 光暈版：送出後約 0.28 秒（紙飛機剛消失）左上的 AIFIAN 字樣開始縮成 logo mark，
+  // 約 0.8 秒變成 mark；
+  // 回首頁時直接展開。掛載當下若已在對話中（切分頁回來）就直接是 mark，不播動畫
+  const LOGO_MORPH_DELAY_MS = 280;
+  const [logoMark, setLogoMark] = useState(chatOpen);
+  const logoMounted = useRef(false);
+  useEffect(() => {
+    const first = !logoMounted.current;
+    logoMounted.current = true;
+    if (!chatOpen || first) {
+      setLogoMark(chatOpen);
+      return;
+    }
+    const t = window.setTimeout(() => setLogoMark(true), LOGO_MORPH_DELAY_MS);
+    return () => window.clearTimeout(t);
+  }, [chatOpen]);
+  // 底色是深色時（GLOW_IS_DARK）：logo、狀態列、招呼語、快捷問題改白色；
+  // 現在是亮色漸層到白，維持深色字。進入對話後是白底，一律深色
+  // 色光在上方時（GLOW_TEXT_ON_COLOR）：logo、狀態列、招呼語壓在色光上，改白字；
+  // 快捷問題在下方白底上，維持深色
+  const glowDark = GLOW_IS_DARK && !chatOpen;
+  const glowTopLight = GLOW_IS_DARK || GLOW_TEXT_ON_COLOR;
+  const lightHeader = glowTopLight && !chatOpen;
+  const darkGreeting = !glowTopLight;
+  useEffect(() => {
+    heroIntroPlayed = true;
+  }, []);
+  const [messages, setMessages] = useState<Message[]>(chat.messages);
+  const [stage, setStage] = useState<Stage>(chat.stage);
+  const [cart, setCart] = useState<CartItem[]>(chat.cart);
+  const cartCount = cartCountOf(cart);
+  const addedIds = cart.map((it) => it.card.id);
+  // 點右上角購物車先開購物車頁，從那裡才進結帳（跟現行 App 一樣）
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // 購物車是空的就不顯示右上角的購物車按鈕；第一件商品飛過去的途中先讓它
+  // 淡入，商品才有地方落下（按鈕一直佔著位置、只是透明，飛行終點量得到）
+  const [cartPeek, setCartPeek] = useState(false);
+  const [sheet, setSheet] = useState<{
+    cards: RecCard[];
+    index: number;
+  } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [thinkingText, setThinkingText] = useState(false);
+  const [input, setInput] = useState("");
+  // 首頁預設展開建議，進到對話後收成一行，點標題可以再打開。
+  // 大標下方有 CTA 的時候（目前是既有用戶的「看看新的 AIFIAN」），建議預設收合，
+  // 畫面上只留一個主要動作，不跟 CTA 搶注意力
+  const [chipsOpen, setChipsOpen] = useState(
+    !chat.open && !returningUser && !reminderKey,
+  );
+  const [suggestions, setSuggestions] = useState(() =>
+    returningUser ? RETURNING_SUGGESTIONS : SUGGESTION_POOL.slice(0, 3),
+  );
+  const [itemPhase, setItemPhase] = useState<SuggestionPhase>("idle");
+  const [historyLoaded, setHistoryLoaded] = useState(chat.historyLoaded);
+  const [showHistoryBtn, setShowHistoryBtn] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const lastScrollTop = useRef(0);
+  const touchStartY = useRef<number | null>(null);
+  const bottomPullStartY = useRef<number | null>(null);
+  const bottomWheelPull = useRef(0);
+  const wheelIdleTimer = useRef<number | null>(null);
+  // 0 到 1：已經多拉了臨界點的幾成，驅動拉動中的回饋動畫
+  const [pull, setPull] = useState(0);
+  const atBottomSince = useRef<number | null>(null);
+  const distanceFromBottom = useRef<number | null>(null);
+  const timersRef = useRef<number[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const cartIconRef = useRef<HTMLImageElement>(null);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const prevCartCount = useRef(cartCount);
+  const sentInitial = useRef(false);
+
+  useEffect(() => {
+    saveChat({
+      open: chatOpen,
+      historyLoaded,
+      messages,
+      stage,
+      cart,
+    });
+  }, [chatOpen, historyLoaded, messages, stage, cart]);
+
+  const showToast = (text: string) => {
+    setToast(text);
+    const t = window.setTimeout(() => setToast(null), 2200);
+    timersRef.current.push(t);
+  };
+
+  // 卡片上的 + ：商品圖飛進購物車，飛到了才真的放進購物車（數字才跳）
+  const addFromCard = (from: HTMLElement, card: RecCard) => {
+    flyToCart(from, () => setCart((c) => addToCart(c, card)));
+  };
+
+  // 細節頁的「加入購物車」是切換：沒加過就加、已經加過就拿掉
+  const toggleCartFromSheet = (card: RecCard) => {
+    setCart((c) =>
+      c.some((it) => it.card.id === card.id)
+        ? removeFromCart(c, card.id)
+        : addToCart(c, card),
+    );
+  };
+
+  // 立即結帳：沒加過的先放進購物車，關掉細節頁直接打開結帳頁
+  const buyFromSheet = (card: RecCard) => {
+    setCart((c) =>
+      c.some((it) => it.card.id === card.id) ? c : addToCart(c, card),
+    );
+    setSheet(null);
+    setCheckoutOpen(true);
+  };
+
+  // 往上滑才冒出「載入上次對話」，往下滑就收起來。三種輸入都要接：
+  // 內容夠長時看 scroll 方向；內容還很短、根本捲不動時，手機看手指往下拖、
+  // 桌機看滾輪往上，不然對話才一兩句的時候永遠叫不出這顆按鈕
+  const revealHistoryBtn = (up: boolean) => {
+    if (historyLoaded || historyLoading || !chatOpen) return;
+    setShowHistoryBtn(up);
+  };
+
+  // 對話捲到底之後還繼續往下滑，要拉過臨界點才打開「你可能想知道」。
+  // 「繼續往下滑」在手機是手指往上推、桌機是滾輪往下；只看已經到底之後
+  // 多推的那段，捲動途中經過底部不會誤觸。
+  // 拉的過程有回饋：對話內容跟著往上帶一點（越拉越緊）、標題旁的箭頭
+  // 從「>」慢慢轉向「v」，轉滿就是到了臨界點。
+  // 手機要放開手指時已經過臨界點才打開，沒過就彈回去；桌機滾輪一過臨界點就打開，
+  // 停下來沒過的話 250ms 後彈回去
+  const BOTTOM_PULL_TOUCH_PX = 140;
+  const BOTTOM_PULL_WHEEL_PX = 420;
+  const PULL_LIFT_PX = 28;
+  const isAtBottom = () => {
+    const el = scrollRef.current;
+    return !!el && el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+  };
+
+  // 送出之後把那則提問錨到畫面頂端，回答往下長，閱讀起點就是答案的第一行。
+  // 底部要補一段空白，不然回答很短時提問根本捲不到頂端
+  const innerRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const anchorMsgId = useRef<number | null>(null);
+  const pendingAnchor = useRef(false);
+  // 錨好之後一直握著，直到使用者自己動手捲。握著的時候不自動追底，
+  // 回覆一段一段補上來也不會把提問擠出畫面
+  const anchorHold = useRef(false);
+  const stickToBottom = useRef(true);
+  const releaseAnchor = () => {
+    anchorHold.current = false;
+  };
+  const [showJump, setShowJump] = useState(false);
+
+  const anchorEl = () =>
+    anchorMsgId.current == null
+      ? null
+      : (scrollRef.current?.querySelector<HTMLElement>(
+          `[data-message-id="${anchorMsgId.current}"]`,
+        ) ?? null);
+
+  // 空白高度＝視窗高度扣掉「提問頂端到內容結尾」那一段。先歸零再量，
+  // 不然會把上一次補的空白也算進去，越補越高
+  const syncAnchorSpacer = () => {
+    const el = scrollRef.current;
+    const inner = innerRef.current;
+    const spacer = spacerRef.current;
+    if (!el || !inner || !spacer) return;
+    spacer.style.height = "0px";
+    const anchor = anchorEl();
+    if (!anchor) return;
+    const afterH =
+      inner.getBoundingClientRect().bottom - anchor.getBoundingClientRect().top;
+    spacer.style.height = `${Math.max(
+      0,
+      el.clientHeight - afterH - ANCHOR_BOTTOM_GAP,
+    )}px`;
+  };
+
+  const jumpToLatest = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    anchorHold.current = false;
+    stickToBottom.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
+  const openChipsFromPull = () => {
+    bottomPullStartY.current = null;
+    bottomWheelPull.current = 0;
+    setPull(0);
+    if (!chipsOpen) setChipsOpen(true);
+  };
+  const releasePull = () => {
+    bottomPullStartY.current = null;
+    bottomWheelPull.current = 0;
+    setPull(0);
+  };
+
+  // 「你可能想知道」展開後，對話區會被往上擠矮一截，最後一則訊息會被
+  // 底下長出來的標籤蓋住，順手捲回最底
+  useEffect(() => {
+    if (!chatOpen || !chipsOpen) return;
+    const t = window.setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }, MODE_TRANSITION_MS);
+    return () => window.clearTimeout(t);
+  }, [chipsOpen, chatOpen]);
+
+  // 「你可能想知道」打開時，往上滑（回頭看對話）超過一小段就自動收起來，
+  // 把空間還給對話。累積往上滑的距離，往下滑就歸零，避免手指輕微抖動就收掉
+  const CHIPS_CLOSE_SCROLL_UP_PX = 40;
+  const scrollUpAccum = useRef(0);
+  const trackScrollUp = (up: number) => {
+    if (!chatOpen || !chipsOpen) return;
+    if (up <= 0) {
+      scrollUpAccum.current = 0;
+      return;
+    }
+    scrollUpAccum.current += up;
+    if (scrollUpAccum.current > CHIPS_CLOSE_SCROLL_UP_PX) {
+      scrollUpAccum.current = 0;
+      setChipsOpen(false);
+    }
+  };
+
+  const handleChatScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // 貼底與否決定回覆吐出來時要不要跟著捲，也決定「跳到最新」出不出現
+    const atBottom = isAtBottom();
+    stickToBottom.current = atBottom && !anchorHold.current;
+    setShowJump(!atBottom);
+    if (isAtBottom()) {
+      if (atBottomSince.current == null)
+        atBottomSince.current = performance.now();
+    } else {
+      atBottomSince.current = null;
+      bottomWheelPull.current = 0;
+    }
+    const delta = el.scrollTop - lastScrollTop.current;
+    lastScrollTop.current = el.scrollTop;
+    if (Math.abs(delta) > 4) revealHistoryBtn(delta < 0);
+    trackScrollUp(-delta);
+  };
+
+  const loadHistory = () => {
+    if (historyLoading) return;
+    setHistoryLoading(true);
+    const t = window.setTimeout(() => {
+      const el = scrollRef.current;
+      if (el) distanceFromBottom.current = el.scrollHeight - el.scrollTop;
+      setHistoryLoaded(true);
+      setHistoryLoading(false);
+      setShowHistoryBtn(false);
+    }, HISTORY_LOADING_MS);
+    timersRef.current.push(t);
+  };
+
+  // 上次對話是接在最上面，直接插進去的話，畫面上正在看的內容會被往下推走。
+  // 插入後先把捲動位置補回去（畫面停在原處），再往上滑一小段，
+  // 讓使用者看到上次對話的尾巴、知道內容已經載進來了
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!historyLoaded || !el || distanceFromBottom.current == null) return;
+    el.scrollTop = el.scrollHeight - distanceFromBottom.current;
+    distanceFromBottom.current = null;
+    lastScrollTop.current = el.scrollTop;
+    el.scrollBy({ top: -140, behavior: "smooth" });
+  }, [historyLoaded]);
+
+  // 購物車數字一變就讓紅點「彈」出來：從 0 放大超過一點再縮回原尺寸
+  useEffect(() => {
+    if (cartCount > prevCartCount.current) {
+      badgeRef.current?.animate(
+        [
+          { transform: "scale(0)" },
+          { transform: "scale(1.35)", offset: 0.6 },
+          { transform: "scale(1)" },
+        ],
+        { duration: 320, easing: "ease-out" },
+      );
+    }
+    prevCartCount.current = cartCount;
+  }, [cartCount]);
+
+  // 按 + 加入購物車：一顆紅點從按鈕沿著弧線飛進右上角的購物車，
+  // 飛到之後購物車圖示縮放一下，數字才 +1 跳出來。
+  // 用 Web Animations API 直接動 DOM，不走 React state，動畫期間不會重繪整頁
+  const flyToCart = (from: HTMLElement, onLand: () => void) => {
+    const root = rootRef.current;
+    const cartIcon = cartIconRef.current;
+    const image = from
+      .closest("[data-product-card]")
+      ?.querySelector<HTMLElement>("[data-product-image]");
+    if (!root || !cartIcon || !image) {
+      onLand();
+      return;
+    }
+    setCartPeek(true);
+    const rootRect = root.getBoundingClientRect();
+    const a = image.getBoundingClientRect();
+    const b = cartIcon.getBoundingClientRect();
+    // 複製一份商品圖（拿掉右上角的勾選圈），疊在原圖的位置上，
+    // 邊飛邊縮小，最後縮成跟購物車圖示差不多大、落在購物車正中間
+    const w = a.width;
+    const endScale = 22 / w;
+    const x0 = a.left - rootRect.left;
+    const y0 = a.top - rootRect.top;
+    const x1 = b.left + b.width / 2 - rootRect.left - (w * endScale) / 2;
+    const y1 = b.top + b.height / 2 - rootRect.top - (w * endScale) / 2;
+    // 中途點：垂直方向先走掉七成、水平只走三成，路徑往左上鼓成一道弧，
+    // 不會衝出畫面上緣（購物車本來就貼著頂部）
+    const midX = x0 + (x1 - x0) * 0.3;
+    const midY = y0 + (y1 - y0) * 0.7;
+    const midScale = 0.45;
+
+    const ghost = image.cloneNode(true) as HTMLElement;
+    ghost.querySelector("button")?.remove();
+    ghost.removeAttribute("data-product-image");
+    Object.assign(ghost.style, {
+      position: "absolute",
+      left: "0",
+      top: "0",
+      width: `${w}px`,
+      height: `${a.height}px`,
+      margin: "0",
+      zIndex: "30",
+      pointerEvents: "none",
+      borderRadius: "16px",
+      overflow: "hidden",
+      transformOrigin: "0 0",
+      boxShadow: "0 6px 20px rgba(0,0,0,0.18)",
+    });
+    root.appendChild(ghost);
+    const anim = ghost.animate(
+      [
+        {
+          transform: `translate(${x0}px, ${y0}px) scale(1)`,
+          borderRadius: "16px",
+        },
+        {
+          transform: `translate(${midX}px, ${midY}px) scale(${midScale})`,
+          offset: 0.45,
+        },
+        {
+          transform: `translate(${x1}px, ${y1}px) scale(${endScale})`,
+          opacity: 0.7,
+          borderRadius: `${w / 2}px`,
+        },
+      ],
+      { duration: FLY_TO_CART_MS, easing: "cubic-bezier(0.45, 0, 0.55, 1)" },
+    );
+    anim.onfinish = () => {
+      ghost.remove();
+      cartIcon.animate(
+        [
+          { transform: "scale(1)" },
+          { transform: "scale(1.3)", offset: 0.4 },
+          { transform: "scale(0.92)", offset: 0.75 },
+          { transform: "scale(1)" },
+        ],
+        { duration: 360, easing: "ease-out" },
+      );
+      window.setTimeout(() => {
+        onLand();
+        setCartPeek(false);
+      }, 140);
+    };
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    syncAnchorSpacer();
+    // 剛送出：把提問捲到頂端，只做這一次
+    if (pendingAnchor.current) {
+      const anchor = anchorEl();
+      if (anchor) {
+        pendingAnchor.current = false;
+        stickToBottom.current = false;
+        const top =
+          el.scrollTop +
+          anchor.getBoundingClientRect().top -
+          el.getBoundingClientRect().top -
+          ANCHOR_TOP_PAD;
+        el.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        return;
+      }
+    }
+    // 回覆一段一段吐出來的過程，只有本來就貼著底部才跟著往下
+    if (stickToBottom.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      return;
+    }
+    setShowJump(!isAtBottom());
+  }, [messages, typing, chatOpen]);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach((id) => window.clearTimeout(id));
+  }, []);
+
+  const openChat = () => {
+    if (chatOpen) return;
+    setChatOpen(true);
+    setChipsOpen(false);
+  };
+
+  const closeChat = () => {
+    inputRef.current?.blur();
+    setChatOpen(false);
+    setChipsOpen(true);
+  };
+
+  // 首頁下拉載入上次對話：拉的過程膠囊從一顆圓長成膠囊，文字跟著露出來，
+  // 拉滿時震動一下、文字換成「放開載入」，放開就直接載入，沒拉滿就彈回去。
+  // 臨界點比原本深（110 → 135），因為少了「停住再點一次」那層確認，
+  // 太淺會變成滑一下畫面就誤觸
+  const HOME_PULL_TOUCH_PX = 135;
+  const HOME_PULL_WHEEL_PX = 260;
+  const [homePull, setHomePull] = useState(0);
+  const [homeHistoryLoading, setHomeHistoryLoading] = useState(false);
+  const homePullStartY = useRef<number | null>(null);
+  const homeWheelPull = useRef(0);
+  const homeWheelTimer = useRef<number | null>(null);
+  // 跨過臨界點才震、而且只震一次；退回臨界點以下才重新上膛，
+  // 不然手指在臨界點附近抖一下就會連續震
+  const homePullArmed = useRef(false);
+  const homeReveal = homeHistoryLoading ? 1 : homePull;
+
+  const armHomePull = (p: number) => {
+    if (p >= 1 && !homePullArmed.current) {
+      homePullArmed.current = true;
+      navigator.vibrate?.(18);
+    } else if (p < 1) {
+      homePullArmed.current = false;
+    }
+  };
+
+  const homeTouchStart = (y: number) => {
+    if (chatOpen) return;
+    homePullStartY.current = y;
+  };
+  const homeTouchMove = (y: number) => {
+    if (chatOpen || homePullStartY.current == null) return;
+    const dy = y - homePullStartY.current;
+    // 越拉越緊：超過臨界點之後就不再跟著手指走
+    const p = Math.max(0, Math.min(1, dy / HOME_PULL_TOUCH_PX));
+    armHomePull(p);
+    setHomePull(p);
+  };
+  const homeTouchEnd = () => {
+    if (homePullStartY.current == null) return;
+    homePullStartY.current = null;
+    const ready = homePull >= 1;
+    homePullArmed.current = false;
+    setHomePull(0);
+    // 放開就載入，不再停住等第二次點擊
+    if (ready) loadHistoryFromHome();
+  };
+  const homeWheel = (deltaY: number) => {
+    if (chatOpen || homeHistoryLoading) return;
+    if (deltaY > 2) {
+      homeWheelPull.current = 0;
+      homePullArmed.current = false;
+      setHomePull(0);
+      return;
+    }
+    if (deltaY >= 0) return;
+    homeWheelPull.current += -deltaY;
+    const p = Math.min(1, homeWheelPull.current / HOME_PULL_WHEEL_PX);
+    // 滾輪沒有「放開」這個動作，所以滾到臨界點就直接載入
+    if (p >= 1) {
+      homeWheelPull.current = 0;
+      homePullArmed.current = false;
+      setHomePull(0);
+      navigator.vibrate?.(18);
+      loadHistoryFromHome();
+      return;
+    }
+    setHomePull(p);
+    // 滾輪停下來還沒到臨界點，就彈回去
+    if (homeWheelTimer.current) window.clearTimeout(homeWheelTimer.current);
+    homeWheelTimer.current = window.setTimeout(() => {
+      homeWheelPull.current = 0;
+      setHomePull(0);
+    }, 250);
+  };
+  const loadHistoryFromHome = () => {
+    if (homeHistoryLoading) return;
+    setHomeHistoryLoading(true);
+    const t = window.setTimeout(() => {
+      setHistoryLoaded(true);
+      setShowHistoryBtn(false);
+      setHomeHistoryLoading(false);
+      openChat();
+    }, HISTORY_LOADING_MS);
+    timersRef.current.push(t);
+  };
+  // 進入對話（送出或點按鈕）後，首頁的下拉狀態收掉
+  useEffect(() => {
+    if (!chatOpen) return;
+    homePullArmed.current = false;
+    setHomePull(0);
+  }, [chatOpen]);
+
+  // 手機瀏覽器頂部狀態列：首頁塗天空的藍色；送出後等雲朵推到頂才改白色，
+  // 不然狀態列會比畫面先變白。回首頁時雲是從上面開始往下退，立刻換回藍色。
+  // 離開聊天分頁時也還原成白色
+  useEffect(() => {
+    // 開場畫面是白底，狀態列先維持白色；註冊頁接漸層最上緣的顏色
+    if (splash === "show") {
+      setTopTint(signup ? SIGNUP_TOP : null);
+      return;
+    }
+    if (!chatOpen) {
+      setTopTint(GLOW_TOP);
+      return;
+    }
+    const t = window.setTimeout(() => setTopTint(null), GRADIENT_EXIT_MS * 0.7);
+    return () => window.clearTimeout(t);
+  }, [chatOpen, splash, signup]);
+  useEffect(() => () => setTopTint(null), []);
+
+  // 已經在聊天分頁時再點一次 tabbar 的「聊天」：收起對話、回到插圖首頁
+  // （對話內容留著，下次點輸入框會接著聊）
+  useEffect(() => {
+    const onReset = () => closeChat();
+    window.addEventListener(HOME_RESET_EVENT, onReset);
+    return () => window.removeEventListener(HOME_RESET_EVENT, onReset);
+  });
+
+  // 每次使用者送出後的第一段回覆，先顯示「收到你的需求了，讓我想一想」
+  // 思考動畫、停久一點；同一輪接著補的第二、三段只顯示跳動的點，停短一點
+  const firstReplyPending = useRef(false);
+  const pushBot = (msg: Omit<Message, "id" | "role">, delay?: number) => {
+    const first = firstReplyPending.current;
+    firstReplyPending.current = false;
+    setThinkingText(first);
+    setTyping(true);
+    return new Promise<void>((resolve) => {
+      const t = window.setTimeout(
+        () => {
+          setTyping(false);
+          setMessages((m) => [...m, { id: genId(), role: "bot", ...msg }]);
+          resolve();
+        },
+        // 第一則回覆要等思考文案三句都換過一輪（THINKING_STEP_MS × 3）
+        delay ?? (first ? THINKING_STEP_MS * 3 : 700),
+      );
+      timersRef.current.push(t);
+    });
+  };
+
+  const wineCard = (index: number): RecCard => {
+    const p = WINE_PICKS[index % WINE_PICKS.length];
+    return {
+      id: p.id,
+      name: p.name,
+      subtitle: p.subtitle,
+      price: p.price,
+      image: p.image,
+    };
+  };
+
+  const handleSend = async (raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    // 同意在傳送之前：沒同意就不送出，先把這句話記著，同意完再幫他送。
+    // 這裡讀的是當下的同意狀態，不是這次 render 當下的——剛按完「同意並開始」
+    // 要補送那一句時，拿到的會是同意之前的那份 closure
+    const now = readConsent();
+    if (!isConsented(now)) {
+      if (now.consent === "remote_off") {
+        setRemoteNotice(true);
+        return;
+      }
+      askConsent(text);
+      return;
+    }
+    openChat();
+    const sentId = genId();
+    // 這則提問等一下要錨到畫面頂端
+    anchorMsgId.current = sentId;
+    pendingAnchor.current = true;
+    anchorHold.current = true;
+    setMessages((m) => [...m, { id: sentId, role: "user", text }]);
+    setInput("");
+    firstReplyPending.current = true;
+
+    // 從商品細節頁按「繼續聊」帶進來的：訊息裡有「商品名稱」，
+    // 用細節頁的資料回一段重點，再附上同一張商品卡
+    const asked = askableCards().find((c) => text.includes(`「${c.name}」`));
+    if (asked) {
+      const detail = PRODUCT_DETAILS[asked.id];
+      const lead = detail ? `${detail.overview.split("。")[0]}。` : "";
+      const points = detail
+        ? `大家最常提到的是${detail.highlights.map((h) => h.title).join("、")}。`
+        : "";
+      await pushBot({
+        text: `${lead}${points}想問口味、份量、怎麼挑，或跟其他款比較，都可以直接問我：`,
+        cards: [asked],
+      });
+      return;
+    }
+
+    if (stage === "await_wine_budget") {
+      setStage("done");
+      await pushBot({
+        text: "了解，那我幫你留了這支，送禮質感很夠，也是我常推薦的一支：",
+        cards: [wineCard(0)],
+      });
+      return;
+    }
+
+    if (text.includes("這個月")) {
+      await pushBot({
+        text: `幫你整理好了。這個月到目前賺了 $1,284 回饋，大部分來自智能選品的每日回饋；用掉 $320，花在許願池跟一筆商品兌換。照這個速度，月底大概會累積到 $1,900。想讓回饋多一點，可以把智能選品剩下的 ${AI_SELECT_CAPACITY - AI_SELECT_HOLDING} 瓶空位補滿。`,
+        quickReplies: ["查看我的回饋", "我的回饋可以換什麼？"],
+      });
+      return;
+    }
+
+    if (text.includes("改了什麼")) {
+      await pushBot({
+        text: "首頁換成我了。以前要自己逛，才知道哪裡還能賺回饋；現在我會直接告訴你今天還能賺什麼，想用回饋的時候也會幫你挑值得換的東西。你的回饋、收藏跟交易紀錄都沒有變，收藏在「帳號」裡的「我的收藏」。",
+        quickReplies: ["打開我的收藏", "今天還能多賺什麼？"],
+      });
+      return;
+    }
+
+    if (text.includes("值多少")) {
+      await pushBot({
+        text: `你的 ${WINE_HOLDINGS.length} 款酒總現值 $${WINE_HOLDINGS_TOTAL_VALUE.toLocaleString()}，比買入時漲了 ${WINE_HOLDINGS_TOTAL_CHANGE_PCT}%。想賣出或領回，都在「我的收藏」裡。`,
+        quickReplies: ["打開我的收藏"],
+      });
+      return;
+    }
+
+    if (text.includes("多賺")) {
+      await pushBot({
+        text: `我幫你看了一下，有兩個還沒用到：這期匯率預測你還沒參加，獎金池目前 $${RATE_FORECAST_POOL.toLocaleString()}；智能選品還有 ${AI_SELECT_CAPACITY - AI_SELECT_HOLDING} 瓶的空位，補滿之後每天的回饋會再多一點。`,
+        quickReplies: ["查看我的回饋"],
+      });
+      return;
+    }
+
+    if (text.includes("可以換什麼")) {
+      await pushBot({
+        text: `你現在有 $${REWARD_BALANCE.toLocaleString()} 回饋，可以拿去許願池抽喜歡的東西，或直接用來買商品。`,
+        quickReplies: ["去看兌換商品"],
+      });
+      return;
+    }
+
+    if (text.includes("麵")) {
+      await pushBot({
+        text: "先推薦你一款我覺得最讚的：大師兄銷魂麻辣粗麵。它是排隊名店直接做成快煮麵的版本，麻辣醬料熬了十小時，香氣跟店裡吃到的很接近，麵體也夠粗夠有嚼勁。不管是自己想解饞，還是要送給喜歡吃辣的朋友，都不容易踩雷，算是討論度最高、回購率也最好的一款：",
+        cards: [NOODLE_PICKS[0]],
+      });
+      await pushBot({
+        text: "如果想一次多備幾款，這幾款也很適合搭配著買：",
+        cards: NOODLE_PICKS.slice(1),
+      });
+      await pushBot({ text: "喜歡的都可以勾起來，一起加入購物車：" }, 400);
+      return;
+    }
+
+    if (
+      text.includes("送禮") ||
+      (text.includes("酒") && !text.includes("烤肉"))
+    ) {
+      setStage("await_wine_budget");
+      await pushBot({
+        text: "送禮的話，大概想抓多少預算？",
+        quickReplies: ["1,000 以內", "1,000–3,000", "3,000 以上"],
+      });
+      return;
+    }
+
+    if (text.includes("中秋") || text.includes("烤肉")) {
+      await pushBot({
+        text: "中秋烤肉配這支很順口，要不要看看？",
+        cards: [wineCard(1)],
+      });
+      return;
+    }
+
+    if (text.includes("現金")) {
+      await pushBot({
+        text: "AIFIAN 的回饋不是現金，是可以拿來用的點數：在「兌換」分頁換商品，或直接折抵買東西的金額。",
+        quickReplies: ["去看兌換商品"],
+      });
+      return;
+    }
+
+    if (
+      text.includes("領取") ||
+      text.includes("賺回饋") ||
+      text.includes("兌換")
+    ) {
+      await pushBot({
+        text: "透過 AIFIAN 買東西、每日簽到、推薦好友都會累積回饋，累積到的回饋可以在「兌換」分頁換商品或折抵金額。",
+        quickReplies: ["去看兌換商品"],
+      });
+      return;
+    }
+
+    if (text.includes("智能選品") || text.includes("回饋")) {
+      await pushBot({
+        text: `你目前的智能選品持有 ${AI_SELECT_HOLDING} 瓶，回饋餘額 ${REWARD_BALANCE.toLocaleString()}，這個月還在累積中。`,
+        quickReplies: ["查看我的回饋"],
+      });
+      return;
+    }
+
+    if (text.includes("可樂") || text.includes("補貨")) {
+      await pushBot({
+        text: "上次那款可樂我幫你留意到通路快缺貨了，補齊我馬上跟你說。",
+      });
+      return;
+    }
+
+    await pushBot({
+      text: "這個我還在學，先跟你說我目前能幫上忙的：推薦商品、看回饋，或聊聊怎麼賺回饋。",
+      quickReplies: ["推薦幾款好吃的乾拌麵給我", "如何開始領取回饋"],
+    });
+  };
+
+  const handleQuickReply = (reply: string) => {
+    if (reply === "查看我的回饋") {
+      router.push("/v14/rewards");
+      return;
+    }
+    if (reply === "去看兌換商品") {
+      router.push("/v14/exchange");
+      return;
+    }
+    if (reply === "打開我的收藏") {
+      router.push("/v14/collection");
+      return;
+    }
+    handleSend(reply);
+  };
+
+  // 其他頁（例如線上藏酒）帶著 ?prompt= 回首頁時，直接展開對話送出那句話。
+  // 用 window.location.search，不用 useSearchParams()，避免整頁進 Suspense
+  useEffect(() => {
+    if (sentInitial.current) return;
+    const prompt =
+      takePendingPrompt() ??
+      new URLSearchParams(window.location.search).get("prompt");
+    if (!prompt) return;
+    sentInitial.current = true;
+    if (window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    handleSend(prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const rollSuggestions = () => {
+    if (itemPhase !== "idle") return;
+    const exitTotalMs =
+      ITEM_DURATION_MS + (suggestions.length - 1) * ITEM_STAGGER_MS;
+
+    setChipsOpen(true);
+    setItemPhase("exiting");
+    const t1 = window.setTimeout(() => {
+      setSuggestions(shuffle(SUGGESTION_POOL).slice(0, 3));
+      setItemPhase("entering-start");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setItemPhase("entering"));
+      });
+      const t2 = window.setTimeout(() => setItemPhase("idle"), exitTotalMs);
+      timersRef.current.push(t2);
+    }, exitTotalMs);
+    timersRef.current.push(t1);
+  };
+
+  // 大標欄位這次要放什麼：提醒（後端給的那一則）優先，其次是改版的「歡迎回來」
+  // 同意與否不動這一格。打招呼語是進 App 的第一句話，被「尚未開啟」蓋掉的話，
+  // 還沒同意的人每次打開都像進到一個壞掉的畫面。沒同意的說明改成貼著輸入列講，
+  // 就在真正被擋住的地方
+  const hero = reminder
+    ? {
+        title: REMINDERS[reminder].title,
+        sub: REMINDERS[reminder].sub,
+        cta: REMINDERS[reminder].cta,
+        onCta: () => {
+          const r = REMINDERS[reminder];
+          if (r.href) router.push(r.href);
+          else if (r.toast) showToast(r.toast);
+        },
+      }
+    : returning
+      ? {
+          title: "歡迎回來",
+          sub: "以後該賺的、值得買的，AI 都能幫你找",
+          cta: "看看新的 AIFIAN",
+          onCta: () => setAnnounce(true),
+        }
+      : null;
+
+  // 輸入列上方的提示條：大標不再讓位給同意之後，這條就是「為什麼不能打字」的
+  // 唯一說明，所以首頁跟對話中都要在。順序是在其他裝置關掉最優先，
+  // 接著是讀取失敗，最後是還沒同意
+  const consentNotice = remoteNotice
+    ? {
+        ...noticeCopy.remoteOff,
+        onAction: () => {
+          setRemoteNotice(false);
+          // 被擋下來的那句話還在輸入框裡，重新同意之後直接幫他送出去
+          askConsent(input.trim() || null);
+        },
+      }
+    : consentRefused
+      ? { ...noticeCopy.blocked, onAction: () => askConsent(null) }
+      : null;
+
+  const lastMessage = messages[messages.length - 1];
+  const lastQuickReplies = !typing ? lastMessage?.quickReplies : undefined;
+  const fade = `opacity ${MODE_TRANSITION_MS}ms ease`;
+  const showCart = chatOpen && (cartCount > 0 || cartPeek);
+
+  return (
+    <div
+      ref={rootRef}
+      onTouchStart={(e) => homeTouchStart(e.touches[0].clientY)}
+      onTouchMove={(e) => homeTouchMove(e.touches[0].clientY)}
+      onTouchEnd={homeTouchEnd}
+      onWheel={(e) => homeWheel(e.deltaY)}
+      className="relative flex h-full flex-col overflow-hidden bg-white"
+    >
+      {splash !== "done" && signup && (
+        <Signup
+          leaving={splash === "leaving"}
+          onContinue={continueFromSignup}
+        />
+      )}
+      {splash !== "done" && !signup && (
+        <Splash leaving={splash === "leaving"} />
+      )}
+      {announce && returning && (
+        <AnnouncementModal
+          onClose={() => setAnnounce(false)}
+          onAction={(slide) => {
+            setAnnounce(false);
+            if (slide.href) router.push(slide.href);
+            else if (slide.prompt) handleSend(slide.prompt);
+          }}
+        />
+      )}
+      {/* 開場畫面還在的時候先不掛插圖，等它開始淡出才掛上去，進場動畫才看得到 */}
+      {/* 米白底＋上方暖到冷的漸層光（照 Figma 1068:26391） */}
+      {splash !== "show" && (
+        <HomeGradient covered={chatOpen} intro={playIntro} />
+      )}
+
+      <div className="relative flex shrink-0 flex-col">
+        <StatusBar light={lightHeader} />
+        <div className="relative flex h-11 items-center justify-between px-4">
+          <button
+            onClick={closeChat}
+            aria-label="AIFIAN 首頁"
+            className="relative"
+          >
+            {/* 首頁是完整字樣，進入對話時字母依序縮進 A、A 再變形成 logo mark */}
+            <LogoMorph
+              mark={logoMark}
+              className="block h-7 w-[95.44px]"
+              // 夜晚的天空太深，logo 改成白色；進入對話後是白底，換回深色。
+              // 光暈版：進入對話後的 logo mark 用品牌紅
+              color={lightHeader ? "#ffffff" : chatOpen ? "#ff3030" : "#1E2939"}
+            />
+          </button>
+          <button
+            aria-label="購物車"
+            tabIndex={showCart ? 0 : -1}
+            onClick={() => setCartOpen(true)}
+            className="relative flex h-11 items-center rounded-[22px] bg-white px-4 shadow-[0px_2px_10px_0px_rgba(0,0,0,0.08)]"
+            style={{
+              opacity: showCart ? 1 : 0,
+              transform: showCart ? "scale(1)" : "scale(0.85)",
+              pointerEvents: showCart ? "auto" : "none",
+              transition: `${fade}, transform ${MODE_TRANSITION_MS}ms ${EASING}`,
+            }}
+          >
+            <img
+              ref={cartIconRef}
+              src="/figma/v14-cart.svg"
+              alt=""
+              className="size-5"
+            />
+            {cartCount > 0 && (
+              <span
+                ref={badgeRef}
+                className="absolute right-[8.5px] top-[7.5px] rounded-[20px] bg-brand px-1 py-0.5 text-[13px] font-bold leading-4 text-gray-000"
+              >
+                {cartCount}
+              </span>
+            )}
+          </button>
+        </div>
+        {/* 首頁下拉的「載入上次對話」：進度感靠膠囊自己長出來，不外掛進度條。
+            前段只有一顆圓（箭頭跟著進度從朝下轉到朝上），後段才撐開成膠囊、
+            文字從裡面露出來；拉滿時文字換成「放開載入」，放開就載入 */}
+        {!chatOpen &&
+          (() => {
+            const p = homeReveal;
+            // 0 到 0.4 只長一顆圓，0.4 之後才開始撐開成膠囊
+            const expand = Math.max(0, Math.min(1, (p - 0.4) / 0.6));
+            // 箭頭前 20% 不轉，之後才從朝下轉到朝上
+            const turn = Math.max(0, Math.min(1, (p - 0.2) / 0.8));
+            const ready = p >= 1;
+            const dragging = homePull > 0 && !homeHistoryLoading;
+            const label = homeHistoryLoading
+              ? "載入中…"
+              : ready
+                ? "放開載入"
+                : "載入上次對話";
+            return (
+              <div
+                className="pointer-events-none absolute inset-x-0 top-full z-20 flex justify-center pt-2"
+                style={{
+                  opacity: Math.min(1, p * 2.5),
+                  transform: `translateY(${(p - 1) * 16}px)`,
+                  transition: dragging
+                    ? "none"
+                    : `opacity 220ms ease, transform 300ms ${EASING}`,
+                }}
+                aria-live="polite"
+              >
+                <div
+                  className="flex h-9 items-center overflow-hidden rounded-full bg-white shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)]"
+                  style={{
+                    paddingLeft: 8 + 6 * expand,
+                    paddingRight: 8 + 8 * expand,
+                    gap: 6 * expand,
+                    // 拉滿的時候整顆微微放大，跟震動同一拍
+                    transform: `scale(${ready ? 1.04 : 1})`,
+                    transition: dragging
+                      ? `transform 160ms ${EASING}`
+                      : `transform 300ms ${EASING}`,
+                  }}
+                >
+                  {homeHistoryLoading ? (
+                    <span className="size-5 shrink-0 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+                  ) : (
+                    <svg
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      className="size-5 shrink-0"
+                      // 箭頭跟著拉的進度轉，但前 20% 先不動（這段是膠囊自己
+                      // 浮出來的時間，箭頭一出現就在轉會太忙），0.2 之後才
+                      // 從朝下轉到朝上，拉滿剛好 180。拖的時候不補間才跟得上
+                      // 手指，放開或回彈時才用 transition 收尾
+                      style={{
+                        transform: `rotate(${turn * 180}deg)`,
+                        transition: dragging
+                          ? "none"
+                          : `transform 200ms ${EASING}`,
+                      }}
+                    >
+                      <path
+                        d="M8 3v10M4.4 9.4 8 13l3.6-3.6"
+                        stroke="#1e2939"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  <span
+                    className="overflow-hidden whitespace-nowrap text-[13px] text-gray-800"
+                    style={{
+                      maxWidth: expand * 112,
+                      opacity: expand,
+                      transition: dragging
+                        ? "none"
+                        : `max-width 220ms ${EASING}, opacity 220ms ease`,
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+        {/* 開場招呼語：疊在天空上，只在首頁出現，送出後淡出、讓雲蓋過去。
+            外層管淡出，內層管載入時浮上來（animation 的 fill 會蓋掉 opacity，要分開兩層） */}
+        {splash !== "show" && (
+          <div
+            aria-hidden={chatOpen}
+            className="pointer-events-none absolute inset-x-0 top-full z-10 p-4 pt-8"
+            style={{
+              opacity: chatOpen ? 0 : 1,
+              // 下拉時被往下拉開，讓出上面的空間給「載入上次對話」
+              transform: `translateY(${homeReveal * 52}px)`,
+              transition:
+                homePull > 0 ? fade : `${fade}, transform 300ms ${EASING}`,
+            }}
+          >
+            <div
+              style={{
+                opacity: chatOpen ? 0 : 1,
+                transition: `opacity ${chatOpen ? 160 : MODE_TRANSITION_MS}ms ease`,
+              }}
+            >
+              <div
+                className="flex flex-col gap-1"
+                style={{
+                  animation: playIntro
+                    ? `heroGreetIn 600ms ${EASING} 300ms both`
+                    : undefined,
+                }}
+              >
+                <p
+                  className="text-[26px] font-medium leading-[1.35] tracking-[-0.01em]"
+                  style={{ color: darkGreeting ? "#1e2939" : "#ffffff" }}
+                >
+                  {hero ? hero.title : greetingOf(time.hour)}
+                </p>
+                <p
+                  className="text-[14px] leading-[18px]"
+                  style={{
+                    color: darkGreeting ? "#4a5565" : "rgba(255,255,255,0.85)",
+                  }}
+                >
+                  {hero ? hero.sub : "賺回饋，買東西，我都很在行"}
+                </p>
+                {hero && (
+                  // 照既有元件 AFFOGATO bullet_button（Light／solid／bright）的尺寸：
+                  // 高 48、圓角 16、內距 12／16、文字 16/24，右邊 24px nav-arrow-right 用黑色；
+                  // 底色改白色（元件裡還沒有白底的變體，先覆寫）
+                  <button
+                    onClick={hero.onCta}
+                    className="pointer-events-auto mt-3 flex h-12 w-fit items-center gap-2 rounded-2xl bg-white px-4 py-3 text-[16px] font-medium leading-6 text-gray-800 active:scale-95"
+                    style={{ transition: "transform 150ms ease" }}
+                  >
+                    {hero.cta}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                      className="size-6"
+                    >
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="#1e2939"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div
+        className="relative min-h-0 flex-1"
+        style={{
+          opacity: chatOpen ? 1 : 0,
+          pointerEvents: chatOpen ? "auto" : "none",
+          // 送出後等紙飛機飛走、色光散開把畫面讓出來，對話內容才淡入
+          transition: chatOpen ? `${fade} ${PLANE_EXIT_MS * 0.75}ms` : fade,
+        }}
+      >
+        {/* 浮動的「載入上次對話」：放在捲動區外面，才不會被頂部的淡出遮罩吃掉 */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center"
+          style={{
+            opacity: showHistoryBtn || historyLoading ? 1 : 0,
+            transform:
+              showHistoryBtn || historyLoading
+                ? "translateY(0)"
+                : "translateY(-8px)",
+            transition: `opacity 200ms ease, transform 200ms ease`,
+          }}
+        >
+          <button
+            onClick={loadHistory}
+            tabIndex={showHistoryBtn ? 0 : -1}
+            className={`flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] text-gray-800 shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)] ${
+              showHistoryBtn || historyLoading ? "pointer-events-auto" : ""
+            }`}
+          >
+            {historyLoading ? (
+              <span className="size-3.5 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+            ) : (
+              <svg viewBox="0 0 16 16" fill="none" className="size-3.5">
+                <path
+                  d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2M8 5.2V8l1.8 1.2"
+                  stroke="#1e2939"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+            {historyLoading ? "載入中…" : "載入上次對話"}
+          </button>
+        </div>
+
+        <div
+          ref={scrollRef}
+          onScroll={handleChatScroll}
+          onWheel={(e) => {
+            if (Math.abs(e.deltaY) > 2) releaseAnchor();
+            if (Math.abs(e.deltaY) > 2) revealHistoryBtn(e.deltaY < 0);
+            // 內容短到捲不動時不會有 scroll 事件，滾輪往上也要算
+            const el0 = scrollRef.current;
+            if (el0 && el0.scrollHeight <= el0.clientHeight + 2)
+              trackScrollUp(-e.deltaY);
+            // 滾輪（尤其觸控板）捲到底之後還會有一段慣性，那段不能算「多推」：
+            // 要在底部停穩 300ms 之後的滾動才累積；內容短到捲不動時直接算停穩
+            const el = scrollRef.current;
+            const scrollable = !!el && el.scrollHeight > el.clientHeight + 2;
+            const settled =
+              !scrollable ||
+              (atBottomSince.current != null &&
+                performance.now() - atBottomSince.current > 300);
+            if (chipsOpen) return;
+            if (e.deltaY > 0 && isAtBottom() && settled) {
+              bottomWheelPull.current += e.deltaY;
+              const progress = bottomWheelPull.current / BOTTOM_PULL_WHEEL_PX;
+              if (progress >= 1) {
+                openChipsFromPull();
+                return;
+              }
+              setPull(progress);
+              if (wheelIdleTimer.current)
+                window.clearTimeout(wheelIdleTimer.current);
+              wheelIdleTimer.current = window.setTimeout(releasePull, 250);
+            } else if (e.deltaY < 0) {
+              releasePull();
+            }
+          }}
+          onTouchStart={(e) => {
+            touchStartY.current = e.touches[0].clientY;
+            bottomPullStartY.current = null;
+          }}
+          onTouchMove={(e) => {
+            if (touchStartY.current == null) return;
+            const y = e.touches[0].clientY;
+            const dy = y - touchStartY.current;
+            if (Math.abs(dy) > 12) releaseAnchor();
+            if (Math.abs(dy) > 12) revealHistoryBtn(dy > 0);
+            // 同上：捲不動時看手指往下拖（＝往上滑）的距離
+            const el1 = scrollRef.current;
+            if (
+              el1 &&
+              el1.scrollHeight <= el1.clientHeight + 2 &&
+              dy > CHIPS_CLOSE_SCROLL_UP_PX
+            )
+              setChipsOpen(false);
+            if (chipsOpen) return;
+            if (!isAtBottom()) {
+              if (bottomPullStartY.current != null) releasePull();
+              return;
+            }
+            if (bottomPullStartY.current == null) bottomPullStartY.current = y;
+            const d = bottomPullStartY.current - y;
+            setPull(Math.max(0, Math.min(d / BOTTOM_PULL_TOUCH_PX, 1)));
+          }}
+          onTouchEnd={() => {
+            if (pull >= 1) openChipsFromPull();
+            else releasePull();
+          }}
+          onTouchCancel={releasePull}
+          className="no-scrollbar h-full overflow-y-auto overscroll-contain px-4 pb-10 pt-4 [mask-image:linear-gradient(to_bottom,transparent,black_16px)]"
+        >
+          <div
+            ref={innerRef}
+            className="flex flex-col gap-6"
+            style={{
+              // 越拉越緊：位移用 ease-out 曲線，不是跟手指 1:1
+              transform: `translateY(${-PULL_LIFT_PX * (1 - Math.pow(1 - pull, 2))}px)`,
+              transition: pull === 0 ? `transform 250ms ${EASING}` : "none",
+            }}
+          >
+            {historyLoaded && (
+              <>
+                <DateDivider label={PREVIOUS_CHAT_DATE} />
+                {PREVIOUS_CHAT.map((m) => (
+                  <ChatMessage
+                    key={m.id}
+                    message={m}
+                    cart={cart}
+                    onAdd={addFromCard}
+                    onBuy={buyFromSheet}
+                    onOpen={(cards, index) => setSheet({ cards, index })}
+                    showDisclaimer={false}
+                  />
+                ))}
+                <DateDivider label="今天" />
+              </>
+            )}
+            {messages.map((m) => (
+              <ChatMessage
+                key={m.id}
+                message={m}
+                cart={cart}
+                onAdd={addFromCard}
+                onBuy={buyFromSheet}
+                onOpen={(cards, index) => setSheet({ cards, index })}
+                showDisclaimer={
+                  !typing && m === lastMessage && m.role === "bot"
+                }
+              />
+            ))}
+            {typing &&
+              (thinkingText ? (
+                <ThinkingIndicator />
+              ) : (
+                <div className="flex items-center gap-1 py-2">
+                  <Dot delay="0ms" />
+                  <Dot delay="150ms" />
+                  <Dot delay="300ms" />
+                </div>
+              ))}
+            {lastQuickReplies && (
+              <div className="-mt-3 flex flex-wrap gap-2">
+                {lastQuickReplies.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => handleQuickReply(q)}
+                    className={CHIP_CLASS}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* 錨點用的底部空白，高度由 syncAnchorSpacer 算，放在內層外面
+              才不會被自己算進去 */}
+          <div ref={spacerRef} aria-hidden />
+        </div>
+
+        {/* 跳到最新：捲離底部才出現，點了回到最下面並恢復自動跟隨 */}
+        <button
+          onClick={jumpToLatest}
+          aria-label="跳到最新"
+          tabIndex={showJump ? 0 : -1}
+          className="absolute bottom-3 left-1/2 z-10 flex size-9 items-center justify-center rounded-full bg-white shadow-[0px_2px_12px_0px_rgba(0,0,0,0.12)]"
+          style={{
+            opacity: showJump ? 1 : 0,
+            pointerEvents: showJump ? "auto" : "none",
+            transform: showJump ? "translate(-50%, 0)" : "translate(-50%, 8px)",
+            transition: "opacity 200ms ease, transform 200ms ease",
+          }}
+        >
+          <img src="/figma/v14-nav-arrow-down.svg" alt="" className="size-5" />
+        </button>
+      </div>
+
+      {/* 底部留白要讓過 tabbar：55px 膠囊＋底部安全區（真手機 env()+12px、
+          桌機預覽 34px），再加 Figma 上 8px 的間距 */}
+      <div className="relative flex shrink-0 flex-col gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+75px)] sm:pb-[97px]">
+        <div className="flex flex-col py-2">
+          <div className="flex h-5 items-center justify-between">
+            <button
+              onClick={() => setChipsOpen((v) => !v)}
+              aria-expanded={chipsOpen}
+              className="flex items-center gap-1"
+            >
+              {/* 照 Figma 1083:25414：Medium 14/18 */}
+              <span
+                className="text-[14px] font-medium leading-[18px] transition-colors duration-300"
+                style={{ color: glowDark ? "#ffffff" : "#1e2939" }}
+              >
+                你可能想知道
+              </span>
+              <img
+                src="/figma/v14-nav-arrow-down.svg"
+                alt=""
+                className="size-4"
+                style={{
+                  filter: glowDark ? "brightness(0) invert(1)" : undefined,
+                  transform: chipsOpen
+                    ? "rotate(0deg)"
+                    : `rotate(${-90 + 90 * pull}deg)`,
+                  transition:
+                    pull > 0 && !chipsOpen
+                      ? "none"
+                      : `transform ${MODE_TRANSITION_MS}ms ease`,
+                }}
+              />
+            </button>
+            <button
+              onClick={rollSuggestions}
+              aria-label="換一批"
+              tabIndex={chipsOpen ? 0 : -1}
+              style={{
+                opacity: chipsOpen ? 1 : 0,
+                pointerEvents: chipsOpen ? "auto" : "none",
+                transition: `opacity ${MODE_TRANSITION_MS}ms ease`,
+              }}
+            >
+              <img
+                src="/figma/v14-refresh.svg"
+                alt=""
+                className="size-4"
+                style={{
+                  filter: glowDark ? "brightness(0) invert(1)" : undefined,
+                }}
+              />
+            </button>
+          </div>
+          {/* 收合／展開用 grid-template-rows 在 0fr 跟 1fr 之間過渡：高度不用
+              寫死，標籤換一批之後內容高度變了也一樣能順順地收起來、打開。
+              同時淡入淡出、稍微往下位移，收起來時像是縮回標題底下 */}
+          <div
+            className="grid"
+            style={{
+              gridTemplateRows: chipsOpen ? "1fr" : "0fr",
+              opacity: chipsOpen ? 1 : 0,
+              transition: `grid-template-rows ${MODE_TRANSITION_MS}ms ${EASING}, opacity ${MODE_TRANSITION_MS}ms ease`,
+            }}
+            aria-hidden={!chipsOpen}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div
+                className="flex flex-col items-start gap-2 pt-4"
+                style={{
+                  transform: chipsOpen ? "translateY(0)" : "translateY(8px)",
+                  transition: `transform ${MODE_TRANSITION_MS}ms ${EASING}`,
+                }}
+              >
+                {suggestions.map((s, i) => {
+                  const visible =
+                    itemPhase === "idle" || itemPhase === "entering";
+                  const animating =
+                    itemPhase === "exiting" || itemPhase === "entering";
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => {
+                        setChipsOpen(false);
+                        handleSend(s.prompt);
+                      }}
+                      style={{
+                        opacity: visible ? 1 : 0,
+                        transform: visible
+                          ? "translateY(0)"
+                          : "translateY(6px)",
+                        transition: animating
+                          ? `opacity ${ITEM_DURATION_MS}ms ease ${i * ITEM_STAGGER_MS}ms, transform ${ITEM_DURATION_MS}ms ease ${i * ITEM_STAGGER_MS}ms`
+                          : "none",
+                      }}
+                      tabIndex={chipsOpen ? 0 : -1}
+                      className={glowDark ? CHIP_CLASS_DARK : CHIP_CLASS}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 不能打字的時候，說明為什麼。緊貼在輸入列上方，講的就是正下方那一列
+            為什麼按不動，所以一定要帶一顆回到同意的按鈕。
+            樣式照 AFFOGATO 的 alert 元件（4039:1062，Mode=Light, cta=button）：
+            灰底圓角 16、左邊 20 的 info 圖示、標題 12/16 Semibold 疊內文 14/18、
+            右邊 bullet_button 36 高圓角 12 */}
+        {consentNotice && (
+          <div
+            className="flex items-center gap-2 rounded-2xl bg-[#f3f4f6] px-4 py-3"
+            style={{ animation: "fadeIn 200ms ease" }}
+          >
+            <img src="/figma/v14-info.svg" alt="" className="size-5 shrink-0" />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="text-[13px] font-semibold leading-[18px] text-[#1e2939]">
+                {consentNotice.title}
+              </p>
+              <p className="text-[14px] leading-[18px] text-[#1e2939]">
+                {consentNotice.body}
+              </p>
+            </div>
+            <button
+              onClick={consentNotice.onAction}
+              className="flex h-9 shrink-0 items-center rounded-xl bg-brand px-4 text-[13px] font-semibold leading-[18px] text-white active:scale-[0.98]"
+              style={{ transition: "transform 150ms ease" }}
+            >
+              {consentNotice.action}
+            </button>
+          </div>
+        )}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend(input);
+          }}
+          // 點輸入框才跳同意，在第一句話送出之前。一進分頁就跳的話，
+          // 使用者還沒想聊天就先被攔一次，而且那時候他還不知道這個功能是什麼
+          onClick={() => {
+            if (consentBlocked) askConsent(null);
+          }}
+          className="flex h-[52px] items-center gap-2 rounded-[999px] bg-white/90 px-3 py-2 shadow-[0px_4px_36px_0px_rgba(0,0,0,0.12)]"
+        >
+          <img src="/figma/plus.svg" alt="" className="size-6 shrink-0" />
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            readOnly={consentBlocked}
+            placeholder={consentRefused ? inputPlaceholder : "什麼都可以聊..."}
+            className="min-w-0 flex-1 bg-transparent text-[14px] text-gray-800 outline-none placeholder:text-[#a1a6ab]"
+          />
+          <span className="flex size-9 shrink-0 items-center justify-center">
+            <img src="/figma/mic.svg" alt="語音輸入" className="size-5" />
+          </span>
+          <button
+            type="submit"
+            disabled={!input.trim() || consentBlocked}
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+              input.trim() && !consentBlocked ? "bg-brand" : "bg-gray-400"
+            }`}
+            aria-label="送出"
+          >
+            <img src="/figma/arrow-up.svg" alt="" className="size-5" />
+          </button>
+        </form>
+      </div>
+
+      {cartOpen && (
+        <Cart
+          cart={cart}
+          onCartChange={setCart}
+          onCheckout={() => {
+            setCartOpen(false);
+            setCheckoutOpen(true);
+          }}
+          onClose={() => setCartOpen(false)}
+          onAsk={(card) => handleSend(`我想多了解「${card.name}」`)}
+        />
+      )}
+
+      {checkoutOpen && (
+        <Checkout
+          cart={cart}
+          onCartChange={setCart}
+          onClose={() => setCheckoutOpen(false)}
+          onPaid={(paidIds) => {
+            setCart((c) => c.filter((it) => !paidIds.includes(it.card.id)));
+            setCheckoutOpen(false);
+            showToast("前往付款・訂單已成立");
+          }}
+        />
+      )}
+
+      {sheet && (
+        <ProductSheet
+          cards={sheet.cards}
+          startIndex={sheet.index}
+          addedIds={addedIds}
+          cart={cart}
+          present="sheet"
+          onToggleCart={toggleCartFromSheet}
+          onBuy={buyFromSheet}
+          onAsk={(card) => {
+            setSheet(null);
+            handleSend(`我想多了解「${card.name}」`);
+          }}
+          onClose={() => setSheet(null)}
+        />
+      )}
+
+      {consentSheet && (
+        <AiConsentSheet
+          onAgree={() => {
+            setConsentSheet(false);
+            setRemoteNotice(false);
+            showToast("AI 對話已開啟");
+            const pending = pendingConsentSend.current;
+            pendingConsentSend.current = null;
+            if (pending) window.setTimeout(() => handleSend(pending), 120);
+          }}
+          onDecline={() => {
+            setConsentSheet(false);
+            pendingConsentSend.current = null;
+          }}
+        />
+      )}
+
+      {/* AFFOGATO 的 snackbar（Mode=Light）：#0C0E11 80%、圓角 8、內距 12/16、
+          Paragraph 16/24 白字、背景模糊 4。元件本身沒有圖示跟陰影，不自己加。 */}
+      {toast && (
+        <div
+          className="pointer-events-none absolute inset-x-0 z-40 flex justify-center px-4 top-[calc(env(safe-area-inset-top)+16px)] sm:top-16"
+          aria-live="polite"
+        >
+          <p className="snackbar-top rounded-lg bg-[#0c0e11]/80 px-4 py-3 text-[16px] leading-6 text-white backdrop-blur-[4px]">
+            {toast}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 字級照 Figma 1083:25414 的 suggestion-chip：14/18
+const CHIP_CLASS =
+  "max-w-full rounded-[999px] border border-[#d1d6db] bg-white px-[14px] py-2 text-left text-[14px] leading-[18px] text-[#4a5461]";
+// 光暈版首頁（深靛藍到紫的底）：半透明白的玻璃膠囊、白字
+const CHIP_CLASS_DARK =
+  "max-w-full rounded-[999px] border border-white/30 bg-white/10 px-[14px] py-2 text-left text-[14px] leading-[18px] text-white backdrop-blur-[2px]";
+
+// 改版公告卡：照既有元件 AFFOGATO modal（Mode=Light）做，不另外設計新元件。
+// 上方 modol_image 328×226、右上關閉鈕；內容區上下 24、左右 16，
+// 標題 20/28 置中、內文 16/24；兩顆 48 高的按鈕並排（外框紅／實心紅），不顯示 text_button。
+// 參考 Gemini 的更新介面：圖片跟文字一起左右滑，一則講一件新版的事，下方點點標示第幾則。
+// 最多 3 則。右邊（主要）按鈕翻下一則，最後一則變成「開始探索」關掉公告卡；
+// 左邊（外框）按鈕是這一則的動作
+type AnnounceSlide = {
+  key: string;
+  visual: "plane" | "mark" | string;
+  title: string;
+  body: string;
+  action: string;
+  prompt?: string;
+  href?: string;
+};
+
+// 跟用戶說的三個重點：AI 幫你買、幫你賺／酒是賺回饋的方法之一，之後還有更多／回饋換成喜歡的東西
+// 文案與公告圖照 Figma 1537:4102 定稿；公告圖是 Figma 匯出的 3 倍圖（984×678）
+const ANNOUNCE_SLIDES: AnnounceSlide[] = [
+  {
+    key: "ai",
+    visual: "/v14/announce-1.png",
+    title: "買東西、賺回饋都交給 AI",
+    body: "想買什麼、怎麼賺回饋，跟 AI 說就好。在對話裡直接下單，東西送到家。",
+    action: "問問看",
+    prompt: "今天還能多賺什麼？",
+  },
+  {
+    // 把酒從主角降成賺回饋的方法之一，並預告之後還有更多（不點名還沒上線的功能）
+    key: "earn",
+    visual: "/v14/announce-2.png",
+    title: "想賺回饋，不只有買酒",
+    body: "之後還有更多賺回饋的功能，上線時第一時間告訴你。",
+    action: "看回饋功能",
+    href: "/v14/rewards",
+  },
+  {
+    key: "spend",
+    visual: "/v14/announce-3.png",
+    title: "把回饋換成喜歡的東西",
+    body: "賺到的回饋可以直接拿來買東西，也能參加許願池抽好禮。",
+    action: "看大家買什麼",
+    // 「大家都在買」是兌換分頁的第一區，進去就看得到
+    href: "/v14/exchange",
+  },
+];
+
+function AnnouncementModal({
+  onClose,
+  onAction,
+}: {
+  onClose: () => void;
+  onAction: (slide: AnnounceSlide) => void;
+}) {
+  // 掛到整個手機框上，才蓋得過 tabbar
+  const [frame, setFrame] = useState<HTMLElement | null>(null);
+  useEffect(() => setFrame(document.getElementById("v14-frame")), []);
+  // 一次只翻一則：不用原生捲動（甩得快會一次跳好幾則），改成自己算拖曳距離，
+  // 放手時超過門檻就前進或後退一則；觸控板橫向滑動一個手勢也只算一則
+  const [index, setIndex] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const dragStart = useRef<number | null>(null);
+  const wheelLock = useRef(false);
+  if (!frame) return null;
+  const count = ANNOUNCE_SLIDES.length;
+  const last = index === count - 1;
+  const slide = ANNOUNCE_SLIDES[index];
+  const goTo = (i: number) => setIndex(Math.max(0, Math.min(count - 1, i)));
+  const SWIPE_PX = 40;
+  const endDrag = () => {
+    if (dragStart.current == null) return;
+    dragStart.current = null;
+    if (drag <= -SWIPE_PX) goTo(index + 1);
+    else if (drag >= SWIPE_PX) goTo(index - 1);
+    setDrag(0);
+  };
+  return createPortal(
+    <div
+      className="absolute inset-0 z-[90] flex items-center justify-center bg-black/40 px-6"
+      style={{ animation: "announceModalFade 200ms ease both" }}
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-[328px] overflow-hidden rounded-2xl bg-white shadow-[0px_4px_8px_0px_rgba(0,0,0,0.06),0px_0.5px_4px_0px_rgba(0,0,0,0.02)]"
+        style={{ animation: `announceModalIn 260ms ${EASING} both` }}
+      >
+        {/* 圖片＋文字一起左右滑；每一則等高（取最高的那則），切換時按鈕不會跳 */}
+        <div
+          className="overflow-hidden"
+          style={{ touchAction: "pan-y" }}
+          onPointerDown={(e) => {
+            dragStart.current = e.clientX;
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            if (dragStart.current == null) return;
+            const dx = e.clientX - dragStart.current;
+            // 第一則往右拉、最後一則往左拉時加阻力，看得出已經到底了
+            const edge = (dx > 0 && index === 0) || (dx < 0 && last);
+            setDrag(edge ? dx / 3 : dx);
+          }}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onWheel={(e) => {
+            if (
+              Math.abs(e.deltaX) < Math.abs(e.deltaY) ||
+              Math.abs(e.deltaX) < 8
+            )
+              return;
+            if (wheelLock.current) return;
+            wheelLock.current = true;
+            goTo(index + (e.deltaX > 0 ? 1 : -1));
+            window.setTimeout(() => (wheelLock.current = false), 600);
+          }}
+        >
+          <div
+            className="flex"
+            style={{
+              transform: `translateX(calc(${-index * 100}% + ${drag}px))`,
+              transition:
+                dragStart.current != null
+                  ? "none"
+                  : `transform 320ms ${EASING}`,
+            }}
+          >
+            {ANNOUNCE_SLIDES.map((sl) => (
+              <div
+                key={sl.key}
+                className="flex w-full shrink-0 select-none flex-col"
+              >
+                <AnnounceVisual visual={sl.visual} />
+                <div className="flex flex-col gap-2.5 px-4 pt-6">
+                  <p className="text-center text-[20px] font-semibold leading-7 text-gray-800">
+                    {sl.title}
+                  </p>
+                  {/* 內文用 \n 指定斷行，避免最後一兩個字單獨掉到下一行 */}
+                  <p className="whitespace-pre-line text-[16px] leading-6 text-gray-800">
+                    {sl.body}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="關閉"
+          className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-full bg-[#fefefe]/60 p-1"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="size-6">
+            <path
+              d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+              stroke="#1e2939"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+        <div className="flex flex-col gap-6 px-4 pt-6 pb-6">
+          <div className="flex justify-center gap-1.5" aria-hidden>
+            {ANNOUNCE_SLIDES.map((sl, i) => (
+              <span
+                key={sl.key}
+                className="h-1.5 rounded-full"
+                style={{
+                  width: i === index ? 16 : 6,
+                  background: i === index ? "#ff3b3b" : "#e5e7eb",
+                  transition: `width 250ms ${EASING}, background-color 250ms ease`,
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onAction(slide)}
+              className="flex h-12 flex-1 items-center justify-center whitespace-nowrap rounded-2xl border border-[#ff3b3b] px-2 text-[16px] font-medium text-[#ff3b3b] active:scale-[0.98]"
+            >
+              {slide.action}
+            </button>
+            <button
+              onClick={() => (last ? onClose() : goTo(index + 1))}
+              className="flex h-12 flex-1 items-center justify-center whitespace-nowrap rounded-2xl bg-[#ff3b3b] px-2 text-[16px] font-medium text-white active:scale-[0.98]"
+            >
+              {last ? "開始探索" : "下一則"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    frame,
+  );
+}
+
+// modol_image 的示意圖：品牌漸層上放紙飛機或 ∧ 記號，或是商品圖
+function AnnounceVisual({ visual }: { visual: string }) {
+  if (visual === "plane" || visual === "mark") {
+    return (
+      <div
+        className="flex h-[226px] w-full shrink-0 items-center justify-center"
+        style={{
+          background:
+            "radial-gradient(70% 60% at 85% 10%, #ffd978 0%, rgba(255,217,120,0) 60%), linear-gradient(155deg, #ff3f7f 0%, #ff4a43 50%, #f22d33 100%)",
+        }}
+      >
+        <img
+          src={
+            visual === "plane"
+              ? "/v14/signup-plane.svg"
+              : "/v14/signup-mark.svg"
+          }
+          alt=""
+          draggable={false}
+          className="h-24 w-auto drop-shadow-[0_8px_14px_rgba(120,10,22,0.26)]"
+        />
+      </div>
+    );
+  }
+  // 公告圖：滿版鋪滿 328×226（Figma 匯出的圖本身已經是這個比例）
+  return (
+    <div className="h-[226px] w-full shrink-0 overflow-hidden bg-[#f3f4f6]">
+      <img
+        src={visual}
+        alt=""
+        draggable={false}
+        className="size-full object-cover"
+      />
+    </div>
+  );
+}
+
+function DateDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="h-px flex-1 bg-gray-100" />
+      <span className="text-[13px] text-[#a1a5af]">{label}</span>
+      <span className="h-px flex-1 bg-gray-100" />
+    </div>
+  );
+}
+
+// AI 思考中：文字上有一道亮光從左掃到右（漸層字＋背景位移），
+// 後面四個點依序亮起，看起來像「正在想」而不是卡住
+// AI 思考中：左邊放 AIFIAN 的等待動態（三個三角形，ai-loading.json），
+// 文案用首頁色光的同一組顏色做漸層，顏色慢慢流動。
+// 等比較久時分段換句，讓人知道還在進行、而且快好了；停在最後一句不循環
+const THINKING_STEPS = ["正在了解你的需求…", "正在幫你比較…", "快好了…"];
+const THINKING_STEP_MS = 1200;
+
+function ThinkingIndicator() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timers = THINKING_STEPS.slice(1).map((_, i) =>
+      window.setTimeout(() => setStep(i + 1), THINKING_STEP_MS * (i + 1)),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, []);
+  return (
+    <div
+      className="flex items-center gap-1.5 py-1 text-[15px] leading-[25px]"
+      style={{ animation: "fadeIn 240ms ease" }}
+    >
+      <AiLoadingLottie />
+      {/* 換句直接換字，不做進場動畫；漸層流動照常 */}
+      <span className="thinking-gradient-text">{THINKING_STEPS[step]}</span>
+    </div>
+  );
+}
+
+function AiLoadingLottie() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let anim: { destroy: () => void } | null = null;
+    let cancelled = false;
+    // lottie-web 一 import 就會碰 document，放到 effect 裡動態載入，避免 SSR 出錯
+    import("lottie-web").then(({ default: lottie }) => {
+      if (cancelled) return;
+      anim = lottie.loadAnimation({
+        container: el,
+        renderer: "svg",
+        loop: true,
+        autoplay: !window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches,
+        animationData: aiLoadingAnimation,
+      });
+    });
+    return () => {
+      cancelled = true;
+      anim?.destroy();
+    };
+  }, []);
+  // 原檔 260×180，縮到跟一行字差不多高
+  return <div ref={ref} aria-hidden className="h-[25px] w-[36px] shrink-0" />;
+}
+
+function Dot({ delay }: { delay: string }) {
+  return (
+    <span
+      className="size-1.5 animate-bounce rounded-full bg-gray-400"
+      style={{ animationDelay: delay }}
+    />
+  );
+}
+
+function ChatMessage({
+  message,
+  cart,
+  onAdd,
+  onBuy,
+  onOpen,
+  showDisclaimer,
+}: {
+  message: Message;
+  cart: CartItem[];
+  onAdd: (from: HTMLElement, card: RecCard) => void;
+  onBuy: (card: RecCard) => void;
+  onOpen: (cards: RecCard[], index: number) => void;
+  showDisclaimer: boolean;
+}) {
+  if (message.role === "user") {
+    return (
+      <div
+        data-message-id={message.id}
+        className="max-w-[80%] self-end rounded-[18px] bg-gray-800 px-[18px] py-[11px] text-[15px] text-white"
+      >
+        {message.text}
+      </div>
+    );
+  }
+
+  const cards = message.cards ?? [];
+  return (
+    <div data-message-id={message.id} className="flex flex-col gap-3">
+      {message.text && (
+        <p className="text-[15px] leading-[25px] text-gray-800">
+          {message.text}
+        </p>
+      )}
+      {cards.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {cards.map((c, i) => (
+            <ProductCard
+              key={c.id}
+              card={c}
+              cart={cart}
+              onAdd={onAdd}
+              onBuy={onBuy}
+              onOpen={() => onOpen(cards, i)}
+            />
+          ))}
+        </div>
+      )}
+      {showDisclaimer && (
+        <p className="text-[13px] text-[#a1a5af]">
+          AIFIAN 是 AI，有時可能會出錯。
+        </p>
+      )}
+    </div>
+  );
+}
+
+// 聊天商品卡照 Figma 1710:6039（chat-prd-card）：左邊 96 的方圖、右邊品名最多兩行、
+// 一行灰色說明，最後一列是價格跟「加入購物車／購買」兩顆按鈕。價格長到擠不下時
+// 按鈕整組換到下一行（價格列可換行、按鈕組有最小寬度）。
+// 點卡片其他地方打開商品細節頁，兩顆按鈕各自擋掉冒泡
+function ProductCard({
+  card,
+  cart,
+  onAdd,
+  onBuy,
+  onOpen,
+}: {
+  card: RecCard;
+  cart: CartItem[];
+  onAdd: (from: HTMLElement, card: RecCard) => void;
+  onBuy: (card: RecCard) => void;
+  onOpen: () => void;
+}) {
+  // 折抵試算跟兌換列表、商品細節頁共用同一套，對話裡看到的價格跟點進去的一致
+  const priced = rewardPrice(card.price, cart, card.id);
+  return (
+    <div
+      data-product-card
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpen();
+      }}
+      className="flex cursor-pointer items-center gap-3 overflow-hidden rounded-[16px] border border-[#e5e7eb] bg-white p-3"
+    >
+      <div
+        data-product-image
+        className="size-24 shrink-0 overflow-hidden rounded-[12px] bg-[#f0f2f5]"
+      >
+        {card.image && (
+          <img
+            src={card.image}
+            alt={card.name}
+            className="size-full object-cover"
+          />
+        )}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-1 overflow-hidden">
+          <p className="line-clamp-2 text-[16px] leading-6 text-gray-800">
+            {card.name}
+          </p>
+          {card.subtitle && (
+            <p className="truncate text-[14px] leading-[18px] text-gray-400">
+              {card.subtitle}
+            </p>
+          )}
+        </div>
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-0.5">
+            <p className="whitespace-nowrap text-[13px] leading-[18px] text-[#4a5565]">
+              折抵後價格{" "}
+              <span className="line-through">
+                NT${card.price.toLocaleString()}
+              </span>
+            </p>
+            <p
+              className={`whitespace-nowrap text-[16px] font-semibold leading-6 ${
+                priced.fullyCovered ? "text-brand" : "text-gray-800"
+              }`}
+            >
+              NT${money0(priced.shortfall)}
+            </p>
+          </div>
+          <div className="flex min-w-[104px] flex-1 items-center justify-end gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd(e.currentTarget, card);
+              }}
+              aria-label="加入購物車"
+              className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-[#e5e7eb] bg-white"
+            >
+              <img
+                src="/figma/v14-chat-cart-plus.svg"
+                alt=""
+                className="size-5"
+              />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBuy(card);
+              }}
+              className="flex h-9 shrink-0 items-center justify-center rounded-[10px] bg-brand px-4 text-[14px] font-medium leading-[18px] text-white"
+            >
+              購買
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

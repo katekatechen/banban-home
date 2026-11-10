@@ -454,6 +454,10 @@ export default function ExchangePage() {
             setCheckoutOpen(true);
           }}
           onClose={() => setCartOpen(false)}
+          onAsk={(card) => {
+            setPendingPrompt(`我想多了解「${card.name}」`);
+            router.push("/v13");
+          }}
         />
       )}
 

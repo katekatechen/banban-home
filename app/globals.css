@@ -1517,13 +1517,13 @@ body {
   }
 }
 
-/* v13 改版公告卡：遮罩淡入，卡片稍微放大進來 */
-@keyframes v13ModalFade {
+/* 改版公告卡：遮罩淡入，卡片稍微放大進來（v13 之後的版本共用） */
+@keyframes announceModalFade {
   from {
     opacity: 0;
   }
 }
-@keyframes v13ModalIn {
+@keyframes announceModalIn {
   from {
     opacity: 0;
     transform: scale(0.94);

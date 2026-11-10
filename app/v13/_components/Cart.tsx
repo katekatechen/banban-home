@@ -3,20 +3,20 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  addToCart,
   cartCountOf,
   removeFromCart,
   type CartItem,
+  type RecCard,
 } from "../_lib/chat-storage";
-import { REWARD_BALANCE } from "../_lib/mock-data";
+import ProductSheet from "./ProductSheet";
 
 // 購物車頁：照現行 App 的購物車，點右上角購物車進來，是結帳前獨立的一頁。
 // 這裡只做兩件事：看有什麼、把不要的移除；數量、備註、地址都留到結帳頁，
 // 所以這頁沒有數量加減也沒有勾選。
 //
-// 折抵只出現在底部的合計，不標在每一列：回饋是整筆共用的額度，標在每件上面會
-// 變成一堆加起來不成立的 $0（餘額 240 的時候，兩件 129 不可能都是 0 元）。
-// 商品列維持原價，合計把原價劃掉、換成折抵後要付的，使用者在列表看到的那個
-// 「$0」會在這裡以合計的形式再出現一次，體驗接得上，數字也站得住。
+// 底部只報商品原價的合計，不在這裡講回饋折抵：折抵多少是結帳頁才決定的事
+// （可以改折抵金額、還要加運費），在這裡先給一個數字，到結帳頁又變一個，反而更亂。
 // 跟結帳頁一樣用 portal 掛到 #v13-frame，才蓋得過 tabbar
 const money = (n: number) => `NT$${n.toLocaleString()}`;
 
@@ -25,13 +25,22 @@ export default function Cart({
   onCartChange,
   onCheckout,
   onClose,
+  onAsk,
 }: {
   cart: CartItem[];
   onCartChange: (cart: CartItem[]) => void;
   onCheckout: () => void;
   onClose: () => void;
+  // 從細節頁的「繼續聊」回到對話，由外面的分頁決定怎麼帶過去
+  onAsk?: (card: RecCard) => void;
 }) {
   const [frame, setFrame] = useState<HTMLElement | null>(null);
+  // 點商品列開出的細節頁。開的瞬間把當下的清單拍一份快照帶進去，
+  // 之後在細節頁把商品移除時，左右滑動的那一疊不會跟著少一張、跳到別的商品
+  const [detail, setDetail] = useState<{
+    cards: RecCard[];
+    index: number;
+  } | null>(null);
   useEffect(() => {
     setFrame(document.getElementById("v13-frame"));
   }, []);
@@ -39,9 +48,6 @@ export default function Cart({
 
   const count = cartCountOf(cart);
   const total = cart.reduce((sum, it) => sum + it.card.price * it.qty, 0);
-  // 折抵算在整筆訂單上，跟結帳頁同一套算法（運費是結帳頁才出現的，這裡只算商品）
-  const reward = Math.floor(Math.min(REWARD_BALANCE, total));
-  const payable = total - reward;
 
   return createPortal(
     <div
@@ -81,7 +87,12 @@ export default function Cart({
           cart.map((it, i) => (
             <div
               key={it.card.id}
-              className="flex items-start gap-3 px-4 py-3.5"
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                setDetail({ cards: cart.map((c) => c.card), index: i })
+              }
+              className="flex items-start gap-3 px-4 py-3.5 text-left active:bg-[#f7f8f9]"
               style={{
                 borderTop: i === 0 ? "none" : "1px solid #f0f2f4",
               }}
@@ -109,9 +120,11 @@ export default function Cart({
                     {money(it.card.price * it.qty)}
                   </p>
                   <button
-                    onClick={() =>
-                      onCartChange(removeFromCart(cart, it.card.id))
-                    }
+                    onClick={(e) => {
+                      // 不要連帶開啟細節頁
+                      e.stopPropagation();
+                      onCartChange(removeFromCart(cart, it.card.id));
+                    }}
                     className="shrink-0 text-[15px] text-[#ff5050]"
                   >
                     移除
@@ -126,28 +139,10 @@ export default function Cart({
       {cart.length > 0 && (
         <div className="shrink-0 border-t border-[#e8eaed] bg-white px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3">
           <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[13px] text-[#a1a5ac]">{count} 件合計</p>
-              {reward > 0 && (
-                <p className="mt-1 text-[13px] font-semibold text-[#1f8a5b]">
-                  已用回饋折抵 −{money(reward)}
-                </p>
-              )}
-            </div>
-            <div className="shrink-0 text-right">
-              {reward > 0 && (
-                <p className="text-[13px] text-[#a1a5ac] line-through">
-                  {money(total)}
-                </p>
-              )}
-              <p
-                className={`text-[26px] font-bold ${
-                  payable === 0 ? "text-brand" : "text-gray-800"
-                }`}
-              >
-                {money(payable)}
-              </p>
-            </div>
+            <p className="text-[13px] text-[#a1a5ac]">{count} 件合計</p>
+            <p className="shrink-0 text-[26px] font-bold text-gray-800">
+              {money(total)}
+            </p>
           </div>
           <button
             onClick={onCheckout}
@@ -169,6 +164,38 @@ export default function Cart({
             </svg>
           </button>
         </div>
+      )}
+
+      {/* 商品細節頁：從購物車點進來，跟兌換分頁一樣從右邊推進來。
+          購物車本身是 z-60，所以細節頁要往上疊才蓋得過去 */}
+      {detail && (
+        <ProductSheet
+          cards={detail.cards}
+          startIndex={detail.index}
+          addedIds={cart.map((it) => it.card.id)}
+          cart={cart}
+          present="push"
+          z={70}
+          onToggleCart={(card) =>
+            onCartChange(
+              cart.some((it) => it.card.id === card.id)
+                ? removeFromCart(cart, card.id)
+                : addToCart(cart, card),
+            )
+          }
+          onBuy={(card) => {
+            if (!cart.some((it) => it.card.id === card.id))
+              onCartChange(addToCart(cart, card));
+            setDetail(null);
+            onCheckout();
+          }}
+          onAsk={(card) => {
+            setDetail(null);
+            onClose();
+            onAsk?.(card);
+          }}
+          onClose={() => setDetail(null)}
+        />
       )}
     </div>,
     frame,

@@ -1774,6 +1774,7 @@ export default function V13HomePage() {
             setCheckoutOpen(true);
           }}
           onClose={() => setCartOpen(false)}
+          onAsk={(card) => handleSend(`我想多了解「${card.name}」`)}
         />
       )}
 
@@ -1926,7 +1927,7 @@ function AnnouncementModal({
   return createPortal(
     <div
       className="absolute inset-0 z-[90] flex items-center justify-center bg-black/40 px-6"
-      style={{ animation: "v13ModalFade 200ms ease both" }}
+      style={{ animation: "announceModalFade 200ms ease both" }}
       onClick={onClose}
     >
       <div
@@ -1934,7 +1935,7 @@ function AnnouncementModal({
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-[328px] overflow-hidden rounded-2xl bg-white shadow-[0px_4px_8px_0px_rgba(0,0,0,0.06),0px_0.5px_4px_0px_rgba(0,0,0,0.02)]"
-        style={{ animation: `v13ModalIn 260ms ${EASING} both` }}
+        style={{ animation: `announceModalIn 260ms ${EASING} both` }}
       >
         {/* 圖片＋文字一起左右滑；每一則等高（取最高的那則），切換時按鈕不會跳 */}
         <div
