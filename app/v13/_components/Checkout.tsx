@@ -175,18 +175,20 @@ export default function Checkout({
               return (
                 <div
                   key={it.card.id}
-                  className="py-3.5"
+                  className="py-4"
                   style={{
                     borderBottom:
                       i < cart.length - 1 ? "1px solid #eef0f1" : "none",
                   }}
                 >
-                  <div className="flex gap-3">
+                  {/* 勾選、縮圖、內容三欄；品名、金額、數量、備註規格都在第三欄裡，
+                      所以它們的左緣對齊同一條線（照現行 App 的結帳頁） */}
+                  <div className="flex gap-2.5">
                     <button
                       onClick={() => toggleSelect(it.card.id)}
                       aria-label={sel ? "這次不結" : "這次要結"}
                       aria-pressed={sel}
-                      className="mt-1 flex size-[22px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors"
+                      className="mt-[5px] flex size-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors"
                       style={{
                         borderColor: sel ? "#ff5050" : "#cfd3d8",
                         background: sel ? "#ff5050" : "transparent",
@@ -194,12 +196,12 @@ export default function Checkout({
                     >
                       {sel && (
                         <svg
-                          width="12"
-                          height="12"
+                          width="11"
+                          height="11"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="white"
-                          strokeWidth="3.4"
+                          strokeWidth="3.6"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         >
@@ -210,7 +212,7 @@ export default function Checkout({
                     <div
                       role="img"
                       aria-label={it.card.name}
-                      className="size-[66px] shrink-0 rounded-[10px] bg-[#f0f2f4] bg-cover bg-center transition-opacity"
+                      className="size-11 shrink-0 rounded-[8px] bg-[#f0f2f4] bg-cover bg-center transition-opacity"
                       style={{
                         backgroundImage: it.card.image
                           ? `url('${it.card.image}')`
@@ -219,39 +221,19 @@ export default function Checkout({
                       }}
                     />
                     <div
-                      className="flex min-w-0 flex-1 flex-col transition-opacity"
+                      className="min-w-0 flex-1 transition-opacity"
                       style={{ opacity: sel ? 1 : 0.45 }}
                     >
-                      <div className="flex items-start gap-2">
-                        <p className="line-clamp-2 min-w-0 flex-1 text-[15px] leading-[1.4] text-gray-800">
-                          {it.card.name}
-                        </p>
-                        <button
-                          onClick={() => setRemoveTarget(it)}
-                          aria-label="移除"
-                          className="-mr-1 -mt-[3px] flex size-7 shrink-0 items-center justify-center rounded-[8px] text-[#a1a5ac]"
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          >
-                            <path d="M18 6 6 18" />
-                            <path d="m6 6 12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                      {/* 金額在左、數量加減在右，單價那行補在金額下面（照現行版） */}
-                      <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="line-clamp-2 text-[16px] leading-[1.35] text-gray-800">
+                        {it.card.name}
+                      </p>
+                      {/* 金額跟單價一組在左，數量加減在右，兩者垂直置中對齊 */}
+                      <div className="mt-2 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[19px] font-bold leading-6 text-gray-800">
+                          <p className="text-[21px] font-bold leading-7 text-gray-800">
                             {money(it.card.price * it.qty)}
                           </p>
-                          <p className="mt-0.5 text-[13px] text-[#a1a5ac]">
+                          <p className="mt-0.5 text-[15px] text-[#a1a5ac]">
                             {money(it.card.price)} / {it.qty} 個
                           </p>
                         </div>
@@ -259,11 +241,11 @@ export default function Checkout({
                           <button
                             onClick={() => changeQty(it, -1)}
                             aria-label="減少數量"
-                            className="flex size-[34px] items-center justify-center text-gray-500"
+                            className="flex size-[42px] items-center justify-center text-gray-500"
                           >
                             <svg
-                              width="15"
-                              height="15"
+                              width="16"
+                              height="16"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -273,17 +255,17 @@ export default function Checkout({
                               <path d="M5 12h14" />
                             </svg>
                           </button>
-                          <span className="min-w-[26px] text-center text-[15px] font-semibold text-gray-800">
+                          <span className="min-w-[26px] text-center text-[16px] font-semibold text-gray-800">
                             {it.qty}
                           </span>
                           <button
                             onClick={() => changeQty(it, 1)}
                             aria-label="增加數量"
-                            className="flex size-[34px] items-center justify-center text-gray-500"
+                            className="flex size-[42px] items-center justify-center text-gray-500"
                           >
                             <svg
-                              width="15"
-                              height="15"
+                              width="16"
+                              height="16"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -295,19 +277,20 @@ export default function Checkout({
                           </button>
                         </div>
                       </div>
+                      <input
+                        value={specs[it.card.id] ?? ""}
+                        onChange={(e) =>
+                          setSpecs((s) => ({
+                            ...s,
+                            [it.card.id]: e.target.value,
+                          }))
+                        }
+                        placeholder="＋ 備註規格"
+                        className="mt-3 h-12 w-full rounded-[10px] bg-[#f3f5f7] px-4 text-[15px] text-gray-800 outline-none placeholder:text-[#a1a5ac]"
+                        style={{ opacity: sel ? 1 : 0.45 }}
+                      />
                     </div>
                   </div>
-                  <input
-                    value={specs[it.card.id] ?? ""}
-                    onChange={(e) =>
-                      setSpecs((s) => ({
-                        ...s,
-                        [it.card.id]: e.target.value,
-                      }))
-                    }
-                    placeholder="＋ 備註規格"
-                    className="mt-3 h-11 w-full rounded-[10px] bg-[#f3f5f7] px-3.5 text-[14px] text-gray-800 outline-none placeholder:text-[#a1a5ac]"
-                  />
                 </div>
               );
             })}
