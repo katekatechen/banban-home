@@ -958,16 +958,16 @@ export default function V13HomePage() {
 
     if (text.includes("改了什麼")) {
       await pushBot({
-        text: "首頁換成我了。以前要自己逛，才知道哪裡還能賺回饋；現在我會直接告訴你今天還能賺什麼，想用回饋的時候也會幫你挑值得換的東西。你的回饋、收藏跟交易紀錄都沒有變，收藏在「帳號」裡的「我的收藏」。",
-        quickReplies: ["打開我的收藏", "今天還能多賺什麼？"],
+        text: "首頁換成我了。以前要自己逛，才知道哪裡還能賺回饋；現在我會直接告訴你今天還能賺什麼，想用回饋的時候也會幫你挑值得換的東西。你的回饋、藏酒跟交易紀錄都沒有變，藏酒在「回饋」頁「線上藏酒」右邊的「我的酒窖」。",
+        quickReplies: ["打開我的酒窖", "今天還能多賺什麼？"],
       });
       return;
     }
 
     if (text.includes("值多少")) {
       await pushBot({
-        text: `你的 ${WINE_HOLDINGS.length} 款酒總現值 $${WINE_HOLDINGS_TOTAL_VALUE.toLocaleString()}，比買入時漲了 ${WINE_HOLDINGS_TOTAL_CHANGE_PCT}%。想賣出或領回，都在「我的收藏」裡。`,
-        quickReplies: ["打開我的收藏"],
+        text: `你的 ${WINE_HOLDINGS.length} 款酒總現值 $${WINE_HOLDINGS_TOTAL_VALUE.toLocaleString()}，比買入時漲了 ${WINE_HOLDINGS_TOTAL_CHANGE_PCT}%。想賣出或領回，都在「我的酒窖」裡。`,
+        quickReplies: ["打開我的酒窖"],
       });
       return;
     }
@@ -1071,7 +1071,7 @@ export default function V13HomePage() {
       router.push("/v14/exchange");
       return;
     }
-    if (reply === "打開我的收藏") {
+    if (reply === "打開我的酒窖") {
       router.push("/v14/collection");
       return;
     }

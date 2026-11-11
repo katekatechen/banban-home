@@ -368,14 +368,7 @@ export const ACCOUNT_ROWS = [
     label: "帳號與安全性",
   },
   { key: "payment", icon: "/figma/icon-wallet.svg", label: "收款與付款" },
-  // Figma 這幾張靜態稿沒有畫出「我的收藏」的入口位置，這裡加在帳號頁
-  // 是我自己補的合理位置，不是照著哪個節點還原的
-  {
-    key: "collection",
-    icon: "/figma/icon-clipboard-check.svg",
-    label: "我的收藏",
-    href: "/v14/collection",
-  },
+  // 我的酒窖的入口在回饋頁「線上藏酒」右邊，帳號頁不放
   {
     key: "history",
     icon: "/figma/icon-clipboard-check.svg",

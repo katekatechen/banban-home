@@ -227,13 +227,6 @@ export default function AccountPage() {
           />
           <Row icon={img("/figma/icon-wallet.svg")} title="收款與付款" />
           <Row icon={<ShoppingBagIcon className="size-6" />} title="訂單紀錄" />
-          {!company && (
-            <Row
-              icon={img("/figma/icon-clipboard-check.svg")}
-              title="我的收藏"
-              onClick={() => router.push("/v14/collection")}
-            />
-          )}
           <Row
             icon={img("/figma/icon-clipboard-check.svg")}
             title="歷史交易紀錄"
