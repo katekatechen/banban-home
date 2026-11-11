@@ -11,7 +11,7 @@ import {
 } from "../_lib/mock-data";
 import { usePageSlide } from "../_lib/page-transition";
 
-// 我的收藏：照 Figma 0j77VWDEI7rbmom5fT0tTb / 19491:22486。
+// 我的酒窖（帳號頁入口仍叫我的收藏）：照 Figma 0j77VWDEI7rbmom5fT0tTb / 19491:22486。
 // 淺灰底頁面、頂部一條「酒品總現值」、下面一列一瓶（wine cell）：
 // 左邊酒的圖、品名最多兩行、數量；右邊市值跟漲跌。
 // 酒品盲盒開出來的酒也是一列，跟其他收藏同一個格式，排在最上面（最新的）。
@@ -75,7 +75,7 @@ export default function CollectionPage() {
           />
         </button>
         <p className="absolute left-1/2 -translate-x-1/2 text-[16px] font-semibold leading-6 text-gray-800">
-          我的收藏
+          我的酒窖
         </p>
       </div>
 

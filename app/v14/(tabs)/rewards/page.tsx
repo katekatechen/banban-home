@@ -190,7 +190,7 @@ export default function RewardsTabPage() {
           </section>
 
           <section className="mt-4">
-            {/* 標題列：左邊整塊點進線上藏酒，右邊是「我的酒窖」入口（點了進我的收藏） */}
+            {/* 標題列：左邊整塊點進線上藏酒，右邊是「我的酒窖」入口（點了進我的酒窖頁） */}
             <div className="flex items-center pr-4">
             <button
               onClick={() => router.push("/v14/wine-select")}
