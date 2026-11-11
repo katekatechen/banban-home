@@ -303,29 +303,7 @@ export default function ExchangePage() {
             });
           }}
         />
-        <ProductRow
-          title="猜你喜歡"
-          subtitle="根據你的對話"
-          products={RECOMMENDED_PRODUCTS}
-          onOpen={(i) => setSheet({ cards: RECOMMENDED_CARDS, index: i })}
-          addedIds={addedIds}
-          cart={cart}
-          onAddToCart={(p, from) => {
-            if (addedIds.includes(p.id)) {
-              setCart(removeFromCart(cart, p.id));
-              return;
-            }
-            // 商品飛進購物車，落地那一刻才震動、才真的加進去，
-            // 震動對到的是「東西進購物車了」而不是「你按到了」
-            flyToCart(from, () => {
-              navigator.vibrate?.(18);
-              setCart(addToCart(cart, toCards([p])[0]));
-              showToast("已加入購物車");
-            });
-          }}
-        />
-
-        {/* 酒品盲盒：放在猜你喜歡下面、許願池上面，墊一層淺灰底（Gray/100）跟上面的
+        {/* 酒品盲盒：放在大家都在買下面、猜你喜歡上面，墊一層淺灰底（Gray/100）跟上面的
             一般商品區隔開，卡片本身跟其他商品同一款 */}
         <div className="bg-[#f3f4f6] py-2">
           <ProductRow
@@ -348,6 +326,28 @@ export default function ExchangePage() {
             }}
           />
         </div>
+
+        <ProductRow
+          title="猜你喜歡"
+          subtitle="根據你的對話"
+          products={RECOMMENDED_PRODUCTS}
+          onOpen={(i) => setSheet({ cards: RECOMMENDED_CARDS, index: i })}
+          addedIds={addedIds}
+          cart={cart}
+          onAddToCart={(p, from) => {
+            if (addedIds.includes(p.id)) {
+              setCart(removeFromCart(cart, p.id));
+              return;
+            }
+            // 商品飛進購物車，落地那一刻才震動、才真的加進去，
+            // 震動對到的是「東西進購物車了」而不是「你按到了」
+            flyToCart(from, () => {
+              navigator.vibrate?.(18);
+              setCart(addToCart(cart, toCards([p])[0]));
+              showToast("已加入購物車");
+            });
+          }}
+        />
 
         {/* 許願池（照 Figma 948:45714）：跟上面用回饋折抵的商品邏輯不同（這裡是抽獎），
             整區換成深色底做出區隔；底部多留一段讓深色延伸到 tabbar 底下 */}
