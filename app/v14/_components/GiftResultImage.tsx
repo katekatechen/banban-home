@@ -6,6 +6,9 @@
 //
 // 分享卡用同一張圖，只是整張縮到 0.6，所以尺寸用 scale 參數控制，
 // 不另外量一組座標。
+//
+// 酒品盲盒開出來的用那一款盒子的禮包圖（src）：禮包圖本身已經畫好碎片，
+// 整張鋪滿框，不再疊會噴出來的碎片，不然碎片會重複。
 
 const W = 300;
 const H = 239.7;
@@ -51,9 +54,12 @@ const PIECES: Piece[] = [
 export default function GiftResultImage({
   scale = 1,
   burst = false,
+  src,
 }: {
   scale?: number;
   burst?: boolean;
+  // 去背的禮包圖（900×720，跟框同比例）
+  src?: string;
 }) {
   return (
     <div
@@ -69,8 +75,21 @@ export default function GiftResultImage({
         }}
         className="relative overflow-hidden"
       >
+        {src && (
+          <img
+            src={src}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: W,
+              height: H,
+              maxWidth: "none",
+            }}
+          />
+        )}
         {/* 商品照片：設計稿上比框大一圈並往左上偏，露出的是中間那一段 */}
-        <img
+        {!src && <img
           src="/v14/gift-result/product-card.png"
           alt=""
           style={{
@@ -81,8 +100,8 @@ export default function GiftResultImage({
             height: 264.25,
             maxWidth: "none",
           }}
-        />
-        {PIECES.map((p, i) => (
+        />}
+        {!src && PIECES.map((p, i) => (
           <div
             key={p.src}
             style={{

@@ -21,6 +21,8 @@ export type GiftPrize = {
   unit: string;
   name: string;
   value: number;
+  // 結果圖：酒品盲盒用那一款盒子的禮包圖，沒給就用原本的商品卡
+  image?: string;
 };
 
 type Phase = "opening" | "result" | "share";
@@ -118,7 +120,7 @@ export default function GiftOpenFlow({
             {/* 商品圖往上凸出卡片 143，設計稿上圖頂離標題還有 80，所以卡片壓低 223 */}
             <div className="relative mt-[223px] w-full rounded-[16px] bg-white p-6">
               <div className="absolute -top-[143px] left-0 w-[300px] overflow-hidden">
-                <GiftResultImage burst />
+                <GiftResultImage burst src={prize.image} />
               </div>
               <div className="flex flex-col gap-4 pt-20 text-center">
                 <div className="flex flex-col gap-1 text-[20px] leading-6 text-gray-800">
@@ -226,7 +228,7 @@ function ShareSheet({
           {/* 可以截圖的那張卡：深灰底、白卡、底下品牌字樣 */}
           <div className="relative h-[376px] w-[261px] overflow-hidden rounded-[4px] bg-[#364153]">
             <div className="absolute left-1/2 top-[53px] -translate-x-1/2">
-              <GiftResultImage scale={0.6} />
+              <GiftResultImage scale={0.6} src={prize.image} />
             </div>
             <div className="absolute left-1/2 top-[133px] flex h-[184px] w-[220px] -translate-x-1/2 flex-col justify-end rounded-[9.6px] bg-white p-[14.4px]">
               <div className="flex flex-col gap-4 pt-12 text-center">

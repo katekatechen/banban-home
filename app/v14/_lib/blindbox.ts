@@ -1,13 +1,14 @@
 // 酒品盲盒：規格在 Notion「酒品盲盒功能規格 v1」。
 //
-// 第一版只做兩款盒子（入門盒、進階盒）。每一款是一個固定的獎池：哪些酒、
-// 各幾瓶，開賣前全部公開；每瓶的機率 = 這支酒剩幾瓶 ÷ 獎池還剩幾瓶，
-// 每開一盒就重算。盒數就是獎池瓶數加總，畫面上不講期數，賣完就 SOLD OUT。
+// 第一版只做兩款盒子（入門盒、進階盒）。每一款有固定的酒款清單，分三個層級，
+// 每個層級的機率是固定的，不會因為開出而改變；也沒有數量限制，會持續補貨，
+// 所以不會 SOLD OUT。開盒時先照層級機率決定層級，再從那一層的酒款平均挑一款。
+// 畫面上每個層級標出價值區間（那一層最便宜到最貴的市值）和機率。
 //
 // 買了不會馬上開：付款後收到一個「禮物」，到「我的禮物」拆開才知道是哪一瓶，
 // 開出來的酒存進「我的酒窖」。
 //
-// 狀態放在模組層級（跟購物車同一招）：兌換頁、我的禮物、我的收藏是不同頁，
+// 狀態放在模組層級（跟購物車同一招）：兌換頁、我的禮物、我的酒窖是不同頁，
 // 只要不重新整理，買了幾盒、開出什麼都會留著。
 
 import { useSyncExternalStore } from "react";
@@ -35,12 +36,8 @@ export type PoolWine = {
   name: string;
   tier: Tier;
   kind: WineKind;
-  // 市值：用商店售價（Product Table 的起始價格）
+  // 市值：以台灣售價為準（Product Table 台灣版的起始價格）
   value: number;
-  // 這一款放幾瓶
-  qty: number;
-  // 還剩幾瓶（開一盒少一瓶）
-  left: number;
 };
 
 export type BlindBox = {
@@ -49,8 +46,8 @@ export type BlindBox = {
   price: number;
   // 保底市值：開出來的每一瓶都不低於這個數字
   floor: number;
-  // 總共幾盒 = 獎池瓶數加總
-  total: number;
+  // 各層級的固定機率（%），加起來 100
+  odds: Record<Tier, number>;
   // 細節頁概覽的開頭：參考 Arena Club Time Box，先講盒裡是什麼樣的酒、
   // 再講適合誰，不講機制
   intro: string;
@@ -58,17 +55,14 @@ export type BlindBox = {
 };
 
 // 選酒照規格的「獎池選酒」：市值不低於保底、選品評分 15 分以上。
-// 瓶數是試算：頂標 1 瓶（不超過 1%）、珍藏約一成、其餘是精選。
-// 剩幾瓶是假裝已經開賣一陣子，機率才看得出會變動
+// 機率沿用原本試算的比例：頂標 1% 以下、珍藏一成多、其餘是精選
 const wine = (
   id: string,
   name: string,
   tier: Tier,
   kind: WineKind,
   value: number,
-  qty: number,
-  left: number,
-): PoolWine => ({ id, name, tier, kind, value, qty, left });
+): PoolWine => ({ id, name, tier, kind, value });
 
 export const BLIND_BOXES: BlindBox[] = [
   {
@@ -76,24 +70,24 @@ export const BLIND_BOXES: BlindBox[] = [
     name: "入門盒",
     price: 1200,
     floor: 1200,
-    total: 200,
+    odds: { top: 0.5, rare: 12, select: 87.5 },
     intro:
       "從百富、人頭馬到勃根地新生代酒莊，威士忌、干邑、紅酒都可能是你開到的那一瓶。給想認識好酒、也想來點驚喜的你。",
     pool: [
-      wine("rouget-2021", "2021 艾曼紐埃爾・侯熱 勃根地紅酒", "top", "red", 5000, 1, 1),
-      wine("port-charlotte", "布萊迪波夏波爾多桶", "rare", "whisky", 3200, 3, 3),
-      wine("drouhin-greves", "2018 約瑟夫・德魯漢 博恩一級園「格雷夫」紅酒", "rare", "red", 3500, 3, 2),
-      wine("chevillon-2010", "2010 羅伯・薛維昂 夜聖喬治老藤紅酒", "rare", "red", 3500, 3, 3),
-      wine("lignier-regnard", "2020 修伯特.利尼耶酒莊 哲維瑞香貝丹「赫納爾」紅酒", "rare", "red", 2800, 3, 2),
-      wine("rouget-ptg", "2022 艾曼紐・侯熱 勃根地巴索圖紅酒", "rare", "red", 2500, 3, 3),
-      wine("morey-2017", "2017 卡羅琳・莫雷 夏薩涅-蒙哈榭 紅酒", "rare", "red", 2100, 3, 3),
-      wine("morey-2021", "2021 卡羅琳・莫雷 夏薩涅-蒙哈榭 紅酒", "rare", "red", 2000, 3, 2),
-      wine("balvenie-14", "百富加勒比桶14年", "rare", "whisky", 1800, 3, 3),
-      wine("balvenie-sweet", "百富糖心12年", "select", "whisky", 1550, 35, 28),
-      wine("balvenie-dw", "百富雙桶12年", "select", "whisky", 1400, 35, 27),
-      wine("remy-1738", "人頭馬 1738 特優香檳干邑", "select", "cognac", 1350, 35, 29),
-      wine("classic-laddie", "布萊迪經典萊迪", "select", "whisky", 1280, 35, 26),
-      wine("remy-vsop", "人頭馬 VSOP 干邑", "select", "cognac", 1250, 35, 28),
+      wine("rouget-2021", "2021 艾曼紐埃爾・侯熱 勃根地紅酒", "top", "red", 5000),
+      wine("port-charlotte", "布萊迪波夏波爾多桶", "rare", "whisky", 3200),
+      wine("drouhin-greves", "2018 約瑟夫・德魯漢 博恩一級園「格雷夫」紅酒", "rare", "red", 3500),
+      wine("chevillon-2010", "2010 羅伯・薛維昂 夜聖喬治老藤紅酒", "rare", "red", 3500),
+      wine("lignier-regnard", "2020 修伯特.利尼耶酒莊 哲維瑞香貝丹「赫納爾」紅酒", "rare", "red", 2800),
+      wine("rouget-ptg", "2022 艾曼紐・侯熱 勃根地巴索圖紅酒", "rare", "red", 2500),
+      wine("morey-2017", "2017 卡羅琳・莫雷 夏薩涅-蒙哈榭 紅酒", "rare", "red", 2100),
+      wine("morey-2021", "2021 卡羅琳・莫雷 夏薩涅-蒙哈榭 紅酒", "rare", "red", 2000),
+      wine("balvenie-14", "百富加勒比桶14年", "rare", "whisky", 1800),
+      wine("balvenie-sweet", "百富糖心12年", "select", "whisky", 1550),
+      wine("balvenie-dw", "百富雙桶12年", "select", "whisky", 1400),
+      wine("remy-1738", "人頭馬 1738 特優香檳干邑", "select", "cognac", 1350),
+      wine("classic-laddie", "布萊迪經典萊迪", "select", "whisky", 1280),
+      wine("remy-vsop", "人頭馬 VSOP 干邑", "select", "cognac", 1250),
     ],
   },
   {
@@ -102,21 +96,21 @@ export const BLIND_BOXES: BlindBox[] = [
     // 保底跟售價一樣：盒內最便宜的是 4,800 的拉・里奧特，售價就定在這裡
     price: 4800,
     floor: 4800,
-    total: 100,
+    odds: { top: 1, rare: 14, select: 85 },
     intro:
       "以勃根地特級園與一級園為主，拉菲昂伯爵、費維利、蓬索、茂-卡慕澤這些藏家熟悉的名莊都在盒裡。給已經有收藏習慣、想開一瓶有份量好酒的你。",
     pool: [
-      wine("lafon-charmes", "2012 拉菲昂伯爵酒莊 默索一級園「夏姆」白酒", "top", "white", 17500, 1, 1),
-      wine("lignier-michelot", "2018 里尼耶-米歇洛 克洛德拉羅什 特級園紅酒", "rare", "red", 8800, 2, 2),
-      wine("meo-cras", "2013 茂-卡慕澤 香波-慕思尼 一級園「勒・克拉」紅酒", "rare", "red", 8000, 2, 2),
-      wine("lignier-csd", "2019 喬治·利尼葉酒莊聖丹尼特級園紅酒", "rare", "red", 8000, 2, 1),
-      wine("drouhin-laroze", "2017 卓林-拉洛茲 香貝丹-貝茲 特級園紅酒", "rare", "red", 7500, 2, 2),
-      wine("ponsot-corton", "2009 蓬索酒莊 科爾登「大黃蜂」特級園 紅酒", "rare", "red", 7500, 2, 2),
-      wine("faiveley-cdv", "2019 費維利酒莊 武若園 特級園紅酒", "rare", "red", 7000, 2, 2),
-      wine("lamarche-ech", "2006 佛朗索瓦・拉馬許 艾雪索特級園紅酒", "rare", "red", 6800, 2, 2),
-      wine("balvenie-21", "百富波特桶21年", "select", "whisky", 5500, 29, 24),
-      wine("lafon-volnay", "2014 拉菲昂伯爵酒莊 沃爾內一級園「中段桑特諾」紅酒", "select", "red", 4900, 28, 23),
-      wine("lignier-riotte", "2019 修伯特・利尼耶 莫雷-聖丹尼「拉・里奧特」一級園紅酒", "select", "red", 4800, 28, 25),
+      wine("lafon-charmes", "2012 拉菲昂伯爵酒莊 默索一級園「夏姆」白酒", "top", "white", 17500),
+      wine("lignier-michelot", "2018 里尼耶-米歇洛 克洛德拉羅什 特級園紅酒", "rare", "red", 8800),
+      wine("meo-cras", "2013 茂-卡慕澤 香波-慕思尼 一級園「勒・克拉」紅酒", "rare", "red", 8000),
+      wine("lignier-csd", "2019 喬治·利尼葉酒莊聖丹尼特級園紅酒", "rare", "red", 8000),
+      wine("drouhin-laroze", "2017 卓林-拉洛茲 香貝丹-貝茲 特級園紅酒", "rare", "red", 7500),
+      wine("ponsot-corton", "2009 蓬索酒莊 科爾登「大黃蜂」特級園 紅酒", "rare", "red", 7500),
+      wine("faiveley-cdv", "2019 費維利酒莊 武若園 特級園紅酒", "rare", "red", 7000),
+      wine("lamarche-ech", "2006 佛朗索瓦・拉馬許 艾雪索特級園紅酒", "rare", "red", 6800),
+      wine("balvenie-21", "百富波特桶21年", "select", "whisky", 5500),
+      wine("lafon-volnay", "2014 拉菲昂伯爵酒莊 沃爾內一級園「中段桑特諾」紅酒", "select", "red", 4900),
+      wine("lignier-riotte", "2019 修伯特・利尼耶 莫雷-聖丹尼「拉・里奧特」一級園紅酒", "select", "red", 4800),
     ],
   },
 ];
@@ -146,14 +140,6 @@ export const boxIdOfProduct = (productId: string): BlindBox["id"] | null => {
 
 export const isBlindBoxProduct = (productId: string) =>
   boxIdOfProduct(productId) !== null;
-
-export const isSoldOutProduct = (productId: string) => {
-  const id = boxIdOfProduct(productId);
-  return id ? boxesAvailable(getBox(id)) <= 0 : false;
-};
-
-export const boxLeft = (box: BlindBox) =>
-  box.pool.reduce((sum, w) => sum + w.left, 0);
 
 // 最近開出：假的動態，讓詳情頁有「真的有人在開」的感覺
 export const RECENT_OPENINGS: Record<
@@ -207,20 +193,23 @@ export const addPendingBox = (id: BlindBox["id"]) => {
 };
 export const pendingBoxCount = () => pending.length;
 
-// 買了還沒拆的盒子已經佔掉一瓶酒，所以「本期還剩幾盒」要扣掉它們
-export const boxesAvailable = (box: BlindBox) =>
-  boxLeft(box) - pending.filter((id) => id === box.id).length;
-
 // ---- 商品細節頁的內容 ----
 // 細節頁沿用一般商品的版型（概覽、規格、重點卡、大家怎麼說），
-// 盒內酒款跟機率寫進概覽的文字裡，就像後台的商品說明欄位。
-// 每次打開都重算，機率跟剩幾盒才會跟著開出的瓶數變
-const tierShare = (box: BlindBox, tier: Tier) => {
-  const total = boxLeft(box);
-  const n = box.pool.filter((w) => w.tier === tier).reduce((s, w) => s + w.left, 0);
-  if (!total || !n) return "0%";
-  const p = (n / total) * 100;
-  return p < 0.1 ? "<0.1%" : `${p.toFixed(1)}%`;
+// 盒內酒款、價值區間跟機率寫進概覽的文字裡，就像後台的商品說明欄位
+const money = (n: number) => `NT$${n.toLocaleString()}`;
+const pct = (n: number) => `${n}%`;
+
+// 價值區間：這一層最便宜到最貴；只有一款時就只寫一個數字
+const tierRange = (box: BlindBox, tier: Tier) => {
+  const values = box.pool.filter((w) => w.tier === tier).map((w) => w.value);
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  return lo === hi ? money(lo) : `${money(lo)}～${hi.toLocaleString()}`;
+};
+
+const boxRange = (box: BlindBox) => {
+  const values = box.pool.map((w) => w.value);
+  return `${money(Math.min(...values))}～${money(Math.max(...values))}`;
 };
 
 export function blindBoxDetail(productId: string): ProductDetail | undefined {
@@ -228,7 +217,6 @@ export function blindBoxDetail(productId: string): ProductDetail | undefined {
   if (!id) return undefined;
   const box = getBox(id);
   const top = box.pool.find((w) => w.tier === "top")!;
-  const money = (n: number) => `NT$${n.toLocaleString()}`;
   const tiers: Tier[] = ["top", "rare", "select"];
   const poolText = tiers
     .map((t) => {
@@ -236,36 +224,32 @@ export function blindBoxDetail(productId: string): ProductDetail | undefined {
         .filter((w) => w.tier === t)
         .map((w) => `・${w.name}｜市值 ${money(w.value)}`);
       // 機率只公開到層級，不列每一款酒的機率
-      return `【${TIER_LABEL[t]}】機率 ${tierShare(box, t)}\n${lines.join("\n")}`;
+      return `【${TIER_LABEL[t]}】${tierRange(box, t)}｜機率 ${pct(box.odds[t])}\n${lines.join("\n")}`;
     })
     .join("\n\n");
   return {
     // 細節頁標題跟兌換頁列表用同一個名稱
     fullName: `酒品盲盒・${box.name}`,
     overviewSource: "by AIFIAN",
+    // 概覽第一句就講最高可以開到什麼，用粗體強調
+    overviewLead: `有機會開出市值 ${money(top.value)} 的${top.name}`,
     overview:
       `${box.intro}\n\n` +
       `每一盒保證開出市值 ${money(box.floor)} 以上的酒。付款後會收到 1 個禮物，到「我的禮物」拆開，開出的酒存進「我的酒窖」，之後可以領回或轉售。\n\n` +
-      `盒內酒款與機率\n\n${poolText}\n\n` +
-      `全部開完就售完。市值以 AIFIAN 售價為準。付款即完成交易，不提供退款。未滿 18 歲請勿購買。\n\n禁止酒駕　飲酒過量，有害健康`,
+      `盒內酒款、價值區間與機率\n\n${poolText}\n\n` +
+      `各層級機率固定，不會因為開出而改變，酒款會持續補貨。市值以台灣售價為準。付款即完成交易，不提供退款。未滿 18 歲請勿購買。\n\n禁止酒駕　飲酒過量，有害健康`,
     specs: [
       { label: "內容", value: "1 瓶／盒" },
       { label: "保底市值", value: money(box.floor) },
+      { label: "價值區間", value: boxRange(box) },
       { label: "盒內酒款", value: `${box.pool.length} 款` },
-      {
-        label: "剩餘",
-        value:
-          boxesAvailable(box) > 0
-            ? `${boxesAvailable(box)} / ${box.total} 盒`
-            : "SOLD OUT",
-      },
     ],
-    highlights: [
-      { title: `頂標 ${money(top.value)}`, sub: `機率 ${tierShare(box, "top")}` },
-      { title: `珍藏 ${tierShare(box, "rare")}`, sub: "機率" },
-      { title: `精選 ${tierShare(box, "select")}`, sub: "機率" },
-    ],
-    highlightSummary: `保底 ${money(box.floor)}・${box.pool.length} 款酒`,
+    // 重點卡一欄很窄，價值區間拿掉 NT$ 才放得進一行，幣別看上面那句摘要
+    highlights: tiers.map((t) => ({
+      title: `${TIER_LABEL[t]} ${pct(box.odds[t])}`,
+      sub: tierRange(box, t).replace("NT$", ""),
+    })),
+    highlightSummary: `最高 ${money(top.value)}・保底 ${money(box.floor)}`,
     reviewText: null,
     reviewTags: [],
   };
@@ -279,6 +263,8 @@ export type OpenedWine = {
   tier: Tier;
   kind: WineKind;
   value: number;
+  // 哪一款盒子開出來的：禮物紀錄用它挑禮包圖
+  boxId: BlindBox["id"];
   boxName: string;
   time: string;
 };
@@ -293,22 +279,22 @@ const stamp = () => {
   return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-// 拆開最早買的那一盒：照剩餘瓶數加權隨機抽一瓶，扣掉庫存，記進「開出來的酒」。
-// 沒有沒拆的盒子就回 null
+// 拆開最早買的那一盒：先照固定的層級機率決定層級，再從那一層平均挑一款，
+// 記進「開出來的酒」。沒有沒拆的盒子就回 null
 export function openPendingBox(): OpenedWine | null {
   const id = pending[0];
   if (!id) return null;
   pending = pending.slice(1);
   emit();
   const box = getBox(id);
-  const left = boxLeft(box);
-  let r = Math.random() * left;
-  const picked =
-    box.pool.find((w) => {
-      r -= w.left;
-      return w.left > 0 && r < 0;
-    }) ?? box.pool.find((w) => w.left > 0)!;
-  picked.left -= 1;
+  let r = Math.random() * 100;
+  const tier =
+    (["top", "rare", "select"] as Tier[]).find((t) => {
+      r -= box.odds[t];
+      return r < 0;
+    }) ?? "select";
+  const candidates = box.pool.filter((w) => w.tier === tier);
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
   openedSeq += 1;
   const result: OpenedWine = {
     key: `bb-${openedSeq}`,
@@ -317,6 +303,7 @@ export function openPendingBox(): OpenedWine | null {
     tier: picked.tier,
     kind: picked.kind,
     value: picked.value,
+    boxId: box.id,
     boxName: box.name,
     time: stamp(),
   };

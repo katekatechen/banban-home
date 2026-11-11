@@ -27,7 +27,6 @@ import {
   addPendingBox,
   BLIND_BOX_PRODUCTS,
   boxIdOfProduct,
-  isSoldOutProduct,
 } from "../../_lib/blindbox";
 
 // 導覽列浮在內容上面用漸層，不是佔自己一排空間的實色色塊，跟回饋分頁
@@ -618,13 +617,6 @@ function ProductRow({
                 )}
                 {/* 已加入的樣式跟商品細節頁的「已加入」按鈕同一組綠：
                     邊框 #1f8a5b、底色是同一個綠的 8% 疊在白底上 */}
-                {isSoldOutProduct(p.id) ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-                    <span className="rounded-[6px] bg-gray-800 px-2.5 py-1 text-[13px] font-semibold tracking-[0.5px] text-white">
-                      SOLD OUT
-                    </span>
-                  </div>
-                ) : (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -659,7 +651,6 @@ function ProductRow({
                     />
                   )}
                 </button>
-                )}
               </div>
               <div className="flex flex-col gap-2 p-2">
                 <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">

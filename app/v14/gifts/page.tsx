@@ -54,6 +54,7 @@ export default function GiftsPage() {
         unit: "瓶",
         name: w.name,
         value: w.value,
+        image: `/v14/gift-result/blindbox-${w.boxId}.png`,
       });
     } else {
       takeBaseGift();
@@ -155,16 +156,17 @@ export default function GiftsPage() {
             {hasRecords ? (
               <div className="flex flex-col gap-2">
                 {/* 酒品盲盒開出來的酒排最上面（最新的），格式跟原本的商品紀錄一樣：
-                    圖、名稱、數量、時間 */}
+                    圖、名稱、數量、時間。圖用那一款盒子的禮包圖；禮包圖是白底 JPG，
+                    用 multiply 疊在灰底上，白色就會透出灰底，跟其他紀錄的去背圖一樣 */}
                 {blindRecords.map((r) => (
                   <div key={r.key} className="flex items-center gap-4 px-4">
                     <div className="shrink-0 rounded-[8px] bg-gray-100 p-2">
                       <img
-                        src="/v14/gift-record/whisky-card.png"
+                        src={`/v14/gift-record/blindbox-${r.boxId}.jpg`}
                         alt=""
                         width={60}
                         height={47.94}
-                        className="block h-[47.94px] w-[60px] object-cover"
+                        className="block h-[47.94px] w-[60px] object-cover mix-blend-multiply"
                       />
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col justify-center">
