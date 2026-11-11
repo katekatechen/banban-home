@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import StatusBar from "../../_components/StatusBar";
 import { UNREAD_NOTIFICATIONS } from "../../_lib/mock-data";
+import { useUnopenedGifts } from "../../_lib/blindbox";
 import {
   AtIcon,
   BuildingIcon,
@@ -96,6 +97,7 @@ export default function AccountPage() {
   const router = useRouter();
   const { corp, mode, toast } = useCorp();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const unopenedGifts = useUnopenedGifts();
   useEffect(() => initCorpFromUrl(), []);
 
   const company = mode === "company" && corp !== "none";
@@ -239,7 +241,22 @@ export default function AccountPage() {
           {!company && (
             <>
               <Row icon={img("/figma/icon-community.svg")} title="推薦好友" />
-              <Row icon={img("/figma/icon-gift.svg")} title="我的禮物" />
+              <Row
+                icon={img("/figma/icon-gift.svg")}
+                title="我的禮物"
+                onClick={() => router.push("/v14/gifts")}
+                trailing={
+                  // 有沒拆的禮物：箭頭左邊多一顆品牌紅的數字
+                  unopenedGifts > 0 ? (
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="min-w-5 rounded-full bg-brand px-1.5 text-center text-[13px] font-bold leading-5 text-white">
+                        {unopenedGifts}
+                      </span>
+                      <ChevronRightIcon className="size-6 text-gray-800" />
+                    </span>
+                  ) : undefined
+                }
+              />
             </>
           )}
           <Row

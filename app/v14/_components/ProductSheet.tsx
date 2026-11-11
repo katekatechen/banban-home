@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { CartItem, RecCard } from "../_lib/chat-storage";
 import { EASING, PAGE_TRANSITION_MS } from "../_lib/page-transition";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
+import { blindBoxDetail, isSoldOutProduct } from "../_lib/blindbox";
 import { money0, rewardPrice } from "../_lib/reward-price";
 
 // 商品細節頁：有兩種開啟方式，由 present 決定。
@@ -126,8 +127,10 @@ export default function ProductSheet({
   const card = cards[index];
   const priced = rewardPrice(card.price, cart, card.id);
   const isSheet = present === "sheet";
-  const detail = PRODUCT_DETAILS[card.id];
+  // 酒品盲盒也是一般商品，細節內容（盒內酒款、機率、剩幾盒）每次打開重算
+  const detail = blindBoxDetail(card.id) ?? PRODUCT_DETAILS[card.id];
   const added = addedIds.includes(card.id);
+  const soldOut = isSoldOutProduct(card.id);
 
   const contentStyle: React.CSSProperties =
     phase === "out"
@@ -262,9 +265,11 @@ export default function ProductSheet({
                       <p className="text-[15px] font-bold text-gray-800">
                         概覽
                       </p>
-                      <p className="text-[13px] text-[#a1a5ac]">AI 整理</p>
+                      <p className="text-[13px] text-[#a1a5ac]">
+                        {detail.overviewSource ?? "AI 整理"}
+                      </p>
                     </div>
-                    <p className="whitespace-pre-line text-[14.5px] leading-[1.85] text-gray-800">
+                    <p className="whitespace-pre-line text-[16px] leading-[1.6] text-gray-800">
                       {detail.overview}
                     </p>
                   </div>
@@ -393,7 +398,14 @@ export default function ProductSheet({
             </svg>
             繼續聊
           </button>
-          {added ? (
+          {soldOut ? (
+            <button
+              disabled
+              className="flex h-11 flex-1 items-center justify-center rounded-full bg-gray-300 text-[15px] font-semibold tracking-[0.5px] text-white"
+            >
+              SOLD OUT
+            </button>
+          ) : added ? (
             <button
               onClick={() => onToggleCart(card)}
               className="flex h-11 flex-1 items-center justify-center gap-1 rounded-full border-[1.5px] border-[#1f8a5b] bg-[rgba(31,138,91,0.08)] text-[15px] font-semibold text-[#1f8a5b]"
@@ -420,12 +432,14 @@ export default function ProductSheet({
               加入購物車
             </button>
           )}
-          <button
-            onClick={() => onBuy(card)}
-            className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#ef4d4d] text-[15px] font-semibold text-white shadow-[0_4px_12px_rgba(239,77,77,0.35)]"
-          >
-            立即結帳
-          </button>
+          {!soldOut && (
+            <button
+              onClick={() => onBuy(card)}
+              className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#ef4d4d] text-[15px] font-semibold text-white shadow-[0_4px_12px_rgba(239,77,77,0.35)]"
+            >
+              立即結帳
+            </button>
+          )}
         </div>
       </div>
     </>,

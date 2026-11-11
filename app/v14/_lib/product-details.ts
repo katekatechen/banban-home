@@ -4,6 +4,8 @@
 
 export type ProductDetail = {
   fullName: string;
+  // 概覽右上角的來源小字，沒填就是「AI 整理」；盲盒是 AIFIAN 自己寫的，標 by AIFIAN
+  overviewSource?: string;
   overview: string;
   specs: { label: string; value: string }[];
   highlights: { title: string; sub: string }[];

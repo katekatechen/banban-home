@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { EASING } from "../_lib/page-transition";
 import { useCorp } from "../_lib/corp-account";
+import { useUnopenedGifts } from "../_lib/blindbox";
 
 // v14 tabbar 改成四格（聊天／回饋／兌換／帳號），照 Figma 948:44415。
 // 四個分頁都是 (tabs) route group 底下的真路由，tabbar 本身放在 layout 裡
@@ -48,6 +49,7 @@ export default function TabBar() {
   // 目前是企業帳號身分：「帳號」icon 換成大樓（照 Figma D1 tabbar；目前分頁用實心），在其他分頁也看得出身分
   const { corp, mode } = useCorp();
   const asCompany = mode === "company" && corp !== "none";
+  const unopenedGifts = useUnopenedGifts();
 
   return (
     // 底部安全區：桌機預覽（sm 以上，外面那圈手機外框）照 Figma 用固定 34px；
@@ -92,6 +94,13 @@ export default function TabBar() {
                   alt=""
                   className="h-5 w-auto"
                 />
+                {/* 有沒拆的禮物：帳號 icon 右上角一個紅點，不寫數字（數字在帳號頁的我的禮物） */}
+                {tab.href === "/v14/account" && unopenedGifts > 0 && (
+                  <span
+                    aria-label={`有 ${unopenedGifts} 個禮物沒拆`}
+                    className="absolute -right-1 -top-0.5 size-2 rounded-full bg-brand ring-2 ring-white"
+                  />
+                )}
               </span>
               <span
                 className={`text-[10px] leading-[11px] text-gray-800 ${

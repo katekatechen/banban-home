@@ -9,6 +9,7 @@ import {
   type CartItem,
 } from "../_lib/chat-storage";
 import { REWARD_BALANCE } from "../_lib/mock-data";
+import { isBlindBoxProduct } from "../_lib/blindbox";
 
 // 結帳頁：從購物車頁的「立即結帳」或商品細節頁的「立即結帳」進來，
 // 版型照現行 App 的結帳頁：白底、資訊分成幾塊淺灰卡（送至／回饋折抵／付款方式），
@@ -70,6 +71,9 @@ export default function Checkout({
 
   const isSelected = (id: string) => !deselected.includes(id);
   const selectedItems = cart.filter((it) => isSelected(it.card.id));
+  // 這次要結的有酒品盲盒，就要先勾「我已年滿 18 歲」
+  const needAdult = selectedItems.some((it) => isBlindBoxProduct(it.card.id));
+  const [adult, setAdult] = useState(false);
   const cartCount = cartCountOf(cart);
   const subtotal = selectedItems.reduce(
     (sum, it) => sum + it.card.price * it.qty,
@@ -362,7 +366,7 @@ export default function Checkout({
                 </button>
               </div>
               {reward > 0 && (
-                <p className="mt-2.5 text-[14px] font-semibold text-[#1f8a5b]">
+                <p className="mt-2.5 text-[14px] font-semibold text-[#ff5050]">
                   已折抵 −{money(reward)}
                 </p>
               )}
@@ -420,6 +424,43 @@ export default function Checkout({
               </p>
             </button>
 
+            {/* 有酒品盲盒時多一個「已滿 18 歲」的勾選，不勾不能付款（規格要求）。
+                樣式照現行 App 結帳頁：淡紅底的一整塊、深色方形勾選框，
+                放在付款方式下面 */}
+            {needAdult && (
+              <button
+                onClick={() => setAdult((v) => !v)}
+                aria-pressed={adult}
+                className="mt-3 flex w-full items-center gap-2.5 rounded-[14px] bg-[#fdebeb] px-3 py-3.5 text-left"
+              >
+                <span
+                  className="flex size-6 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors"
+                  style={{
+                    borderColor: adult ? "#1e2939" : "#cfd3d8",
+                    background: adult ? "#1e2939" : "#ffffff",
+                  }}
+                >
+                  {adult && (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  )}
+                </span>
+                <span className="text-[14px] leading-[1.4] text-gray-800">
+                  我已年滿 18 歲，且本訂單含酒精類商品。
+                </span>
+              </button>
+            )}
+
             {/* 金額明細不包在卡裡，直接列在白底上（照現行版） */}
             <div className="mt-5">
               <div className="flex justify-between text-[15px]">
@@ -428,7 +469,7 @@ export default function Checkout({
               </div>
               <div className="mt-2.5 flex justify-between text-[15px]">
                 <span className="text-gray-500">運費</span>
-                <span style={{ color: freeShip ? "#1f8a5b" : "#1e2939" }}>
+                <span style={{ color: freeShip ? "#ff5050" : "#1e2939" }}>
                   {freeShip ? "免運費" : money(ship)}
                 </span>
               </div>
@@ -438,7 +479,7 @@ export default function Checkout({
                 </p>
               )}
               {reward > 0 && (
-                <div className="mt-2.5 flex justify-between text-[15px] text-[#1f8a5b]">
+                <div className="mt-2.5 flex justify-between text-[15px] text-[#ff5050]">
                   <span>回饋折抵</span>
                   <span>−{money(reward)}</span>
                 </div>
@@ -479,7 +520,7 @@ export default function Checkout({
             </p>
           </div>
           <button
-            disabled={selectedItems.length === 0}
+            disabled={selectedItems.length === 0 || (needAdult && !adult)}
             onClick={() => onPaid(selectedItems.map((it) => it.card.id))}
             className="flex h-[52px] flex-1 items-center justify-center whitespace-nowrap rounded-full bg-[#ff5050] text-[16px] font-semibold text-white disabled:bg-gray-300"
           >

@@ -190,9 +190,11 @@ export default function RewardsTabPage() {
           </section>
 
           <section className="mt-4">
+            {/* 標題列：左邊整塊點進線上藏酒，右邊是「我的酒窖」入口（點了進我的收藏） */}
+            <div className="flex items-center pr-4">
             <button
               onClick={() => router.push("/v14/wine-select")}
-              className="block w-full px-4 py-4 text-left"
+              className="block min-w-0 flex-1 px-4 py-4 text-left"
             >
               <span className="flex items-center gap-1">
                 <span className="text-[16px] font-bold text-gray-800">
@@ -208,6 +210,18 @@ export default function RewardsTabPage() {
                 自己挑選具備增值潛力的酒
               </span>
             </button>
+            <button
+              onClick={() => router.push("/v14/collection")}
+              aria-label="我的酒窖"
+              className="flex h-11 shrink-0 items-center gap-1 rounded-[22px] border border-gray-200 bg-white pl-2 pr-3 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.04)]"
+            >
+              {/* icon 檔是 32×32、圖形本身約佔中間 18px，照原尺寸放才不會顯得太小 */}
+              <img src="/figma/icon-cart.svg" alt="" className="size-8" />
+              <span className="text-[16px] font-semibold text-gray-800">
+                $1,999
+              </span>
+            </button>
+            </div>
             {/* 卡寬固定 168px（照 Figma），兩張排完會露出第三張的邊緣，
                 看得出還可以往右滑 */}
             <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">

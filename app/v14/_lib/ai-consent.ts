@@ -32,7 +32,8 @@ type State = {
   receipt: typeof RECEIPT | null;
 };
 
-const DEFAULT: State = { consent: "unset", receipt: null };
+// 預設已同意：狀態切換面板先拿掉了，demo 一進來就能直接對話
+const DEFAULT: State = { consent: "granted", receipt: RECEIPT };
 
 let state: State = DEFAULT;
 let initialized = false;

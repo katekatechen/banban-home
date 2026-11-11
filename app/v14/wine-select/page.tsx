@@ -18,8 +18,6 @@ const CATEGORIES: { key: WineType | "全部"; label: string; icon: string }[] = 
   { key: "白酒", label: "白酒", icon: "/figma/cat-whitewine.svg" },
 ];
 
-// 這版沒有結帳頁，購物車角標維持純視覺展示、不接任何動作——
-// 沒建的功能不假裝可以點，寧可看起來單純一點
 export default function WineSelectPage() {
   const router = useRouter();
   const { style, exit } = usePageSlide();
@@ -44,12 +42,6 @@ export default function WineSelectPage() {
         >
           <img src="/figma/nav-arrow-left.svg" alt="返回" className="size-5" />
         </button>
-        <div className="flex items-center gap-1.5 rounded-[22px] border border-gray-200 bg-white px-3 py-2 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.04)]">
-          <img src="/figma/icon-cart.svg" alt="" className="size-5" />
-          <span className="text-[13px] font-semibold text-gray-800">
-            $1,999
-          </span>
-        </div>
       </div>
 
       <div className="relative shrink-0">

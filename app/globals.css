@@ -1561,3 +1561,63 @@ body {
     animation: none;
   }
 }
+
+/* ---- 拆禮物流程 ---- */
+
+/* 開場：禮物盒吊著氣球從上面飄下來，到定位之後輕輕晃 */
+@keyframes giftDrop {
+  0% {
+    transform: translateY(-60%) scale(0.86);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes giftSway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.6deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.6deg);
+  }
+}
+/* 雲從右邊飄到左邊，兩朵用不同速度錯開 */
+@keyframes giftCloudDrift {
+  from {
+    transform: translateX(var(--cloud-from, 120%));
+  }
+  to {
+    transform: translateX(var(--cloud-to, -140%));
+  }
+}
+/* 碎片從禮物盒的位置噴到自己的定位 */
+@keyframes giftConfettiBurst {
+  0% {
+    transform: translate(var(--cfx), var(--cfy)) scale(0.2);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+/* 結果卡：往上帶一點放大浮出來 */
+@keyframes giftResultIn {
+  from {
+    transform: translateY(24px) scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}

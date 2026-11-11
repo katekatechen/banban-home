@@ -441,3 +441,71 @@ export const NOTIFICATIONS: Notification[] = [
 export const UNREAD_NOTIFICATIONS = NOTIFICATIONS.filter(
   (n) => n.unread,
 ).length;
+
+// ---- 我的禮物 ----
+// 禮物是從天上空投下來的，拆開才知道裡面是回饋還是商品。
+// 這頁上面報兩個數字（拆過幾個、總共值多少），中間是還沒拆的那一包，
+// 下面直接條列拆過的每一筆，不再先分「哪一個活動的禮包」再點進去。
+export type GiftRecord = {
+  id: string;
+  name: string;
+  // 右邊那個數字：回饋是點數，商品是件數
+  amount: number;
+  time: string;
+  kind: "reward" | "product";
+};
+
+export const GIFT_SUMMARY = {
+  // 已拆禮物
+  opened: 41,
+  // 禮物總價值
+  value: 1550,
+  // 還沒拆的：一開始沒有，在兌換頁買了酒品盲盒才會多出禮物（跟帳號 tab 的紅點）
+  unopened: 0,
+};
+
+const rewardRecords = (
+  ids: string,
+  rows: [amount: number, time: string][],
+): GiftRecord[] =>
+  rows.map(([amount, time], i) => ({
+    id: `${ids}-${i}`,
+    name: "回饋",
+    amount,
+    time,
+    kind: "reward" as const,
+  }));
+
+// 由新到舊，整串就是這一頁下半部看到的東西
+export const GIFT_RECORDS: GiftRecord[] = [
+  {
+    id: "whisky",
+    name: "2023 威士忌新酒",
+    amount: 1,
+    time: "2021/05/19 11:23",
+    kind: "product",
+  },
+  ...rewardRecords("r", [
+    [500, "2021/05/19 11:23"],
+    [100, "2021/05/18 20:41"],
+    [50, "2021/05/17 09:12"],
+    [50, "2021/05/16 18:05"],
+    [50, "2021/05/15 12:37"],
+    [50, "2021/05/14 21:20"],
+    [50, "2021/05/13 10:08"],
+    [50, "2021/05/12 19:55"],
+    [20, "2021/05/11 08:30"],
+    [20, "2021/05/10 17:44"],
+    [20, "2021/05/09 13:19"],
+    [10, "2021/05/08 22:02"],
+  ]),
+];
+
+// 拆開一個禮物會拿到什麼。結果卡上的商品照是設計稿給的那張威士忌，
+// 所以這裡固定用同一個獎品，不做隨機：獎品換了照片卻沒換，看起來更假。
+export const GIFT_PRIZE = {
+  qty: 1,
+  unit: "瓶",
+  name: "2023 經典威士忌",
+  value: 1600,
+};
