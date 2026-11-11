@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CartItem, RecCard } from "../_lib/chat-storage";
 import { EASING, PAGE_TRANSITION_MS } from "../_lib/page-transition";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
-import { blindBoxDetail } from "../_lib/blindbox";
+import { BLIND_BOXES, blindBoxDetail } from "../_lib/blindbox";
+import { WINE_DETAILS } from "../_lib/wine-details";
+import WineDetail from "./WineDetail";
 import { money0, rewardPrice } from "../_lib/reward-price";
 
 // 商品細節頁：有兩種開啟方式，由 present 決定。
@@ -72,6 +74,8 @@ export default function ProductSheet({
   const [frame, setFrame] = useState<HTMLElement | null>(null);
   const [entered, setEntered] = useState(false);
   const [index, setIndex] = useState(startIndex);
+  // 盲盒盒內點開的那支酒（酒款細節頁蓋在上面）
+  const [wineId, setWineId] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("show");
   const [dir, setDir] = useState(1);
   const [closing, setClosing] = useState(false);
@@ -130,6 +134,26 @@ export default function ProductSheet({
   // 酒品盲盒也是一般商品，細節內容（盒內酒款、價值區間、機率）從盲盒資料產生
   const detail = blindBoxDetail(card.id) ?? PRODUCT_DETAILS[card.id];
   const added = addedIds.includes(card.id);
+  // 概覽：一般商品放在價格下面第一段；盲盒（有機率卡）也放最上面，先講盒裡是什麼酒，
+  // 再接保底區塊與盒內酒款
+  const overviewBlock = detail && (
+    <div className="mt-7">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-[15px] font-bold text-gray-800">概覽</p>
+        <p className="text-[13px] text-[#a1a5ac]">
+          {detail.overviewSource ?? "AI 整理"}
+        </p>
+      </div>
+      {detail.overviewLead && (
+        <p className="mb-3 text-[16px] font-bold leading-[1.6] text-gray-800">
+          {detail.overviewLead}
+        </p>
+      )}
+      <p className="whitespace-pre-line text-[16px] leading-[1.6] text-gray-800">
+        {detail.overview}
+      </p>
+    </div>
+  );
 
   const contentStyle: React.CSSProperties =
     phase === "out"
@@ -257,26 +281,138 @@ export default function ProductSheet({
                 </p>
               </div>
 
-              {detail && (
-                <>
-                  <div className="mt-7">
-                    <div className="mb-3 flex items-center justify-between">
-                      <p className="text-[15px] font-bold text-gray-800">
-                        概覽
-                      </p>
-                      <p className="text-[13px] text-[#a1a5ac]">
-                        {detail.overviewSource ?? "AI 整理"}
-                      </p>
-                    </div>
-                    {detail.overviewLead && (
-                      <p className="mb-3 text-[16px] font-bold leading-[1.6] text-gray-800">
-                        {detail.overviewLead}
-                      </p>
-                    )}
-                    <p className="whitespace-pre-line text-[16px] leading-[1.6] text-gray-800">
-                      {detail.overview}
+              {detail?.odds && overviewBlock}
+
+              {/* 盒內酒款：參考 IcyBox 的 What's inside，每一層一個標題（色塊＋機率＋價值區間），
+                  底下三欄酒款卡（酒瓶照、市值、酒名），一眼看到會開到什麼。用格狀不用橫向捲動，
+                  才不會跟細節頁左右滑換商品的手勢打架 */}
+              {detail?.odds && (
+                <div className="mt-7">
+                  <div className="mb-3 flex items-baseline justify-between">
+                    <p className="text-[15px] font-bold text-gray-800">盒內酒款</p>
+                    <p className="text-[13px] text-[#a1a5ac]">
+                      {detail.odds.tiers.reduce((n, t) => n + t.wines.length, 0)} 款
                     </p>
                   </div>
+                  <div className="flex flex-col gap-5">
+                    {detail.odds.tiers.map((t) => (
+                      <div key={t.label}>
+                        {/* 層級標題：左邊色塊＋價值區間，右邊大字機率，下面一條機率長條 */}
+                        <div className="flex items-end justify-between gap-3">
+                          <div className="min-w-0">
+                            <span
+                              className="inline-block rounded-[6px] px-2 py-0.5 text-[12px] font-semibold leading-[18px]"
+                              style={{ background: t.color, color: t.text }}
+                            >
+                              {t.label}
+                            </span>
+                            <p className="mt-1 text-[13px] text-gray-500">{t.range}</p>
+                          </div>
+                          <p className="shrink-0 leading-none">
+                            <span className="mr-1 text-[12px] text-gray-500">機率</span>
+                            <span className="text-[24px] font-bold tabular-nums text-gray-800">
+                              {t.pct}%
+                            </span>
+                          </p>
+                        </div>
+                        <div className="mb-3 mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${Math.max(t.pct, 2)}%`, background: t.color }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-3 gap-x-2.5 gap-y-4">
+                          {t.wines.map((w) => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => WINE_DETAILS[w.id] && setWineId(w.id)}
+                              className="min-w-0 text-left"
+                            >
+                              <img
+                                src={w.image}
+                                alt=""
+                                className="aspect-square w-full rounded-[10px] object-cover"
+                              />
+                              <p className="mt-1.5 text-[14px] font-bold text-gray-800">
+                                {w.value}
+                              </p>
+                              <p className="mt-0.5 line-clamp-2 text-[12px] leading-[1.4] text-gray-600">
+                                {w.name}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 保底區塊（盲盒）：放在盒內酒款下面，看完酒款再看保底跟最高可以開到多少。
+                  各層級機率已經寫在盒內酒款的層級標題，這裡不再重複 */}
+              {detail?.odds && (
+                <div className="mt-6 overflow-hidden rounded-[16px]">
+                  {/* 保底跟最高市值是買之前最想知道的兩個數字：深色底、大字。
+                      不用紅色，紅色留給結帳按鈕 */}
+                  <div className="flex bg-gray-800 px-[18px] py-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] text-white/60">保底市值</p>
+                      <p className="mt-1 text-[24px] font-bold leading-8 text-white">
+                        {detail.odds.floor}
+                      </p>
+                    </div>
+                    <div className="min-w-0 flex-1 border-l border-white/15 pl-4">
+                      <p className="text-[13px] text-white/60">最高市值</p>
+                      <p className="mt-1 text-[24px] font-bold leading-8 text-white">
+                        {detail.odds.max}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 怎麼開：三步，一步一句，取代長段說明 */}
+              {detail?.odds && (
+                <div className="mt-7">
+                  <p className="mb-3 text-[15px] font-bold text-gray-800">怎麼開</p>
+                  {/* 步驟之間放箭頭，順序一眼看得出來 */}
+                  <div className="flex items-center gap-1">
+                    {detail.odds.steps.map((s, i) => (
+                      <Fragment key={s}>
+                        {i > 0 && (
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#a1a5ac"
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="shrink-0"
+                            aria-hidden
+                          >
+                            <path d="m9 6 6 6-6 6" />
+                          </svg>
+                        )}
+                        <div className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-[12px] bg-[#f5f5f6] px-1.5 py-3 text-center">
+                          <span className="flex size-6 items-center justify-center rounded-full bg-gray-800 text-[12px] font-semibold text-white">
+                            {i + 1}
+                          </span>
+                          <p className="text-[13px] leading-[1.4] text-gray-800">{s}</p>
+                        </div>
+                      </Fragment>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 一般商品的概覽、規格、重點卡、大家怎麼說。盲盒（有機率卡）的內容已經畫成
+                  上面的酒款卡與保底區塊，這幾段都不放 */}
+              {detail && !detail.odds && (
+                <>
+                  {overviewBlock}
 
                   <div className="mt-7 border-t border-[#eef0f1] pt-6">
                     <p className="mb-3.5 text-[15px] font-bold text-gray-800">
@@ -300,6 +436,7 @@ export default function ProductSheet({
                     ))}
                   </div>
 
+                  {detail.highlights.length > 0 && (
                   <div className="mt-7 rounded-[16px] border border-[#e8eaed] p-[18px]">
                     {detail.highlightSummary && (
                       <>
@@ -328,6 +465,7 @@ export default function ProductSheet({
                       ))}
                     </div>
                   </div>
+                  )}
 
                   {/* 白底灰線，跟上面那張重點卡同一種框，兩張才像同一套；
                       內容來源的說明不放在卡裡，跟其他注意事項一起收到頁面最後 */}
@@ -375,6 +513,12 @@ export default function ProductSheet({
                   圖片上的活動優惠不適用於 AIFIAN 購買
                 </Note>
               )}
+              {/* 盲盒的機率說明、交易與酒類警語：跟其他注意事項一起放在最下面 */}
+              {detail?.odds && [detail.odds.note, ...detail.odds.legal].map((line) => (
+                <Note key={line} className="mt-1.5">
+                  {line}
+                </Note>
+              ))}
             </div>
           </div>
         </div>
@@ -437,6 +581,27 @@ export default function ProductSheet({
           </button>
         </div>
       </div>
+
+      {/* 酒款細節頁：從盲盒盒內點酒打開，蓋在整個細節頁上面，返回就回到盲盒 */}
+      {wineId &&
+        (() => {
+          const pool = BLIND_BOXES.flatMap((b) => b.pool).find((w) => w.id === wineId);
+          const detailOfWine = WINE_DETAILS[wineId];
+          const photo = detail?.odds?.tiers
+            .flatMap((t) => t.wines)
+            .find((w) => w.id === wineId)?.image;
+          if (!pool || !detailOfWine || !photo) return null;
+          return (
+            <WineDetail
+              key={wineId}
+              wine={detailOfWine}
+              name={pool.name}
+              value={pool.value}
+              image={photo}
+              onClose={() => setWineId(null)}
+            />
+          );
+        })()}
     </>,
     frame,
   );

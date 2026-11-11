@@ -19,9 +19,25 @@ export type Tier = "top" | "rare" | "select";
 export type WineKind = "red" | "white" | "whisky" | "cognac";
 
 export const TIER_LABEL: Record<Tier, string> = {
-  top: "頂標",
+  top: "頂級",
   rare: "珍藏",
   select: "精選",
+};
+
+// 機率卡上的層級色塊：參考 IcyBox 的 Grail 黃、Epic 紫、Rare 藍
+export const TIER_COLOR: Record<Tier, { bg: string; text: string }> = {
+  top: { bg: "#FACC15", text: "#3F3100" },
+  rare: { bg: "#A855F7", text: "#FFFFFF" },
+  select: { bg: "#3B82F6", text: "#FFFFFF" },
+};
+
+// 細節頁酒款卡的示意酒瓶照：還沒有每支酒的商品照，先依酒類放一張
+// （白酒也先用紅酒瓶，跟我的酒窖一樣是示意）
+export const KIND_PHOTO: Record<WineKind, string> = {
+  red: "/figma/product-redwine.png",
+  white: "/figma/product-redwine.png",
+  whisky: "/figma/product-whisky4.png",
+  cognac: "/figma/product-whisky4.png",
 };
 
 export const KIND_ICON: Record<WineKind, string> = {
@@ -51,11 +67,15 @@ export type BlindBox = {
   // 細節頁概覽的開頭：參考 Arena Club Time Box，先講盒裡是什麼樣的酒、
   // 再講適合誰，不講機制
   intro: string;
+  // 細節頁版型，兩款盒子各用一種方便比較：
+  // classic：機率寫在最下面的三欄重點卡（原本的版型）
+  // odds：價格下面放 IcyBox 式機率卡（深色保底區塊＋可展開的各層級機率）
+  layout: "classic" | "odds";
   pool: PoolWine[];
 };
 
 // 選酒照規格的「獎池選酒」：市值不低於保底、選品評分 15 分以上。
-// 機率沿用原本試算的比例：頂標 1% 以下、珍藏一成多、其餘是精選
+// 機率沿用原本試算的比例：頂級 1% 以下、珍藏一成多、其餘是精選
 const wine = (
   id: string,
   name: string,
@@ -71,6 +91,7 @@ export const BLIND_BOXES: BlindBox[] = [
     price: 1200,
     floor: 1200,
     odds: { top: 0.5, rare: 12, select: 87.5 },
+    layout: "classic",
     intro:
       "從百富、人頭馬到勃根地新生代酒莊，威士忌、干邑、紅酒都可能是你開到的那一瓶。給想認識好酒、也想來點驚喜的你。",
     pool: [
@@ -97,6 +118,7 @@ export const BLIND_BOXES: BlindBox[] = [
     price: 4800,
     floor: 4800,
     odds: { top: 1, rare: 14, select: 85 },
+    layout: "odds",
     intro:
       "以勃根地特級園與一級園為主，拉菲昂伯爵、費維利、蓬索、茂-卡慕澤這些藏家熟悉的名莊都在盒裡。給已經有收藏習慣、想開一瓶有份量好酒的你。",
     pool: [
@@ -234,22 +256,55 @@ export function blindBoxDetail(productId: string): ProductDetail | undefined {
     // 概覽第一句就講最高可以開到什麼，用粗體強調
     overviewLead: `有機會開出市值 ${money(top.value)} 的${top.name}`,
     overview:
-      `${box.intro}\n\n` +
-      `每一盒保證開出市值 ${money(box.floor)} 以上的酒。付款後會收到 1 個禮物，到「我的禮物」拆開，開出的酒存進「我的酒窖」，之後可以領回或轉售。\n\n` +
-      `盒內酒款、價值區間與機率\n\n${poolText}\n\n` +
-      `各層級機率固定，不會因為開出而改變，酒款會持續補貨。市值以台灣售價為準。付款即完成交易，不提供退款。未滿 18 歲請勿購買。\n\n禁止酒駕　飲酒過量，有害健康`,
+      box.layout === "odds"
+        ? box.intro
+        : `${box.intro}\n\n` +
+          `每一盒保證開出市值 ${money(box.floor)} 以上的酒。付款後會收到 1 個禮物，到「我的禮物」拆開，開出的酒存進「我的酒窖」，之後可以領回或轉售。\n\n` +
+          `盒內酒款、價值區間與機率\n\n${poolText}\n\n` +
+          `各層級機率固定，不會因為開出而改變，酒款會持續補貨。市值以台灣售價為準。付款即完成交易，不提供退款。未滿 18 歲請勿購買。\n\n禁止酒駕　飲酒過量，有害健康`,
     specs: [
       { label: "內容", value: "1 瓶／盒" },
       { label: "保底市值", value: money(box.floor) },
       { label: "價值區間", value: boxRange(box) },
       { label: "盒內酒款", value: `${box.pool.length} 款` },
     ],
-    // 重點卡一欄很窄，價值區間拿掉 NT$ 才放得進一行，幣別看上面那句摘要
-    highlights: tiers.map((t) => ({
-      title: `${TIER_LABEL[t]} ${pct(box.odds[t])}`,
-      sub: tierRange(box, t).replace("NT$", ""),
-    })),
-    highlightSummary: `最高 ${money(top.value)}・保底 ${money(box.floor)}`,
+    ...(box.layout === "classic"
+      ? {
+          // 重點卡一欄很窄，價值區間拿掉 NT$ 才放得進一行，幣別看上面那句摘要
+          highlights: tiers.map((t) => ({
+            title: `${TIER_LABEL[t]} ${pct(box.odds[t])}`,
+            sub: tierRange(box, t).replace("NT$", ""),
+          })),
+          highlightSummary: `最高 ${money(top.value)}・保底 ${money(box.floor)}`,
+        }
+      : {
+        highlights: [],
+        odds: {
+          floor: money(box.floor),
+          max: money(top.value),
+          tiers: tiers.map((t) => ({
+            label: TIER_LABEL[t],
+            range: tierRange(box, t),
+            pct: box.odds[t],
+            color: TIER_COLOR[t].bg,
+            text: TIER_COLOR[t].text,
+            wines: box.pool
+              .filter((w) => w.tier === t)
+              .map((w) => ({
+                id: w.id,
+                name: w.name,
+                value: money(w.value),
+                image: KIND_PHOTO[w.kind],
+              })),
+          })),
+          note: "各層級機率固定，不會因為開出而改變。市值以台灣售價為準。",
+          steps: ["付款收到禮物", "我的禮物拆開", "存進我的酒窖"],
+          legal: [
+            "付款即完成交易，不提供退款。未滿 18 歲請勿購買。",
+            "禁止酒駕　飲酒過量，有害健康",
+          ],
+        },
+      }),
     reviewText: null,
     reviewTags: [],
   };

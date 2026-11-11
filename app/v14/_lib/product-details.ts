@@ -12,6 +12,26 @@ export type ProductDetail = {
   specs: { label: string; value: string }[];
   highlights: { title: string; sub: string }[];
   highlightSummary?: string;
+  // 機率卡（選填，盲盒用）：參考 IcyBox，最上面放保底跟最高市值，
+  // 下面每個層級一列：色塊標籤、價值區間、機率、機率長條。有這張卡就不放重點卡
+  odds?: {
+    floor: string;
+    max: string;
+    tiers: {
+      label: string;
+      range: string;
+      pct: number;
+      color: string;
+      text: string;
+      // 這一層有哪些酒：細節頁照 IcyBox 的「What's inside」排成兩欄酒款卡
+      wines: { id: string; name: string; value: string; image: string }[];
+    }[];
+    note: string;
+    // 開盒怎麼進行，一步一句短話，取代概覽裡的長段說明
+    steps: string[];
+    // 交易與酒類警語：放在頁面最下面的小字
+    legal: string[];
+  };
   // null 代表還沒有社群討論，細節頁會顯示「還沒人討論過」的空狀態
   reviewText: string | null;
   reviewTags: string[];
