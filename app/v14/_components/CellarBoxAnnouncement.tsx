@@ -46,8 +46,8 @@ export default function CellarBoxAnnouncement({
             >
               拆開之前，誰都猜不到
             </p>
-            <p className="w-full text-[16px] leading-6 text-[#1f1f1f]">
-              藏酒盒上線了！每一盒都藏著一瓶好酒，市值保證不低於售價。經典、名莊兩款，盒裡有哪些酒先攤開給你看，開出來的那瓶直接收進你的酒窖。
+            <p className="w-full text-pretty text-[16px] leading-6 text-[#1f1f1f]">
+              藏酒盒上線了！每一盒都藏著一瓶好酒，有機會開出價值遠高於售價的酒款，不管開出什麼酒，市值都保證不低於售價。
             </p>
           </div>
           <button
