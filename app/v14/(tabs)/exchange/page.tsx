@@ -306,7 +306,7 @@ export default function ExchangePage() {
             一般商品區隔開，卡片本身跟其他商品同一款 */}
         <div className="bg-[#f3f4f6] py-2">
           <ProductRow
-            title="酒品盲盒"
+            title="藏酒盒"
             subtitle="開出的每一瓶，都值回售價"
             products={BLIND_BOX_PRODUCTS}
             onOpen={(i) => setSheet({ cards: BLIND_BOX_CARDS, index: i })}

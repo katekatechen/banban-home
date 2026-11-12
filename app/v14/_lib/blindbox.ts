@@ -24,11 +24,12 @@ export const TIER_LABEL: Record<Tier, string> = {
   select: "精選",
 };
 
-// 機率卡上的層級色塊：參考 IcyBox 的 Grail 黃、Epic 紫、Rare 藍
+// 機率卡上的層級色塊：金、棕、藍。不用遊戲寶物常見的黃紫藍，避免抽卡聯想；
+// 精選用比原本亮藍柔一點的藍，在深色底上看得清楚
 export const TIER_COLOR: Record<Tier, { bg: string; text: string }> = {
-  top: { bg: "#FACC15", text: "#3F3100" },
-  rare: { bg: "#A855F7", text: "#FFFFFF" },
-  select: { bg: "#3B82F6", text: "#FFFFFF" },
+  top: { bg: "#E2B84B", text: "#3A2A00" },
+  rare: { bg: "#A86B43", text: "#FFFFFF" },
+  select: { bg: "#5B8DEF", text: "#FFFFFF" },
 };
 
 // 細節頁酒款卡的示意酒瓶照：還沒有每支酒的商品照，先依酒類放一張
@@ -87,7 +88,7 @@ const wine = (
 export const BLIND_BOXES: BlindBox[] = [
   {
     id: "starter",
-    name: "入門盒",
+    name: "經典",
     price: 1200,
     floor: 1200,
     odds: { top: 0.5, rare: 12, select: 87.5 },
@@ -113,7 +114,7 @@ export const BLIND_BOXES: BlindBox[] = [
   },
   {
     id: "advanced",
-    name: "進階盒",
+    name: "名莊",
     // 保底跟售價一樣：盒內最便宜的是 4,800 的拉・里奧特，售價就定在這裡
     price: 4800,
     floor: 4800,
@@ -148,7 +149,7 @@ const PRODUCT_PREFIX = "blindbox-";
 
 export const BLIND_BOX_PRODUCTS = BLIND_BOXES.map((b) => ({
   id: `${PRODUCT_PREFIX}${b.id}`,
-  name: `酒品盲盒・${b.name}`,
+  name: `${b.name}藏酒盒`,
   subtitle: `保證市值 NT$${b.floor.toLocaleString()} 以上`,
   price: b.price,
   image: `/v14/blindbox/${b.id}.jpg`,
@@ -251,7 +252,7 @@ export function blindBoxDetail(productId: string): ProductDetail | undefined {
     .join("\n\n");
   return {
     // 細節頁標題跟兌換頁列表用同一個名稱
-    fullName: `酒品盲盒・${box.name}`,
+    fullName: `${box.name}藏酒盒`,
     overviewSource: "by AIFIAN",
     // 概覽第一句就講最高可以開到什麼，用粗體強調
     overviewLead: `有機會開出市值 ${money(top.value)} 的${top.name}`,
@@ -298,7 +299,7 @@ export function blindBoxDetail(productId: string): ProductDetail | undefined {
               })),
           })),
           note: "各層級機率固定，不會因為開出而改變。市值以台灣售價為準。",
-          steps: ["付款收到禮物", "我的禮物拆開", "存進我的酒窖"],
+          steps: ["結帳後，\n收到禮物", "在「我的禮物」\n拆開", "存進\n我的酒窖"],
           legal: [
             "付款即完成交易，不提供退款。未滿 18 歲請勿購買。",
             "禁止酒駕　飲酒過量，有害健康",

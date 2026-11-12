@@ -26,6 +26,23 @@ const SHEET_TOP_GAP = 72;
 // 位置各自貼著它說明的東西，但看起來要是同一類的字
 const NOTE_CLASS = "text-[13px] leading-[1.6] text-[#a1a5ac]";
 
+// 「怎麼開」三步的線條圖示：收到禮物、拆開盒子、存進酒窖（酒瓶）
+const STEP_ICONS = [
+  <>
+    <rect x="3" y="8" width="18" height="4" rx="1" />
+    <path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+    <path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5" />
+  </>,
+  <>
+    <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" />
+    <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+  </>,
+  <>
+    <path d="M10 2h4M10.5 2v4.5c0 .8-.5 1.4-1.1 1.9A4.5 4.5 0 0 0 7.5 12v8a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-8a4.5 4.5 0 0 0-1.9-3.6c-.6-.5-1.1-1.1-1.1-1.9V2" />
+    <path d="M7.5 14h9" />
+  </>,
+];
+
 // 注意事項小字：前面帶一個點，一眼看得出是條列的提醒。
 // 點跟文字分成兩欄，第二行會對齊第一行的文字，不會繞到點的下面
 function Note({
@@ -134,22 +151,33 @@ export default function ProductSheet({
   // 酒品盲盒也是一般商品，細節內容（盒內酒款、價值區間、機率）從盲盒資料產生
   const detail = blindBoxDetail(card.id) ?? PRODUCT_DETAILS[card.id];
   const added = addedIds.includes(card.id);
+  // 名莊藏酒盒（有機率卡的盒子）整頁用深色底，跟一般商品的白底區隔出收藏感；
+  // 機率卡、保底區塊、怎麼開這幾段只有深色版，共用的標題、價格、概覽、底部操作列才需要分兩套
+  const dark = !!detail?.odds;
+  const ink = dark ? "text-white" : "text-gray-800";
   // 概覽：一般商品放在價格下面第一段；盲盒（有機率卡）也放最上面，先講盒裡是什麼酒，
-  // 再接保底區塊與盒內酒款
+  // 再接保底區塊與盒內酒款。名莊藏酒盒（深色頁）不放「概覽 by AIFIAN」標題，
+  // 第一句也不用粗體，價格下面直接接一段介紹
   const overviewBlock = detail && (
     <div className="mt-7">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-[15px] font-bold text-gray-800">概覽</p>
-        <p className="text-[13px] text-[#a1a5ac]">
-          {detail.overviewSource ?? "AI 整理"}
-        </p>
-      </div>
+      {!dark && (
+        <div className="mb-3 flex items-center justify-between">
+          <p className={`text-[15px] font-bold ${ink}`}>概覽</p>
+          <p className="text-[13px] text-[#a1a5ac]">
+            {detail.overviewSource ?? "AI 整理"}
+          </p>
+        </div>
+      )}
       {detail.overviewLead && (
-        <p className="mb-3 text-[16px] font-bold leading-[1.6] text-gray-800">
+        <p className={`mb-3 text-[16px] leading-[1.6] ${dark ? "" : "font-bold"} ${ink}`}>
           {detail.overviewLead}
         </p>
       )}
-      <p className="whitespace-pre-line text-[16px] leading-[1.6] text-gray-800">
+      <p
+        className={`whitespace-pre-line text-[16px] leading-[1.6] ${
+          dark ? "text-white/75" : "text-gray-800"
+        }`}
+      >
         {detail.overview}
       </p>
     </div>
@@ -207,7 +235,7 @@ export default function ProductSheet({
           if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy))
             nav(dx < 0 ? 1 : -1);
         }}
-        className={`absolute flex flex-col overflow-hidden bg-white ${
+        className={`absolute flex flex-col overflow-hidden ${dark ? "bg-gray-800" : "bg-white"} ${
           isSheet
             ? "inset-x-0 bottom-0 rounded-t-[20px] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
             : "inset-0"
@@ -260,13 +288,15 @@ export default function ProductSheet({
             />
 
             <div className="px-5 pb-6 pt-[18px]">
-              <p className="text-[21px] font-medium leading-[1.4] text-gray-800">
+              <p className={`text-[21px] font-medium leading-[1.4] ${ink}`}>
                 {detail?.fullName ?? card.name}
               </p>
               {/* 價格：跟兌換列表、對話商品卡同一套說法，原價加刪除線、下面是折抵後要付的，
                   點進來不會又變回原價。試算扣掉購物車裡其他商品已經佔掉的回饋 */}
               <div className="mt-2.5 flex flex-col gap-1">
-                <p className="text-[13px] leading-4 text-[#4a5565]">
+                <p
+                  className={`text-[13px] leading-4 ${dark ? "text-white/60" : "text-[#4a5565]"}`}
+                >
                   折抵後價格{" "}
                   <span className="line-through">
                     NT$ {card.price.toLocaleString()}
@@ -274,7 +304,7 @@ export default function ProductSheet({
                 </p>
                 <p
                   className={`text-[24px] font-bold ${
-                    priced.fullyCovered ? "text-brand" : "text-gray-800"
+                    priced.fullyCovered ? "text-brand" : ink
                   }`}
                 >
                   NT$ {money0(priced.shortfall)}
@@ -284,12 +314,12 @@ export default function ProductSheet({
               {detail?.odds && overviewBlock}
 
               {/* 盒內酒款：參考 IcyBox 的 What's inside，每一層一個標題（色塊＋機率＋價值區間），
-                  底下三欄酒款卡（酒瓶照、市值、酒名），一眼看到會開到什麼。用格狀不用橫向捲動，
+                  底下是酒單列表（只有酒名），一眼看到會開到什麼。不用橫向捲動，
                   才不會跟細節頁左右滑換商品的手勢打架 */}
               {detail?.odds && (
                 <div className="mt-7">
                   <div className="mb-3 flex items-baseline justify-between">
-                    <p className="text-[15px] font-bold text-gray-800">盒內酒款</p>
+                    <p className="text-[15px] font-bold text-white">盒內酒款</p>
                     <p className="text-[13px] text-[#a1a5ac]">
                       {detail.odds.tiers.reduce((n, t) => n + t.wines.length, 0)} 款
                     </p>
@@ -306,40 +336,47 @@ export default function ProductSheet({
                             >
                               {t.label}
                             </span>
-                            <p className="mt-1 text-[13px] text-gray-500">{t.range}</p>
+                            <p className="mt-1 text-[13px] text-white/55">{t.range}</p>
                           </div>
                           <p className="shrink-0 leading-none">
-                            <span className="mr-1 text-[12px] text-gray-500">機率</span>
-                            <span className="text-[24px] font-bold tabular-nums text-gray-800">
+                            <span className="mr-1 text-[12px] text-white/55">機率</span>
+                            <span className="text-[24px] font-bold tabular-nums text-white">
                               {t.pct}%
                             </span>
                           </p>
                         </div>
-                        <div className="mb-3 mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                        <div className="mb-3 mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                           <div
                             className="h-full rounded-full"
                             style={{ width: `${Math.max(t.pct, 2)}%`, background: t.color }}
                           />
                         </div>
-                        <div className="grid grid-cols-3 gap-x-2.5 gap-y-4">
+                        {/* 酒單列表：不放酒瓶照、不放單支市值（層級標題已有價值區間），一支酒一行，點了開酒款細節頁 */}
+                        <div className="flex flex-col">
                           {t.wines.map((w) => (
                             <button
                               key={w.id}
                               type="button"
                               onClick={() => WINE_DETAILS[w.id] && setWineId(w.id)}
-                              className="min-w-0 text-left"
+                              className="flex min-w-0 items-center gap-3 border-t border-white/10 py-3 text-left"
                             >
-                              <img
-                                src={w.image}
-                                alt=""
-                                className="aspect-square w-full rounded-[10px] object-cover"
-                              />
-                              <p className="mt-1.5 text-[14px] font-bold text-gray-800">
-                                {w.value}
-                              </p>
-                              <p className="mt-0.5 line-clamp-2 text-[12px] leading-[1.4] text-gray-600">
+                              <p className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[1.4] text-white/90">
                                 {w.name}
                               </p>
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#a1a5ac"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="-ml-1 shrink-0"
+                                aria-hidden
+                              >
+                                <path d="m9 6 6 6-6 6" />
+                              </svg>
                             </button>
                           ))}
                         </div>
@@ -353,9 +390,9 @@ export default function ProductSheet({
                   各層級機率已經寫在盒內酒款的層級標題，這裡不再重複 */}
               {detail?.odds && (
                 <div className="mt-6 overflow-hidden rounded-[16px]">
-                  {/* 保底跟最高市值是買之前最想知道的兩個數字：深色底、大字。
+                  {/* 保底跟最高市值是買之前最想知道的兩個數字：比頁面亮一階的深灰底、大字。
                       不用紅色，紅色留給結帳按鈕 */}
-                  <div className="flex bg-gray-800 px-[18px] py-4">
+                  <div className="flex bg-white/[0.08] px-[18px] py-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] text-white/60">保底市值</p>
                       <p className="mt-1 text-[24px] font-bold leading-8 text-white">
@@ -375,32 +412,28 @@ export default function ProductSheet({
               {/* 怎麼開：三步，一步一句，取代長段說明 */}
               {detail?.odds && (
                 <div className="mt-7">
-                  <p className="mb-3 text-[15px] font-bold text-gray-800">怎麼開</p>
-                  {/* 步驟之間放箭頭，順序一眼看得出來 */}
-                  <div className="flex items-center gap-1">
+                  <p className="mb-3 text-[15px] font-bold text-white">怎麼開</p>
+                  {/* 一張卡分三欄，中間細線隔開；每欄由上往下是步驟編號、圖示（禮物、盒子、酒瓶）、一句話 */}
+                  <div className="flex rounded-[16px] bg-white/[0.06] px-1 py-4">
                     {detail.odds.steps.map((s, i) => (
                       <Fragment key={s}>
-                        {i > 0 && (
+                        {i > 0 && <div aria-hidden className="w-px shrink-0 bg-white/10" />}
+                        <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 px-1 text-center">
+                          <span className="text-[12px] tabular-nums text-white/50">{i + 1}</span>
                           <svg
-                            width="16"
-                            height="16"
+                            width="26"
+                            height="26"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="#a1a5ac"
-                            strokeWidth="2.4"
+                            stroke="white"
+                            strokeWidth="1.6"
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            className="shrink-0"
                             aria-hidden
                           >
-                            <path d="m9 6 6 6-6 6" />
+                            {STEP_ICONS[i]}
                           </svg>
-                        )}
-                        <div className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-[12px] bg-[#f5f5f6] px-1.5 py-3 text-center">
-                          <span className="flex size-6 items-center justify-center rounded-full bg-gray-800 text-[12px] font-semibold text-white">
-                            {i + 1}
-                          </span>
-                          <p className="text-[13px] leading-[1.4] text-gray-800">{s}</p>
+                          <p className="mt-0.5 whitespace-pre-line text-[13px] leading-[1.4] text-white/90">{s}</p>
                         </div>
                       </Fragment>
                     ))}
@@ -525,10 +558,16 @@ export default function ProductSheet({
 
         {/* 底部固定的操作列（照參考圖）：左邊文字按鈕「繼續聊」帶著這個商品回對話，
             右邊兩顆膠囊按鈕是加入購物車跟立即結帳 */}
-        <div className="flex shrink-0 items-center gap-2.5 border-t border-[#eef0f1] bg-white px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
+        <div
+          className={`flex shrink-0 items-center gap-2.5 border-t px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 ${
+            dark ? "border-white/10 bg-gray-800" : "border-[#eef0f1] bg-white"
+          }`}
+        >
           <button
             onClick={() => onAsk(card)}
-            className="flex shrink-0 items-center gap-1 px-1.5 text-[15px] text-[#4a5565]"
+            className={`flex shrink-0 items-center gap-1 px-1.5 text-[15px] ${
+              dark ? "text-white/70" : "text-[#4a5565]"
+            }`}
           >
             <svg
               width="20"
@@ -568,7 +607,9 @@ export default function ProductSheet({
           ) : (
             <button
               onClick={() => onToggleCart(card)}
-              className="flex h-11 flex-1 items-center justify-center rounded-full border-[1.5px] border-gray-800 text-[15px] font-semibold text-gray-800"
+              className={`flex h-11 flex-1 items-center justify-center rounded-full border-[1.5px] text-[15px] font-semibold ${
+                dark ? "border-white text-white" : "border-gray-800 text-gray-800"
+              }`}
             >
               加入購物車
             </button>
