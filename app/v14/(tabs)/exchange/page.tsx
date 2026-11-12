@@ -324,9 +324,9 @@ export default function ExchangePage() {
           }}
         />
 
-        {/* 藏酒盒：放在許願池上方，跟許願池同一個深色底（#364153），兩區連成一片深色；
+        {/* 藏酒盒：放在許願池上方，跟許願池同一個深色底（#1d2a3d），兩區連成一片深色；
             卡片跟其他商品同一款，文字換成深色底的版本 */}
-        <div className="bg-[#364153]">
+        <div className="bg-[#1d2a3d]">
           <ProductRow
             dark
             title="藏酒盒"
@@ -347,11 +347,14 @@ export default function ExchangePage() {
               });
             }}
           />
+          {/* 跟許願池分開：兩區玩法不同（藏酒盒是買一盒必開到酒，許願池是用回饋換機會），
+              左右各內縮 16px 的淡線，同一片深色裡看得出是兩個區塊 */}
+          <div aria-hidden className="mx-4 h-px bg-white/10" />
         </div>
 
         {/* 許願池（照 Figma 948:45714）：跟上面用回饋折抵的商品邏輯不同（這裡是抽獎），
             整區換成深色底做出區隔；底部多留一段讓深色延伸到 tabbar 底下 */}
-        <div className="flex flex-col gap-4 bg-[#364153] pb-[140px]">
+        <div className="flex flex-col gap-4 bg-[#1d2a3d] pb-[140px]">
           <div>
             <div className="p-4">
               <div className="flex items-center gap-1">

@@ -155,6 +155,12 @@ export const BLIND_BOX_PRODUCTS = BLIND_BOXES.map((b) => ({
   image: `/v14/blindbox/${b.id}.jpg`,
 }));
 
+// 細節頁大圖改用 Lottie 動畫的盒子（用商品 id 對應）。兌換頁列表、購物車、結帳等
+// 其他地方還是用靜態圖。名莊藏酒盒是木盒加光環的循環動畫
+export const PRODUCT_LOTTIE: Record<string, string> = {
+  "blindbox-advanced": "/v14/blindbox/advanced-ring.json",
+};
+
 export const boxIdOfProduct = (productId: string): BlindBox["id"] | null => {
   if (!productId.startsWith(PRODUCT_PREFIX)) return null;
   const id = productId.slice(PRODUCT_PREFIX.length);

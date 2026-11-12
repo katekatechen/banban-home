@@ -5,7 +5,13 @@ import { createPortal } from "react-dom";
 import type { CartItem, RecCard } from "../_lib/chat-storage";
 import { EASING, PAGE_TRANSITION_MS } from "../_lib/page-transition";
 import { PRODUCT_DETAILS } from "../_lib/product-details";
-import { BLIND_BOXES, blindBoxDetail } from "../_lib/blindbox";
+import {
+  BLIND_BOXES,
+  blindBoxDetail,
+  isBlindBoxProduct,
+  PRODUCT_LOTTIE,
+} from "../_lib/blindbox";
+import LottieImage from "./LottieImage";
 import { WINE_DETAILS } from "../_lib/wine-details";
 import WineDetail from "./WineDetail";
 import { money0, rewardPrice } from "../_lib/reward-price";
@@ -276,16 +282,25 @@ export default function ProductSheet({
           className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
         >
           <div className="flex flex-col" style={contentStyle}>
-            <div
-              role="img"
-              aria-label={card.name}
-              className="aspect-square w-full shrink-0 bg-[#eef0f2] bg-cover bg-center"
-              style={
-                card.image
-                  ? { backgroundImage: `url('${card.image}')` }
-                  : undefined
-              }
-            />
+            {/* 有 Lottie 的商品（名莊藏酒盒）大圖換成動畫，其他用靜態圖 */}
+            {PRODUCT_LOTTIE[card.id] ? (
+              <LottieImage
+                key={card.id}
+                src={PRODUCT_LOTTIE[card.id]}
+                className="aspect-square w-full shrink-0 bg-[#1e2939]"
+              />
+            ) : (
+              <div
+                role="img"
+                aria-label={card.name}
+                className="aspect-square w-full shrink-0 bg-[#eef0f2] bg-cover bg-center"
+                style={
+                  card.image
+                    ? { backgroundImage: `url('${card.image}')` }
+                    : undefined
+                }
+              />
+            )}
 
             <div className="px-5 pb-6 pt-[18px]">
               <p className={`text-[21px] font-medium leading-[1.4] ${ink}`}>
@@ -535,20 +550,20 @@ export default function ProductSheet({
                 放在內容最後，不壓在圖上、也不擋在商品資訊前面。
                 頁面上的注意事項（這句跟「大家怎麼說」裡的 AI 說明）共用 Note，
                 同一個字級跟灰，各自貼著它說明的東西，看起來才像同一類小字。
-                沒有圖的商品不顯示 */}
+                沒有圖的商品不顯示；藏酒盒的圖是自己做的，沒有活動訊息，也不顯示 */}
               {detail?.reviewText && (
                 <Note className="mt-6">
                   大家怎麼說由 AI 整理自社群公開討論，非逐字引用
                 </Note>
               )}
-              {card.image && (
+              {card.image && !isBlindBoxProduct(card.id) && (
                 <Note className={detail?.reviewText ? "mt-1.5" : "mt-6"}>
                   圖片上的活動優惠不適用於 AIFIAN 購買
                 </Note>
               )}
               {/* 盲盒的機率說明、交易與酒類警語：跟其他注意事項一起放在最下面 */}
-              {detail?.odds && [detail.odds.note, ...detail.odds.legal].map((line) => (
-                <Note key={line} className="mt-1.5">
+              {detail?.odds && [detail.odds.note, ...detail.odds.legal].map((line, i) => (
+                <Note key={line} className={i === 0 ? "mt-6" : "mt-1.5"}>
                   {line}
                 </Note>
               ))}
