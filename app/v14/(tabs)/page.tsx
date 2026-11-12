@@ -16,6 +16,7 @@ import HomeGradient, {
 } from "../_components/HomeGradient";
 import LogoMorph from "../_components/LogoMorph";
 import Splash, { SPLASH_EXIT_MS, SPLASH_HOLD_MS } from "../_components/Splash";
+import CellarBoxAnnouncement from "../_components/CellarBoxAnnouncement";
 import Signup, { SIGNUP_EXIT_MS, SIGNUP_TOP } from "../_components/Signup";
 import { greetingOf, knownTime, resolveTime } from "../_lib/time-of-day";
 import { HOME_RESET_EVENT } from "../_components/TabBar";
@@ -83,6 +84,8 @@ const ANCHOR_BOTTOM_GAP = 24;
 // 首頁的載入動畫（天空淡入、雲升起）只在打開頁面後第一次看到首頁時播，
 // 切去其他分頁再切回來就不重播
 let heroIntroPlayed = false;
+// 藏酒盒上線公告卡：打開頁面後第一次看到首頁時跳出一次，切分頁回來不再跳
+let cellarBoxAnnounced = false;
 
 const SUGGESTION_POOL = [
   { key: "how-to-earn", prompt: "如何開始領取回饋", label: "如何開始領取回饋" },
@@ -258,6 +261,17 @@ export default function V13HomePage() {
   const [reminder, setReminder] = useState<ReminderKey | null>(reminderKey);
   // 點「看看新的 AIFIAN」才打開的改版公告卡
   const [announce, setAnnounce] = useState(false);
+  // 藏酒盒上線公告卡：開場畫面結束、首頁進場後跳出
+  const [cellarAnnounce, setCellarAnnounce] = useState(false);
+  useEffect(() => {
+    if (splash !== "done" || cellarBoxAnnounced) return;
+    // 旗標在真的跳出時才設，effect 被重跑（開發模式會跑兩次）也不會漏掉
+    const t = window.setTimeout(() => {
+      cellarBoxAnnounced = true;
+      setCellarAnnounce(true);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [splash]);
   // 第三方 AI 的揭露與同意：沒同意之前不能把對話送出去。
   // 變數（供應商、什麼時候跳、說明二用哪版、模擬哪個錯誤）都在 _lib/ai-consent.ts
   const consentVars = useConsent();
@@ -1175,6 +1189,16 @@ export default function V13HomePage() {
       )}
       {splash !== "done" && !signup && (
         <Splash leaving={splash === "leaving"} />
+      )}
+      {cellarAnnounce && (
+        <CellarBoxAnnouncement
+          onClose={() => setCellarAnnounce(false)}
+          onCta={() => {
+            setCellarAnnounce(false);
+            // 兌換頁打開後自動捲到藏酒盒區塊
+            router.push("/v14/exchange?section=cellar-box");
+          }}
+        />
       )}
       {announce && returning && (
         <AnnouncementModal

@@ -101,6 +101,27 @@ export default function ExchangePage() {
     [],
   );
 
+  // 從藏酒盒公告卡進來（?section=cellar-box）：換頁動畫結束後，捲到藏酒盒區塊，
+  // 區塊標題停在上方導覽列下面；捲完把參數拿掉，重新整理不會再捲一次
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const cellarBoxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("section") !== "cellar-box") return;
+    const t = window.setTimeout(() => {
+      const box = cellarBoxRef.current;
+      const sc = scrollRef.current;
+      if (!box || !sc) return;
+      const header = parseFloat(getComputedStyle(sc).paddingTop) || 0;
+      sc.scrollTo({
+        top: box.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - header,
+        behavior: "smooth",
+      });
+      window.history.replaceState(null, "", window.location.pathname);
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // top：收到禮物這類「要你去別頁看」的提示從上方出現，其他維持在 tabbar 上方
   const showToast = (text: string, top = false) => {
     toastId.current += 1;
@@ -279,6 +300,7 @@ export default function ExchangePage() {
           標題各自內縮 16px；橫向卡片列的 16px 內距放在捲動列自己身上，
           卡片往右滑時才能一路滑到螢幕邊緣，不會在 16px 處被切掉 */}
       <div
+        ref={scrollRef}
         className={`flex-1 overflow-y-auto overscroll-contain bg-white ${HEADER_PADDING_CLASS}`}
       >
         <ProductRow
@@ -326,7 +348,7 @@ export default function ExchangePage() {
 
         {/* 藏酒盒：放在許願池上方，跟許願池同一個深色底（#1d2a3d），兩區連成一片深色；
             卡片跟其他商品同一款，文字換成深色底的版本 */}
-        <div className="bg-[#1d2a3d]">
+        <div ref={cellarBoxRef} className="bg-[#1d2a3d]">
           <ProductRow
             dark
             title="藏酒盒"
