@@ -302,30 +302,6 @@ export default function ExchangePage() {
             });
           }}
         />
-        {/* 酒品盲盒：放在大家都在買下面、猜你喜歡上面，墊一層淺灰底（Gray/100）跟上面的
-            一般商品區隔開，卡片本身跟其他商品同一款 */}
-        <div className="bg-[#f3f4f6] py-2">
-          <ProductRow
-            title="藏酒盒"
-            subtitle="開出的每一瓶，都值回售價"
-            products={BLIND_BOX_PRODUCTS}
-            onOpen={(i) => setSheet({ cards: BLIND_BOX_CARDS, index: i })}
-            addedIds={addedIds}
-            cart={cart}
-            onAddToCart={(p, from) => {
-              if (addedIds.includes(p.id)) {
-                setCart(removeFromCart(cart, p.id));
-                return;
-              }
-              flyToCart(from, () => {
-                navigator.vibrate?.(18);
-                setCart(addToCart(cart, toCards([p])[0]));
-                showToast("已加入購物車");
-              });
-            }}
-          />
-        </div>
-
         <ProductRow
           title="猜你喜歡"
           subtitle="根據你的對話"
@@ -347,6 +323,31 @@ export default function ExchangePage() {
             });
           }}
         />
+
+        {/* 藏酒盒：放在許願池上方，跟許願池同一個深色底（#364153），兩區連成一片深色；
+            卡片跟其他商品同一款，文字換成深色底的版本 */}
+        <div className="bg-[#364153]">
+          <ProductRow
+            dark
+            title="藏酒盒"
+            subtitle="開出的每一瓶，都值回售價"
+            products={BLIND_BOX_PRODUCTS}
+            onOpen={(i) => setSheet({ cards: BLIND_BOX_CARDS, index: i })}
+            addedIds={addedIds}
+            cart={cart}
+            onAddToCart={(p, from) => {
+              if (addedIds.includes(p.id)) {
+                setCart(removeFromCart(cart, p.id));
+                return;
+              }
+              flyToCart(from, () => {
+                navigator.vibrate?.(18);
+                setCart(addToCart(cart, toCards([p])[0]));
+                showToast("已加入購物車");
+              });
+            }}
+          />
+        </div>
 
         {/* 許願池（照 Figma 948:45714）：跟上面用回饋折抵的商品邏輯不同（這裡是抽獎），
             整區換成深色底做出區隔；底部多留一段讓深色延伸到 tabbar 底下 */}
@@ -559,7 +560,9 @@ function ProductRow({
   cart,
   onOpen,
   onAddToCart,
+  dark = false,
 }: {
+  dark?: boolean;
   title: string;
   subtitle: string;
   products: typeof TRENDING_PRODUCTS;
@@ -574,7 +577,9 @@ function ProductRow({
   return (
     <div className="flex flex-col gap-4 py-4">
       <div className="px-4">
-        <p className="text-[16px] font-semibold leading-6 text-gray-800">
+        <p
+          className={`text-[16px] font-semibold leading-6 ${dark ? "text-white" : "text-gray-800"}`}
+        >
           {title}
         </p>
         <p className="text-[14px] leading-[18px] text-gray-400">{subtitle}</p>
@@ -653,11 +658,19 @@ function ProductRow({
                 </button>
               </div>
               <div className="flex flex-col gap-2 p-2">
-                <p className="line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] text-gray-800">
+                <p
+                  className={`line-clamp-2 h-9 text-[14px] font-medium leading-[18px] tracking-[0.42px] ${
+                    dark ? "text-white" : "text-gray-800"
+                  }`}
+                >
                   {p.name}
                 </p>
                 <div className="flex flex-col gap-1">
-                  <p className="text-[13px] leading-[18px] tracking-[0.12px] text-[#4a5565]">
+                  <p
+                    className={`text-[13px] leading-[18px] tracking-[0.12px] ${
+                      dark ? "text-gray-400" : "text-[#4a5565]"
+                    }`}
+                  >
                     折抵後價格{" "}
                     <span className="line-through">
                       ${p.price.toLocaleString()}
@@ -665,7 +678,7 @@ function ProductRow({
                   </p>
                   <p
                     className={`text-[16px] font-semibold leading-5 ${
-                      fullyCovered ? "text-brand" : "text-gray-800"
+                      fullyCovered ? "text-brand" : dark ? "text-white" : "text-gray-800"
                     }`}
                   >
                     ${money0(shortfall)}
