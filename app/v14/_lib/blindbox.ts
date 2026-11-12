@@ -29,7 +29,7 @@ export const TIER_LABEL: Record<Tier, string> = {
 export const TIER_COLOR: Record<Tier, { bg: string; text: string }> = {
   top: { bg: "#E2B84B", text: "#3A2A00" },
   rare: { bg: "#A86B43", text: "#FFFFFF" },
-  select: { bg: "#5B8DEF", text: "#FFFFFF" },
+  select: { bg: "#0085D2", text: "#FFFFFF" },
 };
 
 // 細節頁酒款卡的示意酒瓶照：還沒有每支酒的商品照，先依酒類放一張
@@ -156,8 +156,9 @@ export const BLIND_BOX_PRODUCTS = BLIND_BOXES.map((b) => ({
 }));
 
 // 細節頁大圖改用 Lottie 動畫的盒子（用商品 id 對應）。兌換頁列表、購物車、結帳等
-// 其他地方還是用靜態圖。名莊藏酒盒是木盒加光環的循環動畫
+// 其他地方還是用靜態圖。兩盒都是盒子加環繞文字光環的循環動畫
 export const PRODUCT_LOTTIE: Record<string, string> = {
+  "blindbox-starter": "/v14/blindbox/starter-ring.json",
   "blindbox-advanced": "/v14/blindbox/advanced-ring.json",
 };
 

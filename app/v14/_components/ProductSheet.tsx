@@ -342,29 +342,24 @@ export default function ProductSheet({
                   <div className="flex flex-col gap-5">
                     {detail.odds.tiers.map((t) => (
                       <div key={t.label}>
-                        {/* 層級標題：左邊色塊＋價值區間，右邊大字機率，下面一條機率長條 */}
-                        <div className="flex items-end justify-between gap-3">
-                          <div className="min-w-0">
-                            <span
-                              className="inline-block rounded-[6px] px-2 py-0.5 text-[12px] font-semibold leading-[18px]"
-                              style={{ background: t.color, color: t.text }}
-                            >
-                              {t.label}
-                            </span>
-                            <p className="mt-1 text-[13px] text-white/55">{t.range}</p>
+                        {/* 層級標題：色塊一行，下一行左邊價值區間、右邊大字機率，兩邊小字對齊同一條基線。
+                            不放機率長條，長條容易被看成開盒進度 */}
+                        <div className="mb-3">
+                          <span
+                            className="inline-block rounded-[6px] px-2 py-0.5 text-[12px] font-semibold leading-[18px]"
+                            style={{ background: t.color, color: t.text }}
+                          >
+                            {t.label}
+                          </span>
+                          <div className="mt-1 flex items-baseline justify-between gap-3">
+                            <p className="min-w-0 text-[13px] text-white/55">{t.range}</p>
+                            <p className="shrink-0 leading-none">
+                              <span className="mr-1 text-[13px] text-white/55">機率</span>
+                              <span className="text-[24px] font-bold tabular-nums text-white">
+                                {t.pct}%
+                              </span>
+                            </p>
                           </div>
-                          <p className="shrink-0 leading-none">
-                            <span className="mr-1 text-[12px] text-white/55">機率</span>
-                            <span className="text-[24px] font-bold tabular-nums text-white">
-                              {t.pct}%
-                            </span>
-                          </p>
-                        </div>
-                        <div className="mb-3 mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                          <div
-                            className="h-full rounded-full"
-                            style={{ width: `${Math.max(t.pct, 2)}%`, background: t.color }}
-                          />
                         </div>
                         {/* 酒單列表：不放酒瓶照、不放單支市值（層級標題已有價值區間），一支酒一行，點了開酒款細節頁 */}
                         <div className="flex flex-col">
